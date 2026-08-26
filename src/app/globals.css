@@ -1,8 +1,11 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   Design tokens — extracted from Figma "cocoding.ai Designer DEV"
-   Landing page, node 16555:15844
+   Design tokens — read from Figma styles (group: "Landing Page")
+   file yFciEPejue3E2xhstXF0Wu · node 16555:15844 · synced 2026-08-26
+
+   ⚠ marked values are provisional: style exists in Figma but is not yet
+   bound on the landing frame (or not used there) — re-read after binding.
    ========================================================================== */
 
 /* Wired to the next/font variables declared in layout.tsx */
@@ -12,58 +15,49 @@
 }
 
 @theme {
-  /* --- Surfaces ------------------------------------------------------ */
-  --color-bg: #010101;              /* page canvas */
-  --color-surface: #121212;         /* prompt box (#171717 @ 80% over black) */
+  /* --- Colors · Figma "Landing Page/..." ------------------------------ */
+  --color-bg: #010101;              /* Bg/Default      ⚠ sampled, bind frame fill */
+  --color-text-primary: #ededed;    /* Text/Primary */
+  --color-text-body: #a1a1a1;       /* Text/Body */
+  --color-button-primary: #ffffff;  /* Button/Primary */
+  --color-accent: #6a91fc;          /* Accent          ⚠ sampled, bind pill fill */
 
-  /* --- Text ---------------------------------------------------------- */
-  --color-fg: #ededed;              /* headline */
-  --color-fg-secondary: #dedcdc;    /* nav links, buttons, logo */
-  --color-fg-muted: #a1a1a1;        /* toolbar labels */
-  --color-fg-subtle: rgb(161 161 161 / 0.6);   /* subtitle, arrow glyph */
-  --color-fg-placeholder: rgb(146 146 146 / 0.5);
-  --color-fg-inverse: #0a0a0a;      /* on white button */
+  /* --- Type · Figma text styles --------------------------------------- */
+  --text-display: 3rem;             /* Display · 48/100/-5% */
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -0.05em;
 
-  /* --- Accent -------------------------------------------------------- */
-  --color-accent: #6a91fc;          /* "New" pill */
-  --color-accent-fg: #131516;       /* text on accent */
+  --text-heading-lg: 2.25rem;       /* Heading/lg · 36/100  ⚠ unused yet */
+  --text-heading-lg--line-height: 1;
+  --text-heading-md: 1.5rem;        /* Heading/md · 24/100  ⚠ unused yet */
+  --text-heading-md--line-height: 1;
+  --text-heading-sm: 1.25rem;       /* Heading/sm · 20/100  ⚠ unused yet */
+  --text-heading-sm--line-height: 1;
 
-  /* --- Borders ------------------------------------------------------- */
-  --color-border: #2e2e2e;               /* Log in button */
-  --color-border-subtle: rgb(63 63 63 / 0.32);  /* announcement pill */
+  --text-body-md: 1rem;             /* Body/md · 16/137.5   ⚠ bind subtitle */
+  --text-body-md--line-height: 1.375;
+  --text-body-sm: 0.875rem;         /* Body/sm · 14/137.5 */
+  --text-body-sm--line-height: 1.375;
+  --text-body-xs: 0.8125rem;        /* Body/xs · 13/137.5 */
+  --text-body-xs--line-height: 1.375;
 
-  /* --- Type scale ---------------------------------------------------- */
-  /* size + line-height + tracking bundled, so one class carries all three */
-  --text-hero: 3rem;                /* 48px — "What do you want to build?" */
-  --text-hero--line-height: 1;
-  --text-hero--letter-spacing: -0.05em;
+  --text-indicator: 0.8125rem;      /* Indicator · 13/137.5 ⚠ unused yet */
+  --text-indicator--line-height: 1.375;
 
-  --text-body: 1rem;                /* 16px — subtitle, logo */
-  --text-body--line-height: 1;
-  --text-body--letter-spacing: -0.01em;
+  /* --- Radius --------------------------------------------------------- */
+  --radius-sm: 6px;                 /* buttons */
+  --radius-md: 8px;                 /* small controls / cards */
+  --radius-lg: 10px;                /* cards */
+  --radius-xl: 12px;                /* large cards */
+  --radius-2xl: 16px;               /* panels / prompt box */
+  --radius-full: 99px;              /* pills */
 
-  --text-ui: 0.875rem;              /* 14px — nav, buttons, "Auto" */
-  --text-ui--line-height: 1.375;
-
-  --text-label: 0.8125rem;          /* 13px — pill text, "Gemini 3.0" */
-  --text-label--line-height: 1.5;
-
-  --text-micro: 0.75rem;            /* 12px — "New" */
-  --text-micro--line-height: 1.1667;
-
-  /* --- Radii --------------------------------------------------------- */
-  --radius-btn: 6px;                /* header buttons */
-  --radius-control: 8px;            /* toolbar controls */
-  --radius-panel: 16px;             /* prompt box */
-  --radius-pill: 99px;
-
-  /* --- Layout -------------------------------------------------------- */
-  --container-page: 1200px;         /* header content width */
-  --container-hero: 660px;          /* hero column width */
+  /* --- Layout --------------------------------------------------------- */
+  --container-page: 1200px;         /* header/content width from design */
 }
 
 body {
   background: var(--color-bg);
-  color: var(--color-fg-secondary);
+  color: var(--color-text-primary);
   font-family: var(--font-sans);
 }
