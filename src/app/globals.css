@@ -4,8 +4,8 @@
    Design tokens — read from Figma styles (group: "Landing Page")
    file yFciEPejue3E2xhstXF0Wu · node 16555:15844 · synced 2026-08-26
 
-   ⚠ marked values are provisional: style exists in Figma but is not yet
-   bound on the landing frame (or not used there) — re-read after binding.
+   Read via the Plugin API (getLocalTextStylesAsync / getLocalPaintStylesAsync)
+   so styles are picked up whether or not they are bound on a frame.
    ========================================================================== */
 
 /* Wired to the next/font variables declared in layout.tsx */
@@ -16,32 +16,41 @@
 
 @theme {
   /* --- Colors · Figma "Landing Page/..." ------------------------------ */
-  --color-bg: #010101;              /* Bg/Default      ⚠ sampled, bind frame fill */
+  --color-bg: #010101;              /* Bg/Default */
   --color-text-primary: #ededed;    /* Text/Primary */
   --color-text-body: #a1a1a1;       /* Text/Body */
   --color-button-primary: #ffffff;  /* Button/Primary */
-  --color-accent: #6a91fc;          /* Accent          ⚠ sampled, bind pill fill */
+  --color-accent: #6c91f9;          /* Accent */
 
-  /* --- Type · Figma text styles --------------------------------------- */
-  --text-display: 3rem;             /* Display · 48/100/-5% */
+  /* --- Type · Figma text styles (read via Plugin API, incl. letter-spacing) --- */
+  --text-display: 3rem;             /* Display · 48 / 100% / -5% */
   --text-display--line-height: 1;
   --text-display--letter-spacing: -0.05em;
 
-  --text-heading-lg: 2.25rem;       /* Heading/lg · 36/100  ⚠ unused yet */
+  --text-heading-lg: 2.25rem;       /* Heading/lg · 36 / 100% / -4% */
   --text-heading-lg--line-height: 1;
-  --text-heading-md: 1.5rem;        /* Heading/md · 24/100  ⚠ unused yet */
-  --text-heading-md--line-height: 1;
-  --text-heading-sm: 1.25rem;       /* Heading/sm · 20/100  ⚠ unused yet */
-  --text-heading-sm--line-height: 1;
+  --text-heading-lg--letter-spacing: -0.04em;
 
-  --text-body-md: 1rem;             /* Body/md · 16/137.5   ⚠ bind subtitle */
+  --text-heading-md: 1.5rem;        /* Heading/md · 24 / 100% / -3% */
+  --text-heading-md--line-height: 1;
+  --text-heading-md--letter-spacing: -0.03em;
+
+  --text-heading-sm: 1.25rem;       /* Heading/sm · 20 / 100% / -1.2% */
+  --text-heading-sm--line-height: 1;
+  --text-heading-sm--letter-spacing: -0.012em;
+
+  --text-body-md: 1rem;             /* Body/md · 16 / 137.5% / -1% */
   --text-body-md--line-height: 1.375;
-  --text-body-sm: 0.875rem;         /* Body/sm · 14/137.5 */
+  --text-body-md--letter-spacing: -0.01em;
+
+  --text-body-sm: 0.875rem;         /* Body/sm · 14 / 137.5% / 0 */
   --text-body-sm--line-height: 1.375;
-  --text-body-xs: 0.8125rem;        /* Body/xs · 13/137.5 */
+
+  --text-body-xs: 0.8125rem;        /* Body/xs · 13 / 137.5% / 0 */
   --text-body-xs--line-height: 1.375;
 
-  --text-indicator: 0.8125rem;      /* Indicator · 13/137.5 ⚠ unused yet */
+  /* Indicator is Geist MONO — pair `text-indicator` with `font-mono`. */
+  --text-indicator: 0.8125rem;      /* Indicator · 13 / 137.5% / 0 · Geist Mono */
   --text-indicator--line-height: 1.375;
 
   /* --- Radius --------------------------------------------------------- */

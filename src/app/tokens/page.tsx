@@ -1,20 +1,20 @@
 const colors = [
-  { name: "Bg/Default", cls: "bg-bg", value: "#010101 ⚠ unbound", use: "Page background" },
+  { name: "Bg/Default", cls: "bg-bg", value: "#010101", use: "Page background" },
   { name: "Text/Primary", cls: "bg-text-primary", value: "#EDEDED", use: "Headings, primary text" },
   { name: "Text/Body", cls: "bg-text-body", value: "#A1A1A1", use: "Body text" },
   { name: "Button/Primary", cls: "bg-button-primary", value: "#FFFFFF", use: "Primary button surface" },
-  { name: "Accent", cls: "bg-accent", value: "#6A91FC ⚠ unbound", use: "'New' badge, highlights" },
+  { name: "Accent", cls: "bg-accent", value: "#6C91F9", use: "'New' badge, highlights" },
 ];
 
 const type = [
   { name: "Display", cls: "text-display", spec: "48 / 100 / -5%", sample: "What do you want to build?" },
-  { name: "Heading/lg ⚠", cls: "text-heading-lg", spec: "36 / 100", sample: "Section heading large" },
-  { name: "Heading/md ⚠", cls: "text-heading-md", spec: "24 / 100", sample: "Section heading medium" },
-  { name: "Heading/sm ⚠", cls: "text-heading-sm", spec: "20 / 100", sample: "Section heading small" },
-  { name: "Body/md ⚠", cls: "text-body-md", spec: "16 / 137.5", sample: "Create secure apps and websites that work from day one." },
+  { name: "Heading/lg", cls: "text-heading-lg", spec: "36 / 100 / -4%", sample: "Section heading large" },
+  { name: "Heading/md", cls: "text-heading-md", spec: "24 / 100 / -3%", sample: "Section heading medium" },
+  { name: "Heading/sm", cls: "text-heading-sm", spec: "20 / 100 / -1.2%", sample: "Section heading small" },
+  { name: "Body/md", cls: "text-body-md", spec: "16 / 137.5 / -1%", sample: "Create secure apps and websites that work from day one." },
   { name: "Body/sm", cls: "text-body-sm", spec: "14 / 137.5", sample: "Features · Pricing · Testimonial · Documents" },
   { name: "Body/xs", cls: "text-body-xs", spec: "13 / 137.5", sample: "Claude Opus 4.7 now available" },
-  { name: "Indicator ⚠", cls: "text-indicator", spec: "13 / 137.5", sample: "New" },
+  { name: "Indicator", cls: "text-indicator font-mono", spec: "13 / 137.5 · Geist Mono", sample: "New" },
 ];
 
 const radii = [
@@ -41,7 +41,7 @@ export default function Tokens() {
       <header className="flex flex-col gap-3">
         <h1 className="text-display text-text-primary">Design tokens</h1>
         <p className="text-body-md text-text-body">
-          Synced from Figma · group “Landing Page” · ⚠ = style exists in Figma but is unbound/unused; value is a sampled placeholder
+          Synced from Figma · group “Landing Page” · read via Plugin API, all values authoritative
         </p>
       </header>
 
