@@ -148,8 +148,8 @@ function PromptBox() {
           <button
             type="button"
             aria-label={hasText ? "Send" : "Voice input"}
-            className={`pointer-events-auto flex size-8 items-center justify-center rounded-md text-[#131516] transition-colors duration-150 ${
-              hasText ? "bg-accent" : "bg-button-primary/61"
+            className={`pointer-events-auto flex size-8 items-center justify-center rounded-md transition-colors duration-150 ${
+              hasText ? "bg-accent text-white" : "bg-button-primary/61 text-[#131516]"
             }`}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
