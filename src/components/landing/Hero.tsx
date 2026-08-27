@@ -14,8 +14,9 @@ import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
    - .badge-sweep (globals.css): one-time border light sweep on first load
    - .prompt-focus-ring (globals.css): brighter stroke fades in over 150ms
      while the textarea is focused
-   - voice chip: with input text it turns Accent and the audio-lines glyph
-     morphs into a rightward send arrow via GSAP MorphSVG (compound paths) */
+   - voice chip: idle is white/61, with input text it goes fully white and the
+     audio-lines glyph morphs into a rightward send arrow via GSAP MorphSVG
+     (compound paths). The glyph is #000000, matching the Figma vector. */
 
 gsap.registerPlugin(MorphSVGPlugin);
 
@@ -148,8 +149,8 @@ function PromptBox() {
           <button
             type="button"
             aria-label={hasText ? "Send" : "Voice input"}
-            className={`pointer-events-auto flex size-8 items-center justify-center rounded-md transition-colors duration-150 ${
-              hasText ? "bg-accent text-white" : "bg-button-primary/61 text-[#131516]"
+            className={`pointer-events-auto flex size-8 items-center justify-center rounded-md text-black transition-colors duration-150 ${
+              hasText ? "bg-button-primary" : "bg-button-primary/61"
             }`}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
