@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
 
-/* Landing-only values: #3f3f3f/32 badge border, #6A91FC "New" pill (its own
+/* Landing-only values: #3f3f3f/56 badge border, #6A91FC "New" pill (its own
    special blue, intentionally NOT the Accent token), #131516 text on accent,
    #121212 prompt surface, #929292/50 placeholder, 12px badge label size.
    Opacity variants of system colors use token/NN.
@@ -49,7 +49,7 @@ function ArrowRight({ className }: { className?: string }) {
 
 function AnnouncementBadge() {
   return (
-    <div className="relative flex h-8 items-center justify-center gap-2 rounded-full border-[0.7px] border-[#3f3f3f]/32 py-1.5 pl-1.5 pr-2.5">
+    <div className="relative flex h-8 items-center justify-center gap-2 rounded-full border-[0.7px] border-[#3f3f3f]/56 py-1.5 pl-1.5 pr-2.5">
       {/* one-time attention sweep along the border, then gone */}
       <div aria-hidden className="badge-sweep pointer-events-none absolute inset-0 rounded-full" />
       <span className="flex h-[22px] items-center justify-center rounded-full bg-[#6A91FC] px-2 text-[12px] leading-[14px] text-[#131516]">

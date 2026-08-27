@@ -112,15 +112,16 @@ body {
 /* Focused prompt-box stroke — same paint and same stretched sampling window
    as the resting stroke (the design pulls the gradient handle far below the
    box, so it only spans t≈0.15–0.40 of the #FFFFFF->#999999 ramp), just
-   brighter: layer opacity 12% -> 24%. Keeping the window means focus reads
-   as "brighter", not as a different, top-heavy gradient.
+   brighter: layer opacity 12% -> 18%. Keeping the window means focus reads
+   as "brighter", not as a different, top-heavy gradient. The multiplier is
+   ours — the design only specifies the 12% resting state.
    Ring opacity is animated by the component (150ms). */
 .prompt-focus-ring {
   padding: 0.9px;
   background: linear-gradient(
       180deg,
-      rgba(240, 240, 240, 0.205) 0%,
-      rgba(214, 214, 214, 0.143) 100%
+      rgba(240, 240, 240, 0.154) 0%,
+      rgba(214, 214, 214, 0.107) 100%
     );
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
