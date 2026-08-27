@@ -4,11 +4,12 @@ import Image from "next/image";
    #dedcdc for all of these; only the logo wordmark actually is).
    Landing-only: #DEDCDC logo, #2e2e2e "Log in" border, #0a0a0a on white.
 
-   Hover, measured live on v0.app's nav:
-   - the outlined button only lightens its border to white/15; bg and text hold
-   - timing is Tailwind's default `transition` (150ms cubic-bezier(.4,0,.2,1)),
-     which is exactly what v0 ships
-   Everything else in the bar fades to 85% opacity. */
+   Hover (per design direction):
+   - logo: no change
+   - nav links: Text/Primary -> Text/Body
+   - Log in: fill white/10, stroke -> #414141
+   - Sign up: white -> white/70
+   Timing is Tailwind's default `transition`, 150ms cubic-bezier(.4,0,.2,1). */
 
 const links = ["Features", "Pricing", "Testimonial", "Documents"];
 
@@ -19,7 +20,7 @@ export default function Navbar() {
         <div className="flex items-center gap-6">
           <a
             href="/"
-            className="pointer-events-auto flex items-center gap-[7px] transition hover:opacity-85"
+            className="pointer-events-auto flex items-center gap-[7px]"
           >
             <Image
               src="/logo-mark.svg"
@@ -36,7 +37,7 @@ export default function Navbar() {
               <a
                 key={label}
                 href="#"
-                className="pointer-events-auto text-body-sm text-text-primary transition hover:opacity-85"
+                className="pointer-events-auto text-body-sm text-text-primary transition hover:text-text-body"
               >
                 {label}
               </a>
@@ -47,14 +48,14 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <a
             href="#"
-            className="pointer-events-auto flex h-8 items-center justify-center rounded-sm border-[0.9px] border-[#2e2e2e] px-3 text-body-sm whitespace-nowrap text-text-primary transition hover:border-white/15"
+            className="pointer-events-auto flex h-8 items-center justify-center rounded-sm border-[0.9px] border-[#2e2e2e] px-3 text-body-sm whitespace-nowrap text-text-primary transition hover:border-[#414141] hover:bg-white/10"
           >
             Log in
           </a>
           {/* v0's own Sign Up shows no hover change; this restrained dim is ours. */}
           <a
             href="#"
-            className="pointer-events-auto flex h-8 items-center justify-center rounded-sm bg-button-primary px-3 text-body-sm whitespace-nowrap text-[#0a0a0a] transition hover:bg-button-primary/90"
+            className="pointer-events-auto flex h-8 items-center justify-center rounded-sm bg-button-primary px-3 text-body-sm whitespace-nowrap text-[#0a0a0a] transition hover:bg-button-primary/70"
           >
             Sign up
           </a>
