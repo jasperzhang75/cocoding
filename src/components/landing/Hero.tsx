@@ -12,8 +12,8 @@ import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
 
    Motion:
    - .badge-sweep (globals.css): one-time border light sweep on first load
-   - .prompt-focus-ring (globals.css): brighter stroke fades in over 150ms
-     while the textarea is focused
+   - .prompt-ring (globals.css): resting and focused strokes cross-fade over
+     150ms so a focused edge stays a flat 12% instead of doubling
    - voice chip: idle is white/61, with input text it goes fully white and the
      audio-lines glyph morphs into a rightward send arrow via GSAP MorphSVG
      (compound paths). The glyph is #000000, matching the Figma vector. */
@@ -84,21 +84,14 @@ function PromptBox() {
 
   return (
     <div
-      className="group pointer-events-auto relative h-[150px] w-full overflow-hidden rounded-2xl border-[0.7px] border-transparent"
+      className="group pointer-events-auto relative h-[150px] w-full overflow-hidden rounded-2xl"
       style={{
-        /* Read from Figma node 16568:18077 via the Plugin API — its CSS export
-           flattens this stroke to `solid #FFF`, which is wrong.
-           Fills: #171717 under #000000 @ 20%.
-           Stroke: the only visible paint of three is a linear gradient,
-           #FFFFFF a=1 → #999999 a=0, at 12% layer opacity. Its transform
-           (t = 0.2557·y + 0.1475) makes it vertical and samples just
-           t≈0.148→0.403 of the ramp, giving these two endpoints.
-           padding-box/border-box layering paints both, radius intact. */
-        background: [
-          "linear-gradient(0deg, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.20) 100%) padding-box",
-          "linear-gradient(0deg, #171717 0%, #171717 100%) padding-box",
-          "linear-gradient(180deg, rgba(240,240,240,0.102) 0%, rgba(214,214,214,0.072) 100%) border-box",
-        ].join(", "),
+        /* Fills read from Figma node 16568:18077: #171717 under #000000 @ 20%.
+           The stroke is NOT here — it lives in the two .prompt-ring overlays
+           below so the resting and focused states can cross-fade instead of
+           compositing on top of each other. */
+        background:
+          "linear-gradient(0deg, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.20) 100%), linear-gradient(0deg, #171717 0%, #171717 100%)",
       }}
     >
       <textarea
@@ -167,10 +160,14 @@ function PromptBox() {
         </div>
       </div>
 
-      {/* focused stroke: the brighter sampled gradient, fading in over 150ms */}
+      {/* Resting and focused strokes cross-fade over 150ms — see .prompt-ring */}
       <div
         aria-hidden
-        className="prompt-focus-ring pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-150 group-focus-within:opacity-100"
+        className="prompt-ring pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-150 group-focus-within:opacity-0"
+      />
+      <div
+        aria-hidden
+        className="prompt-ring pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-150 group-focus-within:opacity-100"
       />
     </div>
   );

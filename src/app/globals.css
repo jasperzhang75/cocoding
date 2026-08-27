@@ -109,20 +109,21 @@ body {
   animation: badge-sweep 1.8s linear 0.6s 1 forwards;
 }
 
-/* Focused prompt-box stroke — same paint and same stretched sampling window
-   as the resting stroke (the design pulls the gradient handle far below the
-   box, so it only spans t≈0.15–0.40 of the #FFFFFF->#999999 ramp), just
-   at the design's own 12% layer opacity. Note this ring is an overlay ON TOP
-   of the resting stroke, so focused = the two composited (top alpha
-   .102 over .102 ~= .19), not a flat .102.
-   Ring opacity is animated by the component (150ms). */
-.prompt-focus-ring {
+/* Prompt-box strokes. Both states are the design's 12% linear paint sampled
+   through its stretched transform window (t~0.15-0.40 of #FFFFFF->#999999),
+   so .102 at the top falling to .072 at the bottom.
+
+   These CROSS-FADE rather than stack: the resting ring fades out as the
+   focus ring fades in, so a focused edge reads a flat 12% instead of the
+   ~19% you get from painting one over the other. Both live outside the
+   box background for exactly that reason. */
+.prompt-ring {
   padding: 0.9px;
   background: linear-gradient(
-      180deg,
-      rgba(240, 240, 240, 0.102) 0%,
-      rgba(214, 214, 214, 0.072) 100%
-    );
+    180deg,
+    rgba(240, 240, 240, 0.102) 0%,
+    rgba(214, 214, 214, 0.072) 100%
+  );
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
