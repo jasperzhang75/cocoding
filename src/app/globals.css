@@ -73,8 +73,10 @@ body {
 
 /* ==========================================================================
    Landing-page motion (component-specific, not tokens)
-   Both classes paint only the border ring: a border-box background clipped
-   by two masks composited with exclude, so the panel interior stays clean.
+   Both classes paint only a ring: the background is clipped by two masks
+   composited with exclude. Ring thickness comes from PADDING, not border —
+   Chrome snaps border widths down to device pixels (0.9px -> 0.5px) but
+   renders fractional paddings faithfully.
    ========================================================================== */
 
 /* One-time attention sweep along the announcement badge border. */
@@ -92,32 +94,34 @@ body {
 }
 
 .badge-sweep {
-  border: 1px solid transparent;
+  padding: 0.9px;
   background: conic-gradient(
       from var(--badge-sweep-angle),
       transparent 0deg 288deg,
       rgba(255, 255, 255, 0.5) 332deg,
       transparent 360deg
-    ) border-box;
-  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
-  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   opacity: 0;
   animation: badge-sweep 1.8s linear 0.6s 1 forwards;
 }
 
-/* Focused prompt-box stroke — the brighter gradient; opacity is animated
-   by the component (150ms), so no transition here. */
+/* Focused prompt-box stroke — the design's 12% linear stroke at its full
+   ramp: #FFFFFF a=1 -> #999999 a=0, x 12% layer opacity. (The resting
+   stroke is this same paint dimmed by its gradientTransform slice.)
+   Ring opacity is animated by the component (150ms). */
 .prompt-focus-ring {
-  border: 1px solid transparent;
+  padding: 0.9px;
   background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.18) 0%,
-      rgba(255, 255, 255, 0.1) 100%
-    ) border-box;
-  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(153, 153, 153, 0) 100%
+    );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
-  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
 }
