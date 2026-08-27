@@ -1,8 +1,18 @@
-import Image from "next/image";
+"use client";
 
-/* Landing-only values: #dedcdc badge text, #3f3f3f/32 badge border,
-   #131516 text on accent, #121212 prompt surface, #929292/50 placeholder,
-   12px badge label size. Opacity variants of system colors use token/NN. */
+import Image from "next/image";
+import { useState } from "react";
+
+/* Landing-only values: #3f3f3f/32 badge border, #6A91FC "New" pill (its own
+   special blue, intentionally NOT the Accent token), #131516 text on accent,
+   #121212 prompt surface, #929292/50 placeholder, 12px badge label size.
+   Opacity variants of system colors use token/NN.
+
+   Motion:
+   - .badge-sweep (globals.css): one-time border light sweep on first load
+   - .prompt-focus-ring (globals.css): brighter stroke fades in over 150ms
+     while the textarea is focused
+   - voice chip: with input text it turns Accent and swaps to a send arrow */
 
 function ArrowRight({ className }: { className?: string }) {
   return (
@@ -25,13 +35,36 @@ function ArrowRight({ className }: { className?: string }) {
   );
 }
 
+function ArrowUp({ className }: { className?: string }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden
+      className={className}
+    >
+      <path
+        d="M8 12.5V3.5M3.5 8L8 3.5L12.5 8"
+        stroke="currentColor"
+        strokeWidth="0.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function AnnouncementBadge() {
   return (
-    <div className="flex h-8 items-center justify-center gap-2 rounded-full border-[0.7px] border-[#3f3f3f]/32 py-1.5 pl-1.5 pr-2.5">
-      <span className="flex h-[22px] items-center justify-center rounded-full bg-accent px-2 text-[12px] leading-[14px] text-[#131516]">
+    <div className="relative flex h-8 items-center justify-center gap-2 rounded-full border-[0.7px] border-[#3f3f3f]/32 py-1.5 pl-1.5 pr-2.5">
+      {/* one-time attention sweep along the border, then gone */}
+      <div aria-hidden className="badge-sweep pointer-events-none absolute inset-0 rounded-full" />
+      <span className="flex h-[22px] items-center justify-center rounded-full bg-[#6A91FC] px-2 text-[12px] leading-[14px] text-[#131516]">
         New
       </span>
-      <p className="flex items-center gap-1.5 text-body-xs leading-none text-[#dedcdc]">
+      <p className="flex items-center gap-1.5 text-body-xs text-text-primary">
         Claude Opus 4.7 now available
         <ArrowRight className="text-text-body/60" />
       </p>
@@ -40,22 +73,31 @@ function AnnouncementBadge() {
 }
 
 function PromptBox() {
+  const [value, setValue] = useState("");
+  const hasText = value.trim().length > 0;
+
   return (
     <div
-      className="pointer-events-auto relative h-[150px] w-full overflow-hidden rounded-2xl border-[0.7px] border-transparent"
+      className="group pointer-events-auto relative h-[150px] w-full overflow-hidden rounded-2xl border-[0.7px] border-transparent"
       style={{
-        /* Figma: background is rgba(0,0,0,.2) over #171717; the stroke is a
-           vertical gradient (measured #232323 → #1c1c1c against the page),
-           which Figma's CSS export flattened to `solid #FFF`.
-           padding-box/border-box layering paints both while keeping the radius. */
+        /* Read from Figma node 16568:18077 via the Plugin API — its CSS export
+           flattens this stroke to `solid #FFF`, which is wrong.
+           Fills: #171717 under #000000 @ 20%.
+           Stroke: the only visible paint of three is a linear gradient,
+           #FFFFFF a=1 → #999999 a=0, at 12% layer opacity. Its transform
+           (t = 0.2557·y + 0.1475) makes it vertical and samples just
+           t≈0.148→0.403 of the ramp, giving these two endpoints.
+           padding-box/border-box layering paints both, radius intact. */
         background: [
           "linear-gradient(0deg, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.20) 100%) padding-box",
           "linear-gradient(0deg, #171717 0%, #171717 100%) padding-box",
-          "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.10) 100%) border-box",
+          "linear-gradient(180deg, rgba(240,240,240,0.102) 0%, rgba(214,214,214,0.072) 100%) border-box",
         ].join(", "),
       }}
     >
       <textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
         placeholder="I want to create a furniture marketing website..."
         className="pointer-events-auto h-full w-full resize-none bg-transparent px-5 pb-14 pt-[21px] text-body-sm text-text-primary outline-none placeholder:text-[#929292]/50"
       />
@@ -100,18 +142,30 @@ function PromptBox() {
           </button>
           <button
             type="button"
-            aria-label="Voice input"
-            className="pointer-events-auto flex size-8 items-center justify-center rounded-md bg-button-primary/61"
+            aria-label={hasText ? "Send" : "Voice input"}
+            className={`pointer-events-auto flex size-8 items-center justify-center rounded-md text-[#131516] transition-colors duration-150 ${
+              hasText ? "bg-accent" : "bg-button-primary/61"
+            }`}
           >
-            <Image
-              src="/icons/audio-lines.svg"
-              alt=""
-              width={16}
-              height={16}
-            />
+            {hasText ? (
+              <ArrowUp />
+            ) : (
+              <Image
+                src="/icons/audio-lines.svg"
+                alt=""
+                width={16}
+                height={16}
+              />
+            )}
           </button>
         </div>
       </div>
+
+      {/* focused stroke: the brighter sampled gradient, fading in over 150ms */}
+      <div
+        aria-hidden
+        className="prompt-focus-ring pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-150 group-focus-within:opacity-100"
+      />
     </div>
   );
 }
@@ -125,7 +179,7 @@ export default function Hero() {
           <h1 className="whitespace-nowrap text-display text-text-primary">
             What do you want to build?
           </h1>
-          <p className="text-center text-body-md text-text-body/60">
+          <p className="text-center text-body-md leading-none text-text-body/60">
             Create secure apps and websites that work from day one.
           </p>
         </div>

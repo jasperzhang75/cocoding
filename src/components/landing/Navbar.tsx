@@ -1,7 +1,14 @@
 import Image from "next/image";
 
-/* Landing-only values (not in the design system, per agreed policy):
-   #dedcdc nav/logo text, #2e2e2e "Log in" border, #0a0a0a text on white. */
+/* Values verified against the Figma nodes themselves (the CSS export claimed
+   #dedcdc for all of these; only the logo wordmark actually is).
+   Landing-only: #DEDCDC logo, #2e2e2e "Log in" border, #0a0a0a on white.
+
+   Hover, measured live on v0.app's nav:
+   - the outlined button only lightens its border to white/15; bg and text hold
+   - timing is Tailwind's default `transition` (150ms cubic-bezier(.4,0,.2,1)),
+     which is exactly what v0 ships
+   Everything else in the bar fades to 85% opacity. */
 
 const links = ["Features", "Pricing", "Testimonial", "Documents"];
 
@@ -10,14 +17,17 @@ export default function Navbar() {
     <div className="px-10 pt-4">
       <header className="mx-auto flex h-8 w-full max-w-[1200px] items-center justify-between">
         <div className="flex items-center gap-6">
-          <a href="/" className="pointer-events-auto flex items-center gap-[7px]">
+          <a
+            href="/"
+            className="pointer-events-auto flex items-center gap-[7px] transition hover:opacity-85"
+          >
             <Image
               src="/logo-mark.svg"
               alt="Cocoding logo"
               width={26}
               height={15}
             />
-            <span className="text-[16px] font-semibold leading-none tracking-[-0.16px] text-[#dedcdc]">
+            <span className="text-[16px] font-semibold leading-none tracking-[-0.01em] text-[#DEDCDC]">
               Cocoding
             </span>
           </a>
@@ -26,7 +36,7 @@ export default function Navbar() {
               <a
                 key={label}
                 href="#"
-                className="pointer-events-auto text-body-sm text-[#dedcdc]"
+                className="pointer-events-auto text-body-sm text-text-primary transition hover:opacity-85"
               >
                 {label}
               </a>
@@ -37,13 +47,14 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <a
             href="#"
-            className="pointer-events-auto flex h-8 items-center justify-center rounded-sm border-[0.9px] border-[#2e2e2e] px-3 text-body-sm whitespace-nowrap text-[#dedcdc]"
+            className="pointer-events-auto flex h-8 items-center justify-center rounded-sm border-[0.9px] border-[#2e2e2e] px-3 text-body-sm whitespace-nowrap text-text-primary transition hover:border-white/15"
           >
             Log in
           </a>
+          {/* v0's own Sign Up shows no hover change; this restrained dim is ours. */}
           <a
             href="#"
-            className="pointer-events-auto flex h-8 items-center justify-center rounded-sm bg-button-primary px-3 text-body-sm whitespace-nowrap text-[#0a0a0a]"
+            className="pointer-events-auto flex h-8 items-center justify-center rounded-sm bg-button-primary px-3 text-body-sm whitespace-nowrap text-[#0a0a0a] transition hover:bg-button-primary/90"
           >
             Sign up
           </a>
