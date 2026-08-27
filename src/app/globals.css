@@ -109,16 +109,18 @@ body {
   animation: badge-sweep 1.8s linear 0.6s 1 forwards;
 }
 
-/* Focused prompt-box stroke — the design's 12% linear stroke at its full
-   ramp: #FFFFFF a=1 -> #999999 a=0, x 12% layer opacity. (The resting
-   stroke is this same paint dimmed by its gradientTransform slice.)
+/* Focused prompt-box stroke — same paint and same stretched sampling window
+   as the resting stroke (the design pulls the gradient handle far below the
+   box, so it only spans t≈0.15–0.40 of the #FFFFFF->#999999 ramp), just
+   brighter: layer opacity 12% -> 24%. Keeping the window means focus reads
+   as "brighter", not as a different, top-heavy gradient.
    Ring opacity is animated by the component (150ms). */
 .prompt-focus-ring {
   padding: 0.9px;
   background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.12) 0%,
-      rgba(153, 153, 153, 0) 100%
+      rgba(240, 240, 240, 0.205) 0%,
+      rgba(214, 214, 214, 0.143) 100%
     );
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
