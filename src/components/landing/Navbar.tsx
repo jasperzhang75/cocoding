@@ -48,7 +48,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <a
             href="#"
-            className="pointer-events-auto flex h-8 items-center justify-center rounded-sm border-[0.9px] border-[#2e2e2e] px-3 text-body-sm whitespace-nowrap text-text-primary transition hover:border-[#414141] hover:bg-white/10"
+            className="pointer-events-auto flex h-8 items-center justify-center rounded-sm border border-[#2e2e2e] px-3 text-body-sm whitespace-nowrap text-text-primary transition hover:border-[#414141] hover:bg-white/10"
           >
             Log in
           </a>
