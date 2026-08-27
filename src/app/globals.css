@@ -79,7 +79,8 @@ body {
    renders fractional paddings faithfully.
    ========================================================================== */
 
-/* One-time attention sweep along the announcement badge border. */
+/* One-time attention sweep along the announcement badge border:
+   a single quick lap at white/30. */
 @property --badge-sweep-angle {
   syntax: "<angle>";
   inherits: false;
@@ -98,7 +99,7 @@ body {
   background: conic-gradient(
       from var(--badge-sweep-angle),
       transparent 0deg 288deg,
-      rgba(255, 255, 255, 0.5) 332deg,
+      rgba(255, 255, 255, 0.3) 332deg,
       transparent 360deg
     );
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -106,7 +107,7 @@ body {
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   opacity: 0;
-  animation: badge-sweep 1.8s linear 0.6s 1 forwards;
+  animation: badge-sweep 0.9s linear 0.6s 1 forwards;
 }
 
 /* Prompt-box strokes. Both are the design's linear paint (#FFFFFF a=1 ->
