@@ -98,7 +98,7 @@ function PromptBox() {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="I want to create a furniture marketing website..."
-        className="pointer-events-auto h-full w-full resize-none bg-transparent px-5 pb-14 pt-[21px] text-body-sm text-text-primary outline-none placeholder:text-[#929292]/50"
+        className="pointer-events-auto h-full w-full resize-none bg-transparent px-5 pb-14 pt-[21px] text-body-md text-text-primary outline-none placeholder:text-[#929292]/50 md:text-body-sm"
       />
 
       <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-5 pb-4">
@@ -129,7 +129,7 @@ function PromptBox() {
           </button>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 md:gap-6">
           <button type="button" className="pointer-events-auto flex items-center gap-[3px]">
             <span className="text-body-xs text-text-body">Gemini 3.0</span>
             <Image
@@ -175,14 +175,14 @@ function PromptBox() {
 
 export default function Hero() {
   return (
-    <section className="flex justify-center px-10 pt-[15vh]">
+    <section className="flex justify-center px-5 pt-[15svh] md:px-10">
       <div className="flex w-full max-w-[660px] flex-col items-center gap-9">
         <div className="flex flex-col items-center gap-6">
           <AnnouncementBadge />
-          <h1 className="whitespace-nowrap text-display text-text-primary">
+          <h1 className="text-center text-heading-lg leading-[1.1] text-text-primary md:whitespace-nowrap md:text-display md:leading-none">
             What do you want to build?
           </h1>
-          <p className="text-center text-body-md leading-none text-text-body/60">
+          <p className="text-center text-body-md text-text-body/60 md:leading-none">
             Create secure apps and websites that work from day one.
           </p>
         </div>

@@ -11,11 +11,13 @@ import Image from "next/image";
    - Sign up: white -> white/70
    Timing is Tailwind's default `transition`, 150ms cubic-bezier(.4,0,.2,1). */
 
+/* Responsive: below md the four links are hidden (logo + auth buttons only) —
+   swap for a hamburger later if Jasper prefers. */
 const links = ["Features", "Pricing", "Testimonial", "Documents"];
 
 export default function Navbar() {
   return (
-    <div className="px-10 pt-4">
+    <div className="px-5 pt-4 md:px-10">
       <header className="mx-auto flex h-8 w-full max-w-[1200px] items-center justify-between">
         <div className="flex items-center gap-6">
           <a
@@ -32,7 +34,7 @@ export default function Navbar() {
               Cocoding
             </span>
           </a>
-          <nav className="flex items-center gap-6">
+          <nav className="hidden items-center gap-6 md:flex">
             {links.map((label) => (
               <a
                 key={label}
