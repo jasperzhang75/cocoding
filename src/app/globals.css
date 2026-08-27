@@ -92,7 +92,7 @@ body {
 }
 
 .badge-sweep {
-  border: 0.7px solid transparent;
+  border: 1px solid transparent;
   background: conic-gradient(
       from var(--badge-sweep-angle),
       transparent 0deg 288deg,
@@ -110,7 +110,7 @@ body {
 /* Focused prompt-box stroke — the brighter gradient; opacity is animated
    by the component (150ms), so no transition here. */
 .prompt-focus-ring {
-  border: 0.7px solid transparent;
+  border: 1px solid transparent;
   background: linear-gradient(
       180deg,
       rgba(255, 255, 255, 0.18) 0%,
