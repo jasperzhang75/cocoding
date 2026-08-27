@@ -12,8 +12,8 @@ import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
 
    Motion:
    - .badge-sweep (globals.css): one-time border light sweep on first load
-   - .prompt-ring (globals.css): resting and focused strokes cross-fade over
-     150ms so a focused edge stays a flat 12% instead of doubling
+   - .prompt-ring-rest / -focus (globals.css): the two strokes cross-fade over
+     150ms — resting is a near-invisible 4%, focus the design's flat 12%
    - voice chip: idle is white/61, with input text it goes fully white and the
      audio-lines glyph morphs into a rightward send arrow via GSAP MorphSVG
      (compound paths). The glyph is #000000, matching the Figma vector. */
@@ -163,11 +163,11 @@ function PromptBox() {
       {/* Resting and focused strokes cross-fade over 150ms — see .prompt-ring */}
       <div
         aria-hidden
-        className="prompt-ring pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-150 group-focus-within:opacity-0"
+        className="prompt-ring prompt-ring-rest pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-150 group-focus-within:opacity-0"
       />
       <div
         aria-hidden
-        className="prompt-ring pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-150 group-focus-within:opacity-100"
+        className="prompt-ring prompt-ring-focus pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-150 group-focus-within:opacity-100"
       />
     </div>
   );
