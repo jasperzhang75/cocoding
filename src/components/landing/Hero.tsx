@@ -15,7 +15,7 @@ import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
    - .prompt-focus-ring (globals.css): brighter stroke fades in over 150ms
      while the textarea is focused
    - voice chip: with input text it turns Accent and the audio-lines glyph
-     morphs into a send arrow via GSAP MorphSVG (both are compound paths) */
+     morphs into a rightward send arrow via GSAP MorphSVG (compound paths) */
 
 gsap.registerPlugin(MorphSVGPlugin);
 
@@ -23,7 +23,7 @@ gsap.registerPlugin(MorphSVGPlugin);
    AUDIO is exactly public/icons/audio-lines.svg's path. */
 const AUDIO_D =
   "M1.33333 6.66667V8.66667M4 4V11.3333M6.66667 2V14M9.33333 5.33333V10M12 3.33333V12M14.6667 6.66667V8.66667";
-const ARROW_UP_D = "M8 12.5V3.5M3.5 8L8 3.5L12.5 8";
+const SEND_D = "M3.5 8H12.5M8.5 4L12.5 8L8.5 12";
 
 function ArrowRight({ className }: { className?: string }) {
   return (
@@ -75,7 +75,7 @@ function PromptBox() {
       return;
     }
     gsap.to(morphRef.current, {
-      morphSVG: hasText ? ARROW_UP_D : AUDIO_D,
+      morphSVG: hasText ? SEND_D : AUDIO_D,
       duration: 0.35,
       ease: "power2.inOut",
     });
