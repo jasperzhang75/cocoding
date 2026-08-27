@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
 
 /* Landing-only values: #3f3f3f/32 badge border, #6A91FC "New" pill (its own
    special blue, intentionally NOT the Accent token), #131516 text on accent,
@@ -12,7 +14,16 @@ import { useState } from "react";
    - .badge-sweep (globals.css): one-time border light sweep on first load
    - .prompt-focus-ring (globals.css): brighter stroke fades in over 150ms
      while the textarea is focused
-   - voice chip: with input text it turns Accent and swaps to a send arrow */
+   - voice chip: with input text it turns Accent and the audio-lines glyph
+     morphs into a send arrow via GSAP MorphSVG (both are compound paths) */
+
+gsap.registerPlugin(MorphSVGPlugin);
+
+/* Compound path data at the icon set's 16px / 0.9-stroke spec.
+   AUDIO is exactly public/icons/audio-lines.svg's path. */
+const AUDIO_D =
+  "M1.33333 6.66667V8.66667M4 4V11.3333M6.66667 2V14M9.33333 5.33333V10M12 3.33333V12M14.6667 6.66667V8.66667";
+const ARROW_UP_D = "M8 12.5V3.5M3.5 8L8 3.5L12.5 8";
 
 function ArrowRight({ className }: { className?: string }) {
   return (
@@ -26,27 +37,6 @@ function ArrowRight({ className }: { className?: string }) {
     >
       <path
         d="M3.5 8H12.5M8.5 4L12.5 8L8.5 12"
-        stroke="currentColor"
-        strokeWidth="0.9"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ArrowUp({ className }: { className?: string }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      aria-hidden
-      className={className}
-    >
-      <path
-        d="M8 12.5V3.5M3.5 8L8 3.5L12.5 8"
         stroke="currentColor"
         strokeWidth="0.9"
         strokeLinecap="round"
@@ -75,6 +65,21 @@ function AnnouncementBadge() {
 function PromptBox() {
   const [value, setValue] = useState("");
   const hasText = value.trim().length > 0;
+  const morphRef = useRef<SVGPathElement>(null);
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    if (!morphRef.current) return;
+    if (!mounted.current) {
+      mounted.current = true; // initial render already shows AUDIO_D
+      return;
+    }
+    gsap.to(morphRef.current, {
+      morphSVG: hasText ? ARROW_UP_D : AUDIO_D,
+      duration: 0.35,
+      ease: "power2.inOut",
+    });
+  }, [hasText]);
 
   return (
     <div
@@ -147,16 +152,16 @@ function PromptBox() {
               hasText ? "bg-accent" : "bg-button-primary/61"
             }`}
           >
-            {hasText ? (
-              <ArrowUp />
-            ) : (
-              <Image
-                src="/icons/audio-lines.svg"
-                alt=""
-                width={16}
-                height={16}
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <path
+                ref={morphRef}
+                d={AUDIO_D}
+                stroke="currentColor"
+                strokeWidth="0.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
-            )}
+            </svg>
           </button>
         </div>
       </div>
