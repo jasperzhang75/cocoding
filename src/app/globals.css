@@ -36,9 +36,10 @@
   --text-heading-md--line-height: 1;
   --text-heading-md--letter-spacing: -0.03em;
 
-  --text-heading-sm: 1.25rem;       /* Heading/sm · 20 / 100% / -1.2% */
+  --text-heading-sm: 1.25rem;       /* Heading/sm · 20 / 100% / -1.2% / wght 430 */
   --text-heading-sm--line-height: 1;
   --text-heading-sm--letter-spacing: -0.012em;
+  --text-heading-sm--font-weight: 430; /* variable-font axis; Figma shows "Regular" */
 
   --text-body-md: 1rem;             /* Body/md · 16 / 137.5% / -1% */
   --text-body-md--line-height: 1.375;
@@ -56,7 +57,7 @@
   --text-label-sm--line-height: 1;
 
   /* Indicator is Geist MONO — pair `text-indicator` with `font-mono`. */
-  --text-indicator: 0.8125rem;      /* Indicator · 13 / 137.5% / 0 · Geist Mono */
+  --text-indicator: 0.875rem;       /* Indicator · 14 / 137.5% / 0 · Geist Mono */
   --text-indicator--line-height: 1.375;
 
   /* --- Radius --------------------------------------------------------- */
