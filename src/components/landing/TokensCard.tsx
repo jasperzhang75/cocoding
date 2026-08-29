@@ -4,15 +4,13 @@ import Image from "next/image";
 import { useEffect, useRef } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import TodayDate from "./TodayDate";
 import DashboardChart from "./DashboardChart";
 
-gsap.registerPlugin(ScrollTrigger);
-
 /* Card 2 — the tokens dashboard, now a client component for two touches:
-   - the dated tooltip drifts a few px against page scroll (subtle parallax,
-     scrubbed by ScrollTrigger across the card's pass through the viewport);
+   - the dated tooltip drifts a few px against page scroll (subtle parallax
+     across the card's pass through the viewport — a plain scroll listener
+     writing the transform synchronously, no ticker to go stale);
    - hovering the green arrow next to "174" redraws its stroke once.
    Both are skipped under prefers-reduced-motion. */
 
@@ -69,23 +67,23 @@ export default function TokensCard() {
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const tween = gsap.fromTo(
-      tipRef.current,
-      { y: 9 },
-      {
-        y: -9,
-        ease: "none",
-        scrollTrigger: {
-          trigger: cardRef.current,
-          start: "top bottom",
-          end: "bottom top",
-          scrub: true,
-        },
-      }
-    );
+    const card = cardRef.current;
+    const tip = tipRef.current;
+    if (!card || !tip) return;
+
+    const RANGE = 9; // px each way
+    const update = () => {
+      const r = card.getBoundingClientRect();
+      const total = window.innerHeight + r.height;
+      const progress = Math.min(1, Math.max(0, (window.innerHeight - r.top) / total));
+      tip.style.transform = `translateY(${(RANGE - 2 * RANGE * progress).toFixed(2)}px)`;
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update, { passive: true });
     return () => {
-      tween.scrollTrigger?.kill();
-      tween.kill();
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
     };
   }, []);
 
