@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
-import BillboardReveal from "./BillboardReveal";
+import HyperText from "./HyperText";
 import TodayDate from "./TodayDate";
 
 /* Features bento — Figma node 16555:17150, desktop (1280) only for now.
@@ -329,14 +329,15 @@ export default function Features() {
   return (
     <section className="px-10 pt-[71px]">
       <div className="mx-auto w-full max-w-[1200px]">
-        <BillboardReveal>
-          <p className="font-mono text-indicator uppercase text-accent">Features</p>
-          <h2 className="mt-3 text-display text-text-primary">
-            Build faster.
-            <br />
-            Spend less. Stay in control.
-          </h2>
-        </BillboardReveal>
+        <HyperText
+          text="Features"
+          className="font-mono text-indicator uppercase text-accent"
+        />
+        <h2 className="mt-3 text-display text-text-primary">
+          Build faster.
+          <br />
+          Spend less. Stay in control.
+        </h2>
 
         {/* flush bento — rebuilt card by card with Jasper; cards 3 and 4
             still to come */}
