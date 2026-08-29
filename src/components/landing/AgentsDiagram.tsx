@@ -108,12 +108,12 @@ export default function AgentsDiagram() {
     });
     gsap.set(fills, { opacity: 0 });
 
-    /* DOM order: lights = 4 connectors x (glow, core), then 4 verticals x
-       (glow, core); strokes = per agent (left, right); one fill per agent.
-       Branch i feeds agent i. */
+    /* DOM order: lights = 4 connectors then 4 verticals (one hairline path
+       each); strokes = per agent (left, right); one fill per agent. Branch i
+       feeds agent i. */
     const branch = (i: number) => ({
-      conn: lights.slice(i * 2, i * 2 + 2),
-      vert: lights.slice(8 + i * 2, 8 + i * 2 + 2),
+      conn: lights[i],
+      vert: lights[4 + i],
       strokes: strokes.slice(i * 2, i * 2 + 2),
       fill: fills[i],
     });
@@ -121,54 +121,62 @@ export default function AgentsDiagram() {
     /* each function chip "thinks" for a slightly different beat */
     const DWELL = [0.3, 0.46, 0.38, 0.54];
     const CONN_T = 0.55;
-    const VERT_T = 0.28;
+    const VERT_T = 0.45;
+    const HOLD_UNTIL = 3;
+    const FADE_T = 1.2;
+    const GAP = 2;
 
-    let tl: gsap.core.Timeline | undefined;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
-        io.disconnect();
-
-        tl = gsap.timeline({ repeat: -1, repeatDelay: 3.2 });
-        for (let i = 0; i < 4; i++) {
-          const b = branch(i);
-          const arrive = CONN_T + DWELL[i] + VERT_T;
-          b.conn.forEach((p) =>
-            tl!.fromTo(
-              p,
-              { strokeDashoffset: SEG },
-              { strokeDashoffset: -(len(p) + SEG), duration: CONN_T, ease: "none" },
-              0
-            )
-          );
-          b.vert.forEach((p) =>
-            tl!.fromTo(
-              p,
-              { strokeDashoffset: SEG },
-              { strokeDashoffset: -(len(p) + SEG), duration: VERT_T, ease: "none" },
-              CONN_T + DWELL[i]
-            )
-          );
+    /* One flow cycle. Strokes are drawn on the FIRST cycle only and then
+       persist — later cycles just breathe the light and the fill. */
+    const makeCycle = (drawStrokes: boolean) => {
+      const c = gsap.timeline();
+      for (let i = 0; i < 4; i++) {
+        const b = branch(i);
+        const arrive = CONN_T + DWELL[i] + VERT_T;
+        c.fromTo(
+          b.conn,
+          { strokeDashoffset: SEG },
+          { strokeDashoffset: -(len(b.conn) + SEG), duration: CONN_T, ease: "none" },
+          0
+        );
+        c.fromTo(
+          b.vert,
+          { strokeDashoffset: SEG },
+          { strokeDashoffset: -(len(b.vert) + SEG), duration: VERT_T, ease: "none" },
+          CONN_T + DWELL[i]
+        );
+        if (drawStrokes) {
           b.strokes.forEach((p) =>
-            tl!.fromTo(
+            c.fromTo(
               p,
-              { strokeDashoffset: len(p), opacity: 1 },
+              { strokeDashoffset: len(p) },
               { strokeDashoffset: 0, duration: 0.45, ease: "power2.out" },
               arrive
             )
           );
-          tl!.fromTo(
-            b.fill,
-            { opacity: 0 },
-            { opacity: 1, duration: 0.5, ease: "power1.inOut" },
-            arrive + 0.12
-          );
         }
-        // hold lit, then the blue slowly drains before the next cycle
-        tl.to(
-          [...strokes, ...fills],
-          { opacity: 0, duration: 1.6, ease: "power1.inOut" },
-          3.6
+        c.fromTo(
+          b.fill,
+          { opacity: 0 },
+          { opacity: 1, duration: 0.5, ease: "power1.inOut" },
+          arrive + 0.12
+        );
+      }
+      // hold lit, then only the FILL drains — strokes stay
+      c.to(fills, { opacity: 0, duration: FADE_T, ease: "power1.inOut" }, HOLD_UNTIL);
+      return c;
+    };
+
+    let master: gsap.core.Timeline | undefined;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        master = gsap.timeline();
+        master.add(makeCycle(true));
+        master.add(
+          gsap.timeline({ repeat: -1, repeatDelay: GAP }).add(makeCycle(false)),
+          `+=${GAP}`
         );
       },
       { threshold: 0.45 }
@@ -176,7 +184,7 @@ export default function AgentsDiagram() {
     io.observe(root);
     return () => {
       io.disconnect();
-      tl?.kill();
+      master?.kill();
     };
   }, []);
 
@@ -245,27 +253,22 @@ export default function AgentsDiagram() {
         aria-hidden
       >
         <defs>
-          <filter id="ad-glow" x="-80%" y="-80%" width="260%" height="260%">
-            <feGaussianBlur stdDeviation="2.2" />
-          </filter>
           <linearGradient id="ad-agent-stroke" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#4C8BE9" stopOpacity="0.7" />
             <stop offset="1" stopColor="#676767" stopOpacity="0.7" />
           </linearGradient>
         </defs>
 
+        {/* the light IS the vector lighting up: hairline width, no extra
+            glow layer, emerging from under the Prompt chip */}
         {CONNECTORS.map(({ key, d, transform }) => (
           <g key={key} transform={transform}>
-            <path data-light="connector" d={d} stroke="#4C8BE9" strokeOpacity="0.5" strokeWidth="4" filter="url(#ad-glow)" />
-            <path data-light="connector" d={d} stroke="#4C8BE9" strokeOpacity="0.85" strokeWidth="1.4" />
+            <path data-light="connector" d={d} stroke="#4C8BE9" strokeOpacity="0.85" strokeWidth="1.1" />
           </g>
         ))}
 
         {VERTICAL_X.map((x) => (
-          <g key={x}>
-            <path data-light="vertical" d={`M ${x} 239 V 298`} stroke="#4C8BE9" strokeOpacity="0.5" strokeWidth="4" filter="url(#ad-glow)" />
-            <path data-light="vertical" d={`M ${x} 239 V 298`} stroke="#4C8BE9" strokeOpacity="0.85" strokeWidth="1.4" />
-          </g>
+          <path key={x} data-light="vertical" d={`M ${x} 239 V 298`} stroke="#4C8BE9" strokeOpacity="0.85" strokeWidth="1.1" />
         ))}
 
         {AGENTS.map(({ label, x }, i) => (
