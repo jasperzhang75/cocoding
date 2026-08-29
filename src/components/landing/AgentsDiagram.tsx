@@ -87,11 +87,12 @@ export default function AgentsDiagram() {
 
     const lights = [...root.querySelectorAll<SVGPathElement>("[data-light]")];
     const strokes = [...root.querySelectorAll<SVGPathElement>("[data-agent-stroke]")];
+    const blues = [...root.querySelectorAll<SVGPathElement>("[data-agent-blue]")];
     const fills = [...root.querySelectorAll<HTMLElement>("[data-agent-fill]")];
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      strokes.forEach((p) => p.style.removeProperty("stroke-dasharray"));
-      gsap.set(strokes, { strokeDashoffset: 0, opacity: 1 });
+      [...strokes, ...blues].forEach((p) => p.style.removeProperty("stroke-dasharray"));
+      gsap.set([...strokes, ...blues], { strokeDashoffset: 0, opacity: 1 });
       gsap.set(fills, { opacity: 1 });
       return;
     }
@@ -102,7 +103,7 @@ export default function AgentsDiagram() {
       p.style.strokeDasharray = `${SEG} ${len(p) + SEG}`;
       p.style.strokeDashoffset = `${SEG}`;
     });
-    strokes.forEach((p) => {
+    [...strokes, ...blues].forEach((p) => {
       p.style.strokeDasharray = `${len(p)}`;
       p.style.strokeDashoffset = `${len(p)}`;
     });
@@ -115,6 +116,7 @@ export default function AgentsDiagram() {
       conn: lights[i],
       vert: lights[4 + i],
       strokes: strokes.slice(i * 2, i * 2 + 2),
+      blues: blues.slice(i * 2, i * 2 + 2),
       fill: fills[i],
     });
 
@@ -152,6 +154,16 @@ export default function AgentsDiagram() {
               { strokeDashoffset: len(p) },
               { strokeDashoffset: 0, duration: 0.45, ease: "power2.out" },
               arrive
+            )
+          );
+          // then the blue closes down over the gray, both sides meeting at
+          // the bottom — the stroke's own color animation
+          b.blues.forEach((p) =>
+            c.fromTo(
+              p,
+              { strokeDashoffset: len(p) },
+              { strokeDashoffset: 0, duration: 0.55, ease: "power1.inOut" },
+              arrive + 0.4
             )
           );
         }
@@ -271,10 +283,14 @@ export default function AgentsDiagram() {
           <path key={x} data-light="vertical" d={`M ${x} 239 V 298`} stroke="#4C8BE9" strokeOpacity="0.85" strokeWidth="1.1" />
         ))}
 
+        {/* per agent: the resting blue-top/gray-bottom stroke, plus a solid
+            blue copy that sweeps down both sides and closes over the gray */}
         {AGENTS.map(({ label, x }) => (
           <g key={label}>
             <path data-agent-stroke d={halfOutline(x, AGENT_Y, -1)} stroke="url(#ad-agent-stroke)" strokeWidth="0.9" />
             <path data-agent-stroke d={halfOutline(x, AGENT_Y, 1)} stroke="url(#ad-agent-stroke)" strokeWidth="0.9" />
+            <path data-agent-blue d={halfOutline(x, AGENT_Y, -1)} stroke="#4C8BE9" strokeOpacity="0.7" strokeWidth="0.9" />
+            <path data-agent-blue d={halfOutline(x, AGENT_Y, 1)} stroke="#4C8BE9" strokeOpacity="0.7" strokeWidth="0.9" />
           </g>
         ))}
       </svg>
