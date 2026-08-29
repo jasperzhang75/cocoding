@@ -10,16 +10,18 @@ import gsap from "gsap";
    design, reproduced with scale(-1,1) groups.
 
    Sequence, per Jasper's spec — a slow, subtle LOOP started on scroll into
-   view:
+   view. The agents' blue-top/gray-bottom gradient stroke is their PERMANENT
+   resting state, visible before, between and after cycles; each cycle:
    1. a #4C8BE9/85 light flows from under the Prompt chip down all four
       connectors,
    2. it dwells briefly at each function chip — every branch a slightly
       different beat, as if thinking — then continues down the verticals,
-   3. as it arrives, each agent chip's stroke draws closed downward and the
-      chip fades in Agent 2's blue fill,
-   4. everything holds, the blue slowly drains away, and after a few quiet
-      seconds the cycle plays again.
-   prefers-reduced-motion shows the lit end state, no loop. */
+   3. as it arrives, a solid-blue stroke closes down over the gray from the
+      top and the chip fades in Agent 2's blue fill,
+   4. everything holds, then fill AND blue stroke drain away together,
+      returning the chips to the resting gradient; after a quiet gap the
+      cycle replays.
+   prefers-reduced-motion shows the resting state, no loop. */
 
 const mask = (url: string, size: string, position: string): CSSProperties => ({
   maskImage: `url(${url})`,
@@ -86,14 +88,13 @@ export default function AgentsDiagram() {
     if (!root) return;
 
     const lights = [...root.querySelectorAll<SVGPathElement>("[data-light]")];
-    const strokes = [...root.querySelectorAll<SVGPathElement>("[data-agent-stroke]")];
     const blues = [...root.querySelectorAll<SVGPathElement>("[data-agent-blue]")];
     const fills = [...root.querySelectorAll<HTMLElement>("[data-agent-fill]")];
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      [...strokes, ...blues].forEach((p) => p.style.removeProperty("stroke-dasharray"));
-      gsap.set([...strokes, ...blues], { strokeDashoffset: 0, opacity: 1 });
-      gsap.set(fills, { opacity: 1 });
+      // resting state: default gradient strokes only
+      gsap.set(blues, { opacity: 0 });
+      gsap.set(fills, { opacity: 0 });
       return;
     }
 
@@ -103,7 +104,7 @@ export default function AgentsDiagram() {
       p.style.strokeDasharray = `${SEG} ${len(p) + SEG}`;
       p.style.strokeDashoffset = `${SEG}`;
     });
-    [...strokes, ...blues].forEach((p) => {
+    blues.forEach((p) => {
       p.style.strokeDasharray = `${len(p)}`;
       p.style.strokeDashoffset = `${len(p)}`;
     });
@@ -115,7 +116,6 @@ export default function AgentsDiagram() {
     const branch = (i: number) => ({
       conn: lights[i],
       vert: lights[4 + i],
-      strokes: strokes.slice(i * 2, i * 2 + 2),
       blues: blues.slice(i * 2, i * 2 + 2),
       fill: fills[i],
     });
@@ -128,9 +128,8 @@ export default function AgentsDiagram() {
     const FADE_T = 1.2;
     const GAP = 3;
 
-    /* One flow cycle. Strokes are drawn on the FIRST cycle only and then
-       persist — later cycles just breathe the light and the fill. */
-    const makeCycle = (drawStrokes: boolean) => {
+    /* One flow cycle — identical every repeat. */
+    const makeCycle = () => {
       const c = gsap.timeline();
       for (let i = 0; i < 4; i++) {
         const b = branch(i);
@@ -147,26 +146,16 @@ export default function AgentsDiagram() {
           { strokeDashoffset: -(len(b.vert) + SEG), duration: VERT_T, ease: "none" },
           CONN_T + DWELL[i]
         );
-        if (drawStrokes) {
-          b.strokes.forEach((p) =>
-            c.fromTo(
-              p,
-              { strokeDashoffset: len(p) },
-              { strokeDashoffset: 0, duration: 0.45, ease: "power2.out" },
-              arrive
-            )
-          );
-          // then the blue closes down over the gray, both sides meeting at
-          // the bottom — the stroke's own color animation
-          b.blues.forEach((p) =>
-            c.fromTo(
-              p,
-              { strokeDashoffset: len(p) },
-              { strokeDashoffset: 0, duration: 0.55, ease: "power1.inOut" },
-              arrive + 0.4
-            )
-          );
-        }
+        // the blue closes down over the resting gradient, both sides
+        // meeting at the bottom
+        b.blues.forEach((p) =>
+          c.fromTo(
+            p,
+            { strokeDashoffset: len(p), opacity: 1 },
+            { strokeDashoffset: 0, duration: 0.55, ease: "power1.inOut" },
+            arrive
+          )
+        );
         c.fromTo(
           b.fill,
           { opacity: 0 },
@@ -174,8 +163,8 @@ export default function AgentsDiagram() {
           arrive + 0.12
         );
       }
-      // hold lit, then only the FILL drains — strokes stay
-      c.to(fills, { opacity: 0, duration: FADE_T, ease: "power1.inOut" }, HOLD_UNTIL);
+      // hold lit, then fill and blue stroke drain together, back to resting
+      c.to([...fills, ...blues], { opacity: 0, duration: FADE_T, ease: "power1.inOut" }, HOLD_UNTIL);
       return c;
     };
 
@@ -184,12 +173,8 @@ export default function AgentsDiagram() {
       (entries) => {
         if (!entries.some((e) => e.isIntersecting)) return;
         io.disconnect();
-        master = gsap.timeline();
-        master.add(makeCycle(true));
-        master.add(
-          gsap.timeline({ repeat: -1, repeatDelay: GAP }).add(makeCycle(false)),
-          `+=${GAP}`
-        );
+        master = gsap.timeline({ repeat: -1, repeatDelay: GAP });
+        master.add(makeCycle());
       },
       { threshold: 0.45 }
     );
@@ -283,12 +268,13 @@ export default function AgentsDiagram() {
           <path key={x} data-light="vertical" d={`M ${x} 239 V 298`} stroke="#4C8BE9" strokeOpacity="0.85" strokeWidth="1.1" />
         ))}
 
-        {/* per agent: the resting blue-top/gray-bottom stroke, plus a solid
-            blue copy that sweeps down both sides and closes over the gray */}
+        {/* per agent: the resting blue-top/gray-bottom stroke is permanent
+            (Figma default); the solid-blue copy sweeps closed over it while
+            lit and drains away with the fill */}
         {AGENTS.map(({ label, x }) => (
           <g key={label}>
-            <path data-agent-stroke d={halfOutline(x, AGENT_Y, -1)} stroke="url(#ad-agent-stroke)" strokeWidth="0.9" />
-            <path data-agent-stroke d={halfOutline(x, AGENT_Y, 1)} stroke="url(#ad-agent-stroke)" strokeWidth="0.9" />
+            <path d={halfOutline(x, AGENT_Y, -1)} stroke="url(#ad-agent-stroke)" strokeWidth="0.9" />
+            <path d={halfOutline(x, AGENT_Y, 1)} stroke="url(#ad-agent-stroke)" strokeWidth="0.9" />
             <path data-agent-blue d={halfOutline(x, AGENT_Y, -1)} stroke="#4C8BE9" strokeOpacity="0.7" strokeWidth="0.9" />
             <path data-agent-blue d={halfOutline(x, AGENT_Y, 1)} stroke="#4C8BE9" strokeOpacity="0.7" strokeWidth="0.9" />
           </g>
