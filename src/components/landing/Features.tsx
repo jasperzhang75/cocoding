@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
 import TodayDate from "./TodayDate";
 import DashboardChart from "./DashboardChart";
+import AgentsDiagram from "./AgentsDiagram";
 
 /* Features bento — Figma node 16555:17150, desktop (1280) only for now.
    Card 1 (parallel agents) only — the other three come one at a time.
@@ -100,43 +101,6 @@ function Bleed({
 
 /* ---------------------------------------------------------------- card 1 */
 
-const CHIP =
-  "absolute flex h-8 items-center justify-center rounded-sm text-label-sm text-text-primary";
-const AGENT_STROKE =
-  "linear-gradient(180deg, rgba(76,139,233,0.7) 0%, rgba(103,103,103,0.7) 100%)";
-
-function PlainChip({ label, x, y, w, border }: { label: string; x: number; y: number; w?: number; border: string }) {
-  return (
-    <div className={CHIP} style={{ left: x, top: y, width: w, border: `0.9px solid ${border}`, padding: w ? undefined : "6px 12px" }}>
-      {label}
-    </div>
-  );
-}
-
-function AgentChip({ label, x, active }: { label: string; x: number; active?: boolean }) {
-  return (
-    <div
-      className={`${CHIP} w-[71px]`}
-      style={
-        active
-          ? {
-              left: x,
-              top: 299,
-              border: "0.9px solid rgba(76,139,233,0.7)",
-              background:
-                "linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.06)), linear-gradient(90deg, rgba(67,117,237,0.22), rgba(67,117,237,0.22))",
-            }
-          : { left: x, top: 299 }
-      }
-    >
-      {!active && (
-        <div aria-hidden className="absolute inset-0 rounded-sm" style={ring(AGENT_STROKE)} />
-      )}
-      {label}
-    </div>
-  );
-}
-
 function AgentsCard() {
   return (
     <div className="relative h-[610px] w-[600px] overflow-hidden rounded-tl-xl border-l border-r border-t border-white/[0.08] bg-black">
@@ -192,40 +156,8 @@ function AgentsCard() {
           <Bleed src="/features/f1-glow-b.svg" inset="-235.29% -196.08%" className="absolute left-[313px] top-[267px] h-[85px] w-[102px]" />
           <Bleed src="/features/f1-glow-c.svg" inset="-322.58% -180.18%" className="absolute left-[404px] top-[4px] h-[62px] w-[111px]" />
 
-          {/* diagram, inner-masked once as a group */}
-          <div
-            className="absolute inset-0 opacity-80 mix-blend-plus-lighter"
-            style={mask("/features/f1-mask-inner.svg", "686px 489px", "-49px 4px")}
-          >
-            <PlainChip label="Prompt" x={235} y={102} border="#313131" />
-            <PlainChip label="Design" x={76} y={206} w={71} border="#2A2A2A" />
-            <PlainChip label="Plan" x={180} y={206} w={71} border="#2A2A2A" />
-            <PlainChip label="Data" x={289} y={206} w={71} border="#2A2A2A" />
-            <PlainChip label="Cloud" x={394} y={206} w={71} border="#2A2A2A" />
-
-            <AgentChip label="Agent 1" x={76} />
-            <AgentChip label="Agent 2" x={177} active />
-            <AgentChip label="Agent 3" x={288} />
-            <AgentChip label="Agent 4" x={394} />
-
-            {/* prompt -> function connectors */}
-            <Bleed src="/features/f1-conn-2.svg" inset="-0.15% -0.31% -0.24% -0.29%" className="absolute left-[112px] top-[135px] h-[70px] w-[142px]" />
-            <Bleed src="/features/f1-conn-3.svg" inset="-0.14% -0.84% 0 -0.86%" className="absolute left-[214px] top-[135px] h-[70px] w-[52px]" />
-            <Bleed src="/features/f1-conn-4.svg" inset="-0.14% -0.84% 0 -0.86%" className="absolute left-[274px] top-[135px] h-[70px] w-[52px] -scale-x-100" />
-            <Bleed src="/features/f1-conn-1.svg" inset="-0.15% -0.31% -0.24% -0.29%" className="absolute left-[286px] top-[135px] h-[70px] w-[142px] -scale-x-100" />
-
-            {/* function -> agent verticals */}
-            {[
-              { x: 111, src: "/features/f1-line-a.svg" },
-              { x: 213, src: "/features/f1-line-b.svg" },
-              { x: 325, src: "/features/f1-line-c.svg" },
-              { x: 428, src: "/features/f1-line-b.svg" },
-            ].map(({ x, src }) => (
-              <div key={x} className="absolute top-[239px] h-[59px] w-px" style={{ left: x }}>
-                <Image src={src} alt="" fill className="max-w-none object-fill" />
-              </div>
-            ))}
-          </div>
+          {/* diagram + its scroll-in flow animation (client component) */}
+          <AgentsDiagram />
         </div>
       </div>
     </div>
