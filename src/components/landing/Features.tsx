@@ -261,13 +261,17 @@ function TokensCard() {
           chart < tooltip < stats < dashboard label < the two #2E3046 glows,
           which sit ON TOP of everything and tint the whole dashboard. */}
 
-      {/* chart — Figma's own flattened export; both series' soft masks
-          (blurred-ellipse over the green run, blurred-rect over the blue)
-          are baked into the SVG. Split into live layers when we animate it. */}
-      <Bleed
-        src="/features/f2-chart.svg"
-        inset="-18.62% -11.69% -33.1% -22.27%"
-        className="absolute left-[83px] top-[238px] h-[169px] w-[449px]"
+      {/* chart — Figma PNG export of group 869 (the flattened SVG rendered
+          its soft masks wrong). Placed at the node's absoluteRenderBounds
+          relative to the card, blur bleed included. 1x export: overwrite
+          public/features/f2-chart.png with a 2x if the series lines need
+          more retina sharpness. Split into live layers when we animate. */}
+      <Image
+        src="/features/f2-chart.png"
+        alt=""
+        width={584}
+        height={254}
+        className="absolute left-0 top-[207.5px] h-[254.5px] w-[584.5px] max-w-none"
       />
 
       {/* tooltip — stroke read off the node: vertical linear
