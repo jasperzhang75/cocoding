@@ -124,7 +124,7 @@ export default function AgentsDiagram() {
     const VERT_T = 0.45;
     const HOLD_UNTIL = 3;
     const FADE_T = 1.2;
-    const GAP = 2;
+    const GAP = 3;
 
     /* One flow cycle. Strokes are drawn on the FIRST cycle only and then
        persist — later cycles just breathe the light and the fill. */
@@ -271,22 +271,10 @@ export default function AgentsDiagram() {
           <path key={x} data-light="vertical" d={`M ${x} 239 V 298`} stroke="#4C8BE9" strokeOpacity="0.85" strokeWidth="1.1" />
         ))}
 
-        {AGENTS.map(({ label, x }, i) => (
+        {AGENTS.map(({ label, x }) => (
           <g key={label}>
-            <path
-              data-agent-stroke
-              d={halfOutline(x, AGENT_Y, -1)}
-              stroke={i === 1 ? "#4C8BE9" : "url(#ad-agent-stroke)"}
-              strokeOpacity={i === 1 ? 0.7 : 1}
-              strokeWidth="0.9"
-            />
-            <path
-              data-agent-stroke
-              d={halfOutline(x, AGENT_Y, 1)}
-              stroke={i === 1 ? "#4C8BE9" : "url(#ad-agent-stroke)"}
-              strokeOpacity={i === 1 ? 0.7 : 1}
-              strokeWidth="0.9"
-            />
+            <path data-agent-stroke d={halfOutline(x, AGENT_Y, -1)} stroke="url(#ad-agent-stroke)" strokeWidth="0.9" />
+            <path data-agent-stroke d={halfOutline(x, AGENT_Y, 1)} stroke="url(#ad-agent-stroke)" strokeWidth="0.9" />
           </g>
         ))}
       </svg>
