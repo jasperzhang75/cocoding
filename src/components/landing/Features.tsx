@@ -1,5 +1,7 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
+import BillboardReveal from "./BillboardReveal";
+import TodayDate from "./TodayDate";
 
 /* Features bento — Figma node 16555:17150, desktop (1280) only for now.
    Card 1 (parallel agents) only — the other three come one at a time.
@@ -136,7 +138,7 @@ function AgentChip({ label, x, active }: { label: string; x: number; active?: bo
 
 function AgentsCard() {
   return (
-    <div className="relative h-[610px] w-[600px] overflow-hidden rounded-tl-xl border-l border-r border-t border-white/[0.06] bg-black">
+    <div className="relative h-[610px] w-[600px] overflow-hidden rounded-tl-xl border-l border-r border-t border-white/[0.08] bg-black">
       <CardHeader
         left={35}
         title="Go faster with parallel agents"
@@ -229,23 +231,118 @@ function AgentsCard() {
   );
 }
 
+
+/* ---------------------------------------------------------------- card 2 */
+
+function Stat({ label, value, x, arrow }: { label: string; value: string; x: number; arrow?: boolean }) {
+  return (
+    <div className="absolute top-[214px] flex flex-col gap-1.5 opacity-80" style={{ left: x }}>
+      <p className="text-body-xs text-white/50">{label}</p>
+      <div className="flex items-start">
+        <p className="whitespace-nowrap text-body-sm text-text-primary">{value}</p>
+        {arrow && (
+          <Image src="/features/f2-arrow-up-right.svg" alt="" width={18} height={18} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TokensCard() {
+  return (
+    <div className="relative h-[462px] w-[600px] overflow-hidden rounded-tr-xl border-r border-t border-white/[0.08] bg-black">
+      <CardHeader
+        title="Less tokens, more builds"
+        desc="Optimized call to LLMs and smart search in big code base to allow more efficient token usage."
+        descWidth={370}
+      />
+
+      {/* Stacking follows the Figma layer order exactly:
+          chart < tooltip < stats < dashboard label < the two #2E3046 glows,
+          which sit ON TOP of everything and tint the whole dashboard. */}
+
+      {/* chart — Figma's own flattened export; both series' soft masks
+          (blurred-ellipse over the green run, blurred-rect over the blue)
+          are baked into the SVG. Split into live layers when we animate it. */}
+      <Bleed
+        src="/features/f2-chart.svg"
+        inset="-18.62% -11.69% -33.1% -22.27%"
+        className="absolute left-[83px] top-[238px] h-[169px] w-[449px]"
+      />
+
+      {/* tooltip — stroke read off the node: vertical linear
+          #FFFFFF -> #646464 at 9% layer opacity (t = y in its
+          gradientTransform). Five of seven shadows are hidden and the two
+          visible ones are ~0 alpha, so none are painted. */}
+      <div
+        className="absolute left-[409px] top-[214px] h-[90px] w-[155px] rounded-md px-[18px] py-3 backdrop-blur-[1.75px]"
+        style={{
+          background:
+            "linear-gradient(-38.45deg, rgba(10,10,11,0.95) 56.39%, rgba(15,15,15,0.95) 95.42%)",
+        }}
+      >
+        <div
+          aria-hidden
+          className="absolute inset-0 rounded-md"
+          style={ring("linear-gradient(180deg, rgba(255,255,255,0.09), rgba(100,100,100,0.09))")}
+        />
+        <div className="flex flex-col gap-1.5">
+          <p className="text-body-xs text-white/50">
+            <TodayDate />
+          </p>
+          <div className="flex items-center gap-3">
+            <Image src="/features/f2-dot-build.svg" alt="" width={5} height={5} />
+            <p className="text-body-xs text-text-primary">Build: 6</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Image src="/features/f2-dot-usage.svg" alt="" width={5} height={5} />
+            <p className="text-body-xs text-text-primary">Usage: 1.12K</p>
+          </div>
+        </div>
+      </div>
+
+      <Stat label="Token used:" value="118K" x={36} />
+      <Stat label="Build created:" value="174" x={126} arrow />
+
+      <p className="absolute left-[36px] top-[172px] font-mono text-[13px] uppercase leading-[1.375] text-text-primary">
+        dashboard
+      </p>
+
+      {/* topmost: the pair of #2E3046 glows tinting the dashboard below */}
+      <Bleed
+        src="/features/f2-glow.svg"
+        inset="-200% -92.17%"
+        className="pointer-events-none absolute left-[24px] top-[190px] h-[100px] w-[217px]"
+      />
+      <Bleed
+        src="/features/f2-glow.svg"
+        inset="-200% -92.17%"
+        className="pointer-events-none absolute left-[347px] top-[164px] h-[100px] w-[217px]"
+      />
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------------- section */
 
 export default function Features() {
   return (
     <section className="px-10 pt-[71px]">
       <div className="mx-auto w-full max-w-[1200px]">
-        <p className="font-mono text-indicator uppercase text-accent">Features</p>
-        <h2 className="mt-3 text-display text-text-primary">
-          Build faster.
-          <br />
-          Spend less. Stay in control.
-        </h2>
+        <BillboardReveal>
+          <p className="font-mono text-indicator uppercase text-accent">Features</p>
+          <h2 className="mt-3 text-display text-text-primary">
+            Build faster.
+            <br />
+            Spend less. Stay in control.
+          </h2>
+        </BillboardReveal>
 
-        {/* flush bento — being rebuilt card by card with Jasper; only the
-            agents card is in so far */}
+        {/* flush bento — rebuilt card by card with Jasper; cards 3 and 4
+            still to come */}
         <div className="mt-[73px] flex justify-center">
           <AgentsCard />
+          <TokensCard />
         </div>
       </div>
     </section>
