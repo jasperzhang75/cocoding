@@ -319,6 +319,170 @@ function TokensCard() {
   );
 }
 
+/* ---------------------------------------------------------------- card 3 */
+
+type LogRow = { text: string; status: "check" | "check-lit" } | { text: string; error: string };
+
+function LogBlock({
+  y,
+  icon,
+  title,
+  titleClass,
+  meta,
+  metaX,
+  time,
+  rows,
+}: {
+  y: number;
+  icon: string;
+  title: string;
+  titleClass: string;
+  meta: string;
+  metaX: number;
+  time: string;
+  rows: LogRow[];
+}) {
+  return (
+    <div className="absolute left-[36px] w-[480px]" style={{ top: y }}>
+      <Image src={icon} alt="" width={32} height={32} className="absolute left-0 top-0" />
+      <p className={`absolute left-[56px] top-[7px] font-mono text-[13px] uppercase leading-[1.375] ${titleClass}`}>
+        {title}
+      </p>
+      <p className="absolute top-[7px] whitespace-pre font-mono text-[13px] uppercase text-[#EBEBEB]/20" style={{ left: metaX }}>
+        {meta}
+      </p>
+      <p className="absolute left-[363px] top-[7px] whitespace-pre font-mono text-[13px] uppercase text-[#EBEBEB]/20">
+        {time}
+      </p>
+      <div className="absolute left-[56px] top-[37px] flex flex-col gap-1.5 opacity-80">
+        {rows.map((row) => (
+          <div key={row.text} className="flex items-center gap-3">
+            <p
+              className={`whitespace-pre text-[13px] leading-[1.375] ${
+                "error" in row ? "text-text-body/60" : "status" in row && row.status === "check-lit" ? "text-text-body" : "text-text-body/60"
+              }`}
+            >
+              {row.text}
+            </p>
+            {"error" in row ? (
+              <p className="text-label-sm leading-[1.375] text-[#A34545]/[0.39]">{row.error}</p>
+            ) : (
+              <Image
+                src={row.status === "check-lit" ? "/features/f3-check-lit.svg" : "/features/f3-check-dim.svg"}
+                alt=""
+                width={14}
+                height={14}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ErrorFixCard() {
+  return (
+    <div className="relative h-[611px] w-[600px] overflow-hidden rounded-br-xl border-b border-r border-t border-white/[0.08] bg-black">
+      <CardHeader
+        title="Error auto-fix as you move forward"
+        desc="Dedicated debugging agent checks and fixes errors automatically during production."
+        descWidth={359}
+      />
+
+      <div
+        className="absolute inset-0"
+        style={mask("/features/f3-mask-outer.svg", "980px 811px", "-233px -61px")}
+      >
+        <Bleed
+          src="/features/f3-glow-wide.svg"
+          inset="-71.77% -48.94%"
+          className="absolute left-[-60px] top-[151px] h-[418px] w-[613px]"
+        />
+
+        <div
+          className="absolute left-[36px] top-[182px] h-[435px] w-[562px] overflow-hidden rounded-tl-lg shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
+          style={{
+            borderLeft: "0.9px solid rgba(224,224,224,0.13)",
+            borderTop: "0.9px solid rgba(224,224,224,0.13)",
+            background:
+              "linear-gradient(90deg, rgba(50,50,50,0.24), rgba(50,50,50,0.24)), linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(90deg, #030303, #030303)",
+          }}
+        >
+          <Bleed src="/features/f3-glow-a.svg" inset="-200% -196.08%" className="absolute left-[-24.9px] top-[-50.9px] h-[100px] w-[102px]" />
+          <Bleed src="/features/f3-glow-b.svg" inset="-166.67% -139.86%" className="absolute left-[239px] top-[-7.9px] h-[120px] w-[143px]" />
+          <Bleed src="/features/f3-glow-a.svg" inset="-200% -196.08%" className="absolute left-[79px] top-[205px] h-[100px] w-[102px]" />
+
+          <div
+            className="absolute inset-0"
+            style={mask("/features/f3-mask-inner.svg", "669px 425px", "-66px -35px")}
+          >
+            <p
+              className="absolute left-[35.5px] top-[35px] bg-clip-text font-mono text-[13px] uppercase leading-[1.375] text-transparent"
+              style={{
+                backgroundImage:
+                  "linear-gradient(90deg, #FFFFFF 0%, #595959 50%, #FFFFFF 100%)",
+              }}
+            >
+              Processing/
+            </p>
+
+            <Bleed
+              src="/features/f3-curve-top.svg"
+              inset="-68.09% -9.6%"
+              className="absolute left-[-35.9px] top-[-30.9px] h-[89px] w-[631px] -scale-y-100"
+            />
+
+            <LogBlock
+              y={138}
+              icon="/features/f3-code-1.svg"
+              title="building"
+              titleClass="text-text-primary/80"
+              meta="42 files"
+              metaX={143}
+              time={"May 18th  20:10"}
+              rows={[
+                { text: "Generating routes ", status: "check" },
+                { text: "Linking auth state", status: "check" },
+                { text: "Checking data hooks", status: "check" },
+                { text: "Bundling frontend", status: "check" },
+              ]}
+            />
+            <LogBlock
+              y={289}
+              icon="/features/f3-code-2.svg"
+              title="error-check"
+              titleClass="text-text-primary/80"
+              meta="3 issues"
+              metaX={166}
+              time={"May 18th  20:11"}
+              rows={[
+                { text: "auth.ts   :   9", error: "undefined ref" },
+                { text: "api/users.ts   :   121", error: "type mismatch" },
+                { text: "hooks/useData.ts   :   174", error: "missing dep" },
+              ]}
+            />
+            <LogBlock
+              y={419}
+              icon="/features/f3-code-3.svg"
+              title="fixing"
+              titleClass="text-text-primary"
+              meta="3 fixed"
+              metaX={166}
+              time={"May 18th  20:12"}
+              rows={[
+                { text: "auth.ts   :   9", status: "check-lit" },
+                { text: "api/users.ts   :   121", status: "check-lit" },
+                { text: "hooks/useData.ts   :   174", status: "check-lit" },
+              ]}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------------- section */
 
 export default function Features() {
@@ -343,11 +507,15 @@ export default function Features() {
           Spend less. Stay in control.
         </h2>
 
-        {/* flush bento — rebuilt card by card with Jasper; cards 3 and 4
-            still to come */}
+        {/* flush bento — rebuilt card by card with Jasper; card 4 still to
+            come. Until then the two columns are assembled per-column so the
+            rows stay flush. */}
         <div className="mt-[73px] flex justify-center">
           <AgentsCard />
-          <TokensCard />
+          <div className="flex flex-col">
+            <TokensCard />
+            <ErrorFixCard />
+          </div>
         </div>
       </div>
     </section>
