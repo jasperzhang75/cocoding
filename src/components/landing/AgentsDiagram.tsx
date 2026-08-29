@@ -9,15 +9,17 @@ import gsap from "gsap";
    coordinates (563x444); the two right-hand connectors are mirrored in the
    design, reproduced with scale(-1,1) groups.
 
-   Sequence, per Jasper's spec, once on scroll into view:
+   Sequence, per Jasper's spec — a slow, subtle LOOP started on scroll into
+   view:
    1. a #4C8BE9/85 light flows from under the Prompt chip down all four
       connectors,
-   2. then down the four verticals toward the agent chips,
-   3. as it arrives each agent chip's stroke draws closed downward (two
-      half-perimeter paths from top-center meeting at bottom-center) and
-      the chip fades in Agent 2's blue fill.
-   All four agents end in the active style. prefers-reduced-motion jumps
-   straight to the final state. */
+   2. it dwells briefly at each function chip — every branch a slightly
+      different beat, as if thinking — then continues down the verticals,
+   3. as it arrives, each agent chip's stroke draws closed downward and the
+      chip fades in Agent 2's blue fill,
+   4. everything holds, the blue slowly drains away, and after a few quiet
+      seconds the cycle plays again.
+   prefers-reduced-motion shows the lit end state, no loop. */
 
 const mask = (url: string, size: string, position: string): CSSProperties => ({
   maskImage: `url(${url})`,
@@ -83,71 +85,99 @@ export default function AgentsDiagram() {
     const root = rootRef.current;
     if (!root) return;
 
-    const lights = root.querySelectorAll<SVGPathElement>("[data-light]");
-    const strokes = root.querySelectorAll<SVGPathElement>("[data-agent-stroke]");
-    const fills = root.querySelectorAll<HTMLElement>("[data-agent-fill]");
+    const lights = [...root.querySelectorAll<SVGPathElement>("[data-light]")];
+    const strokes = [...root.querySelectorAll<SVGPathElement>("[data-agent-stroke]")];
+    const fills = [...root.querySelectorAll<HTMLElement>("[data-agent-fill]")];
 
-    const finish = () => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       strokes.forEach((p) => p.style.removeProperty("stroke-dasharray"));
       gsap.set(strokes, { strokeDashoffset: 0, opacity: 1 });
       gsap.set(fills, { opacity: 1 });
-    };
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      finish();
       return;
     }
 
-    // lights: a bright segment travelling the full path
     const SEG = 30;
+    const len = (p: SVGPathElement) => p.getTotalLength();
     lights.forEach((p) => {
-      const L = p.getTotalLength();
-      p.style.strokeDasharray = `${SEG} ${L + SEG}`;
+      p.style.strokeDasharray = `${SEG} ${len(p) + SEG}`;
       p.style.strokeDashoffset = `${SEG}`;
-      p.dataset.len = String(L);
     });
-    // agent strokes: hidden, drawn by dashoffset
     strokes.forEach((p) => {
-      const L = p.getTotalLength();
-      p.style.strokeDasharray = `${L}`;
-      p.style.strokeDashoffset = `${L}`;
+      p.style.strokeDasharray = `${len(p)}`;
+      p.style.strokeDashoffset = `${len(p)}`;
     });
     gsap.set(fills, { opacity: 0 });
 
+    /* DOM order: lights = 4 connectors x (glow, core), then 4 verticals x
+       (glow, core); strokes = per agent (left, right); one fill per agent.
+       Branch i feeds agent i. */
+    const branch = (i: number) => ({
+      conn: lights.slice(i * 2, i * 2 + 2),
+      vert: lights.slice(8 + i * 2, 8 + i * 2 + 2),
+      strokes: strokes.slice(i * 2, i * 2 + 2),
+      fill: fills[i],
+    });
+
+    /* each function chip "thinks" for a slightly different beat */
+    const DWELL = [0.3, 0.46, 0.38, 0.54];
+    const CONN_T = 0.55;
+    const VERT_T = 0.28;
+
+    let tl: gsap.core.Timeline | undefined;
     const io = new IntersectionObserver(
       (entries) => {
         if (!entries.some((e) => e.isIntersecting)) return;
         io.disconnect();
 
-        const tl = gsap.timeline();
-        lights.forEach((p) => {
-          const L = Number(p.dataset.len);
-          const isConnector = p.dataset.light === "connector";
-          tl.to(
-            p,
-            {
-              strokeDashoffset: -(L + SEG),
-              duration: isConnector ? 0.55 : 0.28,
-              ease: "none",
-            },
-            isConnector ? 0 : 0.55
+        tl = gsap.timeline({ repeat: -1, repeatDelay: 3.2 });
+        for (let i = 0; i < 4; i++) {
+          const b = branch(i);
+          const arrive = CONN_T + DWELL[i] + VERT_T;
+          b.conn.forEach((p) =>
+            tl!.fromTo(
+              p,
+              { strokeDashoffset: SEG },
+              { strokeDashoffset: -(len(p) + SEG), duration: CONN_T, ease: "none" },
+              0
+            )
           );
-        });
+          b.vert.forEach((p) =>
+            tl!.fromTo(
+              p,
+              { strokeDashoffset: SEG },
+              { strokeDashoffset: -(len(p) + SEG), duration: VERT_T, ease: "none" },
+              CONN_T + DWELL[i]
+            )
+          );
+          b.strokes.forEach((p) =>
+            tl!.fromTo(
+              p,
+              { strokeDashoffset: len(p), opacity: 1 },
+              { strokeDashoffset: 0, duration: 0.45, ease: "power2.out" },
+              arrive
+            )
+          );
+          tl!.fromTo(
+            b.fill,
+            { opacity: 0 },
+            { opacity: 1, duration: 0.5, ease: "power1.inOut" },
+            arrive + 0.12
+          );
+        }
+        // hold lit, then the blue slowly drains before the next cycle
         tl.to(
-          strokes,
-          { strokeDashoffset: 0, duration: 0.4, ease: "power2.out" },
-          0.78
-        );
-        tl.to(
-          fills,
-          { opacity: 1, duration: 0.45, ease: "power1.inOut" },
-          0.88
+          [...strokes, ...fills],
+          { opacity: 0, duration: 1.6, ease: "power1.inOut" },
+          3.6
         );
       },
       { threshold: 0.45 }
     );
     io.observe(root);
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      tl?.kill();
+    };
   }, []);
 
   return (

@@ -124,15 +124,25 @@ function AgentsCard() {
         <div
           className="absolute left-[36px] top-[172px] h-[444px] w-[563px] overflow-hidden rounded-tl-lg"
           style={{
-            borderLeft: "0.9px solid rgba(224,224,224,0.13)",
-            borderTop: "0.9px solid rgba(224,224,224,0.13)",
+            borderLeft: "0.9px solid rgba(224,224,224,0.17)",
+            borderTop: "0.9px solid rgba(224,224,224,0.17)",
             background:
               "linear-gradient(90deg, rgba(46,46,46,0.27), rgba(46,46,46,0.27)), linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(90deg, #030303, #030303)",
           }}
         >
-          {/* BUILDING header */}
+          {/* BUILDING header — the mark slowly cycles the Figma gradient
+              (#FFFFFF / #ACACAC 25% / #595959) back and forth, "running" */}
           <div className="absolute left-[35px] top-[35px] flex items-center gap-2 mix-blend-plus-lighter">
-            <Image src="/features/f1-logo-mark.svg" alt="" width={17} height={9} />
+            <div
+              aria-hidden
+              className="building-mark h-[9px] w-[17px]"
+              style={{
+                maskImage: "url(/features/f1-logo-mark.svg)",
+                maskSize: "100% 100%",
+                WebkitMaskImage: "url(/features/f1-logo-mark.svg)",
+                WebkitMaskSize: "100% 100%",
+              }}
+            />
             <p
               className="bg-clip-text font-mono text-[13px] uppercase leading-[1.375] text-transparent"
               style={{
