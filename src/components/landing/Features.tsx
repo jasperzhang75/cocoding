@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
-import HyperText from "./HyperText";
+import { HyperText } from "@/components/magicui/hyper-text";
 import TodayDate from "./TodayDate";
 
 /* Features bento — Figma node 16555:17150, desktop (1280) only for now.
@@ -333,10 +333,18 @@ export default function Features() {
   return (
     <section className="px-10 pt-[71px]">
       <div className="mx-auto w-full max-w-[1200px]">
+        {/* Magic UI HyperText: scrambles 400ms after first scroll into view,
+            one-shot (hover re-scramble off). */}
         <HyperText
-          text="Features"
-          className="font-mono text-indicator uppercase text-accent"
-        />
+          as="p"
+          startOnView
+          delay={400}
+          duration={800}
+          animateOnHover={false}
+          className="overflow-visible py-0 font-mono text-indicator font-normal uppercase text-accent"
+        >
+          Features
+        </HyperText>
         <h2 className="mt-3 text-display text-text-primary">
           Build faster.
           <br />
