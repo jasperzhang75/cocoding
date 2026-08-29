@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { CSSProperties } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
 import TodayDate from "./TodayDate";
+import DashboardChart from "./DashboardChart";
 
 /* Features bento — Figma node 16555:17150, desktop (1280) only for now.
    Card 1 (parallel agents) only — the other three come one at a time.
@@ -261,18 +262,9 @@ function TokensCard() {
           chart < tooltip < stats < dashboard label < the two #2E3046 glows,
           which sit ON TOP of everything and tint the whole dashboard. */}
 
-      {/* chart — Figma PNG export of group 869 (the flattened SVG rendered
-          its soft masks wrong). Placed at the node's absoluteRenderBounds
-          relative to the card, blur bleed included. 1x export: overwrite
-          public/features/f2-chart.png with a 2x if the series lines need
-          more retina sharpness. Split into live layers when we animate. */}
-      <Image
-        src="/features/f2-chart.png"
-        alt=""
-        width={584}
-        height={254}
-        className="absolute left-0 top-[207.5px] h-[254.5px] w-[584.5px] max-w-none"
-      />
+      {/* chart — data-driven inline SVG rebuilt from the Figma vectors
+          (framer.com-style); see DashboardChart for the layer/mask map */}
+      <DashboardChart />
 
       {/* tooltip — stroke read off the node: vertical linear
           #FFFFFF -> #646464 at 9% layer opacity (t = y in its
@@ -341,7 +333,7 @@ export default function Features() {
           delay={400}
           duration={800}
           animateOnHover={false}
-          className="overflow-visible py-0 font-mono text-indicator font-normal uppercase text-accent"
+          className="font-mono text-indicator uppercase text-accent"
         >
           Features
         </HyperText>
