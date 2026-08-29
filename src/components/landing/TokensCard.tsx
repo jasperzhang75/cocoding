@@ -71,19 +71,34 @@ export default function TokensCard() {
     const tip = tipRef.current;
     if (!card || !tip) return;
 
-    const RANGE = 9; // px each way
-    const update = () => {
+    const RANGE = 20; // px each way
+    let target = 0;
+    let current = 0;
+    let raf = 0;
+
+    const measure = () => {
       const r = card.getBoundingClientRect();
       const total = window.innerHeight + r.height;
       const progress = Math.min(1, Math.max(0, (window.innerHeight - r.top) / total));
-      tip.style.transform = `translateY(${(RANGE - 2 * RANGE * progress).toFixed(2)}px)`;
+      target = RANGE - 2 * RANGE * progress;
     };
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update, { passive: true });
+    const tick = () => {
+      // eased pursuit: the tooltip drifts after the scroll, which reads as
+      // floating rather than being bolted to the page
+      current += (target - current) * 0.08;
+      tip.style.transform = `translateY(${current.toFixed(2)}px)`;
+      raf = requestAnimationFrame(tick);
+    };
+    measure();
+    current = target;
+    tip.style.willChange = "transform";
+    raf = requestAnimationFrame(tick);
+    window.addEventListener("scroll", measure, { passive: true });
+    window.addEventListener("resize", measure, { passive: true });
     return () => {
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", measure);
     };
   }, []);
 
