@@ -55,7 +55,7 @@ export default async function TrendingProjects() {
     <section className="px-5 py-20 md:px-10">
       <div className="mx-auto w-full max-w-[1200px]">
         <div className="flex items-end justify-between gap-6">
-          <h2 className="text-heading-md text-text-primary">
+          <h2 className="text-heading-sm text-text-primary md:text-heading-md">
             Not inspired yet? Start with a trending project
           </h2>
           <a
