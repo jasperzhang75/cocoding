@@ -21,6 +21,7 @@
   --color-text-body: #a1a1a1;       /* Text/Body */
   --color-button-primary: #ffffff;  /* Button/Primary */
   --color-accent: #6c91f9;          /* Accent */
+  --color-number: #929292;          /* Number — view counts and similar figures */
 
   /* --- Type · Figma text styles (read via Plugin API, incl. letter-spacing) --- */
   --text-display: 3rem;             /* Display · 48 / 100% / -5% */
@@ -48,6 +49,11 @@
 
   --text-body-xs: 0.8125rem;        /* Body/xs · 13 / 137.5% / 0 */
   --text-body-xs--line-height: 1.375;
+
+  /* Label/sm is Body/sm's size with tight leading — the single-line UI role
+     (card titles, categories, counts) as opposed to wrapping body copy. */
+  --text-label-sm: 0.875rem;        /* Label/sm · 14 / 100% / 0 */
+  --text-label-sm--line-height: 1;
 
   /* Indicator is Geist MONO — pair `text-indicator` with `font-mono`. */
   --text-indicator: 0.8125rem;      /* Indicator · 13 / 137.5% / 0 · Geist Mono */
@@ -142,4 +148,22 @@ body {
     rgba(240, 240, 240, 0.102) 0%,
     rgba(214, 214, 214, 0.072) 100%
   );
+}
+
+/* Logo marquee: the track is two identical runs, so translating exactly half
+   its width lands run 2 where run 1 began and the loop is seamless. Paused
+   for anyone who asked the OS to reduce motion. */
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.marquee-track {
+  animation: marquee-scroll 40s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
 }

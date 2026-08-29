@@ -1,24 +1,31 @@
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
+import TrendingProjects from "@/components/landing/TrendingProjects";
+import LogoMarquee from "@/components/landing/LogoMarquee";
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      {/* Unicorn Studio background — self-adaptive, sits behind everything and
-          stays mouse-interactive. The content layer above is pointer-events-none
-          so the cursor reaches this scene; individual controls opt back in with
-          pointer-events-auto. */}
-      <iframe
-        src="https://www.unicorn.studio/embed/hjz7dlZ2jZHar7bHXhfg"
-        title="Background animation"
-        aria-hidden
-        className="absolute inset-0 size-full border-0"
-      />
+    <>
+      {/* The Unicorn Studio scene backs the first screen only, so it is scoped
+          to this wrapper rather than the whole (now much taller) page. It stays
+          mouse-interactive: the content layer above is pointer-events-none and
+          individual controls opt back in with pointer-events-auto. */}
+      <div className="relative min-h-screen overflow-hidden">
+        <iframe
+          src="https://www.unicorn.studio/embed/hjz7dlZ2jZHar7bHXhfg"
+          title="Background animation"
+          aria-hidden
+          className="absolute inset-0 size-full border-0"
+        />
 
-      <div className="pointer-events-none relative z-10">
-        <Navbar />
-        <Hero />
+        <div className="pointer-events-none relative z-10">
+          <Navbar />
+          <Hero />
+        </div>
       </div>
-    </div>
+
+      <TrendingProjects />
+      <LogoMarquee />
+    </>
   );
 }
