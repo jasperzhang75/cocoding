@@ -185,7 +185,7 @@ export default function TerminalCard() {
     gsap.set(strip, { y: STRIP_STAGE[0] });
     gsap.set(replay, { autoAlpha: 0 });
     gsap.set([errorB, fixing], { opacity: 0 });
-    gsap.set(checksOf(building), { opacity: 0 });
+    gsap.set([...checksOf(building), ...checksOf(fixing)], { opacity: 0 });
     gsap.set([...rowsOf(errorB), ...rowsOf(fixing)], { opacity: 0 });
     counts.forEach((c) => setCount(c, 0));
 
@@ -207,6 +207,8 @@ export default function TerminalCard() {
 
         tl = gsap.timeline();
         tlRef.current = tl;
+        const shimmer = root.querySelector<HTMLElement>(".processing-shimmer");
+        tl.call(() => { if (shimmer) shimmer.style.animationPlayState = "running"; }, [], 0);
         // ---- phase 1: BUILDING on stage -------------------------------
         tl.add(countTween(counts[0], 42, 0.9), 0);
         tl.to(
@@ -237,10 +239,18 @@ export default function TerminalCard() {
           { opacity: 1, duration: 0.25, stagger: 0.35, ease: "power2.out" },
           tF + 0.5
         );
+        // each green check lands a beat after its own row
+        tl.fromTo(
+          checksOf(fixing),
+          { opacity: 0 },
+          { opacity: 1, duration: 0.2, stagger: 0.35, ease: "power2.out" },
+          tF + 0.85
+        );
 
-        // ---- done: the restart control fades in ----------------------
+        // ---- done: shimmer parks, the restart control fades in --------
         tl.set(replay, { autoAlpha: 0 }, 0);
         tl.to(replay, { autoAlpha: 1, duration: 0.35 }, tF + 1.7);
+        tl.call(() => { if (shimmer) shimmer.style.animationPlayState = "paused"; }, [], tF + 1.7);
       },
       { threshold: 0.4 }
     );
@@ -307,7 +317,7 @@ export default function TerminalCard() {
             type="button"
             aria-label="Replay"
             onClick={replaySequence}
-            className="absolute left-[123px] top-[36.5px] flex size-[17px] items-center justify-center text-text-body opacity-0 transition-colors hover:text-text-primary"
+            className="absolute left-[123px] top-[35.5px] flex size-[17px] items-center justify-center text-text-body opacity-0 transition-colors hover:text-text-primary"
           >
             <svg width="12.5" height="12.5" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path
@@ -320,8 +330,10 @@ export default function TerminalCard() {
             </svg>
           </button>
 
-          {/* the log window: feathered band, with the strip sliding behind */}
-          <div className="absolute inset-0" style={windowMask}>
+          {/* the log window: feathered band, with the strip sliding behind.
+              pointer-events-none — its full-panel hit area was swallowing
+              clicks meant for the replay control underneath the mask */}
+          <div className="pointer-events-none absolute inset-0" style={windowMask}>
             <div ref={stripRef} className="absolute left-[36px] top-[42px] h-full w-[480px]">
               <LogBlock
                 blockRef={(el) => { blockRefs.current[0] = el; }}
