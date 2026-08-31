@@ -196,3 +196,24 @@ body {
     background-position: 50% 0;
   }
 }
+
+/* PROCESSING/ label: its white -> #595959 -> white gradient slides left to
+   right continuously — background work that never stops. Static under
+   reduced motion. */
+@keyframes processing-slide {
+  from { background-position: 200% 0; }
+  to   { background-position: 0% 0; }
+}
+
+.processing-shimmer {
+  background-image: linear-gradient(90deg, #ffffff 0%, #595959 50%, #ffffff 100%);
+  background-size: 200% 100%;
+  animation: processing-slide 3s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .processing-shimmer {
+    animation: none;
+    background-position: 50% 0;
+  }
+}
