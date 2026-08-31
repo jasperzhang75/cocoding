@@ -143,16 +143,19 @@ export default function TokensCard() {
           (framer.com-style); see DashboardChart for the layer/mask map */}
       <DashboardChart />
 
-      {/* tooltip — stroke read off the node: vertical linear
-          #FFFFFF -> #646464 at 9% layer opacity (t = y in its
-          gradientTransform). Five of seven shadows are hidden and the two
-          visible ones are ~0 alpha, so none are painted. */}
+      {/* tooltip — restyled node 17168:8284, everything read off it:
+          fills #0D0E10@64% under a #606060@4% wash; stroke stays the
+          vertical white -> #646464 at 9% (ring below); the two visible
+          drop shadows painted verbatim; Figma background blur 3.5 ==
+          backdrop blur 1.75px. Five hidden shadows omitted as intended. */}
       <div
         ref={tipRef}
         className="absolute left-[409px] top-[214px] h-[90px] w-[155px] rounded-md px-[18px] py-3 backdrop-blur-[1.75px]"
         style={{
           background:
-            "linear-gradient(-38.45deg, rgba(10,10,11,0.95) 56.39%, rgba(15,15,15,0.95) 95.42%)",
+            "linear-gradient(0deg, rgba(96,96,96,0.04), rgba(96,96,96,0.04)), linear-gradient(0deg, rgba(13,14,16,0.64), rgba(13,14,16,0.64))",
+          boxShadow:
+            "0 86px 34px rgba(26,26,26,0.01), 0 134px 38px rgba(26,26,26,0)",
         }}
       >
         <div
