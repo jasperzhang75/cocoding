@@ -156,20 +156,17 @@ export default function AgentsDiagram() {
             arrive
           )
         );
-        // the fill BURSTS full — a snap to 100% with a slight outward
-        // swell past the chip edge — then slowly dissipates on its own
+        // the fill BURSTS full, then slowly dissipates on its own
         c.fromTo(
           b.fill,
-          { opacity: 0, scale: 0.9 },
-          { opacity: 1, duration: 0.12, ease: "power4.out" },
+          { opacity: 0 },
+          { opacity: 1, duration: 0.2, ease: "power4.out" },
           arrive
         );
-        c.to(b.fill, { scale: 1.06, duration: 0.16, ease: "power3.out" }, arrive);
-        c.to(b.fill, { scale: 1, duration: 0.35, ease: "power2.inOut" }, arrive + 0.16);
         c.to(
           b.fill,
           { opacity: 0, duration: 2.2, ease: "power1.out" },
-          arrive + 0.55
+          arrive + 0.75
         );
       }
       // fills dissipate on their own above; only the blue stroke holds,
