@@ -317,7 +317,7 @@ export default function TerminalCard() {
             type="button"
             aria-label="Replay"
             onClick={replaySequence}
-            className="absolute left-[123px] top-[35.5px] flex size-[17px] items-center justify-center text-text-body opacity-0 transition-colors hover:text-text-primary"
+            className="absolute left-[123px] top-[35.5px] flex size-[17px] items-center justify-center text-text-body/80 opacity-0 transition-colors hover:text-text-body"
           >
             <svg width="12.5" height="12.5" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path
