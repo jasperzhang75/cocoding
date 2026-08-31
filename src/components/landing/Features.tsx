@@ -4,6 +4,7 @@ import { HyperText } from "@/components/magicui/hyper-text";
 import AgentsDiagram from "./AgentsDiagram";
 import TokensCard from "./TokensCard";
 import TerminalCard from "./TerminalCard";
+import SecurityCard from "./SecurityCard";
 
 /* Features bento — Figma node 16555:17150, desktop (1280) only for now.
    Card 1 (parallel agents) only — the other three come one at a time.
@@ -174,68 +175,6 @@ function AgentsCard() {
   );
 }
 
-
-/* ---------------------------------------------------------------- card 4 */
-
-function SecurityCard() {
-  return (
-    <div
-      className="relative h-[464px] w-[600px] overflow-hidden rounded-bl-xl border border-white/[0.08]"
-      style={{
-        background:
-          "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
-      }}
-    >
-      {/* Re-read from Figma after Jasper's redesign (node 16629:18699):
-          the shield is now a solid green-gradient glyph, the two big
-          blur-250 glows paint OVER it unmasked, and the toggle sits in the
-          header row, above everything and NOT masked. Paint order per the
-          layer tree: header < shield < glows < toggle. */}
-      <div className="absolute left-[33px] top-[35px] w-[496px]">
-        <p className="text-heading-sm text-text-primary">Built-in security, by default</p>
-        <p className="mt-3 w-[394px] text-body-md text-text-body">
-          With robust security safeguards already in place, your data and user information stay protected as you build.
-        </p>
-      </div>
-
-      {/* shield glyph with its gradient "S" */}
-      <div className="absolute left-[260px] top-[239px] size-20">
-        <Image
-          src="/features/f4-shield.svg"
-          alt=""
-          width={55}
-          height={68}
-          className="absolute left-[12.5px] top-[5.9px] h-[68.3px] w-[54.9px] max-w-none"
-        />
-        <p
-          className="absolute left-[35px] top-[29px] bg-clip-text font-mono text-[16px] font-medium uppercase leading-[1.375] tracking-[-0.16px] text-transparent"
-          style={{
-            backgroundImage: "linear-gradient(180deg, #D8C8FF 0%, #ECE3FF 50%, #FFFFFF 100%)",
-          }}
-        >
-          S
-        </p>
-      </div>
-
-      {/* the pair of blur-250 glows, unmasked, over the shield */}
-      <Bleed
-        src="/features/f4-glow-a.svg"
-        inset="-47.8% -31.69%"
-        className="pointer-events-none absolute left-[-99px] top-[77px] h-[523px] w-[789px]"
-      />
-      <Bleed
-        src="/features/f4-glow-b.svg"
-        inset="-47.8% -31.69%"
-        className="pointer-events-none absolute left-[-99px] top-[77px] h-[523px] w-[789px]"
-      />
-
-      {/* security toggle, on — header row, topmost, unmasked */}
-      <div className="absolute left-[529px] top-[35px] flex h-[18px] w-[30px] items-center justify-end rounded-full bg-[#489C32] pl-[15px] pr-[3px]">
-        <div className="size-3 rounded-full bg-white shadow-[0px_4px_24px_0px_rgba(0,0,0,0.2)]" />
-      </div>
-    </div>
-  );
-}
 
 /* ---------------------------------------------------------------- section */
 

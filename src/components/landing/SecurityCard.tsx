@@ -1,0 +1,213 @@
+"use client";
+
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+
+/* Card 4 — built-in security, now interactive. Two states, both read from
+   Figma (ON: 16629:18699, OFF: 17175:8667):
+
+   ON  — green-gradient shield; a light-green inner shadow
+         (inset 0 0 30px 3px #7BFFD3/25) breathes slowly at the card edge.
+   OFF — the toggle knob slides left and the pill grays out (#B5B5B5/50);
+         the shield fades to #65686D/82 (same silhouette, recolored through
+         a mask); the breathing glow drains away; and behind the shield a
+         soft-masked field of scrambling pass-codes appears (Geist Mono 14,
+         #596684/40, group at 80%, clipped to the design's blurred blob).
+         Codes are randomly generated, mixed-case + digits, in the design's
+         "XXXXXXX XXXXXXX" shape, and keep scrambling while off.
+
+   The blue glows stay in both states, per the layer trees. Reduced motion:
+   no breathing, no scrambling, state switches are instant. */
+
+const CELLS: Array<[number, number]> = [
+  [69, 176], [224, 176], [379, 176], [534, 176],
+  [24, 210], [179, 210], [334, 210], [489, 210],
+  [41, 242], [196, 242], [351, 242], [506, 242],
+  [6, 276], [161, 276], [316, 276], [471, 276],
+  [-29, 310], [124, 310], [277, 310], [430, 310],
+  [-64, 344], [91, 344], [246, 344], [401, 344],
+  [-99, 378], [56, 378], [211, 378], [366, 378],
+  [20, 412], [175, 412], [330, 412], [485, 412],
+  [-54, 446], [101, 446], [256, 446], [411, 446],
+];
+
+const CODE_CHARS =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+const randChar = () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+const randCode = () =>
+  `${Array.from({ length: 7 }, randChar).join("")} ${Array.from({ length: 7 }, randChar).join("")}`;
+
+export default function SecurityCard() {
+  const [on, setOn] = useState(true);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const breatheRef = useRef<HTMLDivElement>(null);
+  const grayShieldRef = useRef<HTMLDivElement>(null);
+  const greenShieldRef = useRef<HTMLImageElement>(null);
+  const matrixRef = useRef<HTMLDivElement>(null);
+  const knobRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLDivElement>(null);
+  const scrambleId = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // populate codes after mount (random content can't be server-rendered)
+  useEffect(() => {
+    matrixRef.current
+      ?.querySelectorAll("[data-code]")
+      .forEach((el) => (el.textContent = randCode()));
+  }, []);
+
+  useEffect(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const dur = reduced ? 0 : undefined;
+    const breathe = breatheRef.current;
+    const matrix = matrixRef.current;
+    if (!breathe || !matrix) return;
+
+    if (on) {
+      gsap.to(breathe, { autoAlpha: 1, duration: dur ?? 0.6 });
+      gsap.to(grayShieldRef.current, { opacity: 0, duration: dur ?? 0.8 });
+      gsap.to(greenShieldRef.current, { opacity: 1, duration: dur ?? 0.8 });
+      gsap.to(matrix, { autoAlpha: 0, duration: dur ?? 0.5 });
+      gsap.to(knobRef.current, { x: 0, duration: dur ?? 0.25, ease: "power2.out" });
+      gsap.to(pillRef.current, { backgroundColor: "#489C32", duration: dur ?? 0.25 });
+      if (scrambleId.current) {
+        clearInterval(scrambleId.current);
+        scrambleId.current = null;
+      }
+    } else {
+      gsap.to(breathe, { autoAlpha: 0, duration: dur ?? 0.6 });
+      gsap.to(grayShieldRef.current, { opacity: 1, duration: dur ?? 0.8 });
+      gsap.to(greenShieldRef.current, { opacity: 0, duration: dur ?? 0.8 });
+      gsap.to(matrix, { autoAlpha: 1, duration: dur ?? 0.8, delay: reduced ? 0 : 0.15 });
+      gsap.to(knobRef.current, { x: -12, duration: dur ?? 0.25, ease: "power2.out" });
+      gsap.to(pillRef.current, { backgroundColor: "rgba(181,181,181,0.5)", duration: dur ?? 0.25 });
+      if (!reduced && !scrambleId.current) {
+        const cells = [...matrix.querySelectorAll<HTMLElement>("[data-code]")];
+        scrambleId.current = setInterval(() => {
+          cells.forEach((el) => {
+            const t = el.textContent ?? "";
+            if (!t) return;
+            const i = Math.floor(Math.random() * t.length);
+            if (t[i] === " ") return;
+            el.textContent = t.slice(0, i) + randChar() + t.slice(i + 1);
+          });
+        }, 90);
+      }
+    }
+    return () => {
+      if (scrambleId.current) {
+        clearInterval(scrambleId.current);
+        scrambleId.current = null;
+      }
+    };
+  }, [on]);
+
+  return (
+    <div
+      ref={rootRef}
+      className="relative h-[464px] w-[600px] overflow-hidden rounded-bl-xl border border-white/[0.08]"
+      style={{
+        background:
+          "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
+      }}
+    >
+      {/* breathing light-green inner shadow (ON state) */}
+      <div
+        ref={breatheRef}
+        aria-hidden
+        className="security-breathe pointer-events-none absolute inset-0 rounded-bl-xl"
+        style={{ boxShadow: "inset 0 0 30px 3px rgba(123,255,211,0.25)" }}
+      />
+
+      <div className="absolute left-[33px] top-[35px] w-[496px]">
+        <p className="text-heading-sm text-text-primary">Built-in security, by default</p>
+        <p className="mt-3 w-[394px] text-body-md text-text-body">
+          With robust security safeguards already in place, your data and user information stay protected as you build.
+        </p>
+      </div>
+
+      {/* scrambling pass-codes, clipped to the design's soft blob (OFF).
+          Outer div = show/hide (animated); inner keeps the design's 80%. */}
+      <div ref={matrixRef} aria-hidden className="pointer-events-none absolute inset-0 opacity-0">
+        <div
+          className="absolute inset-0 opacity-80"
+          style={{
+            maskImage:
+              "radial-gradient(ellipse 227px 102px at 296px 262px, black 35%, transparent 78%)",
+            WebkitMaskImage:
+              "radial-gradient(ellipse 227px 102px at 296px 262px, black 35%, transparent 78%)",
+          }}
+        >
+          {CELLS.map(([x, y], i) => (
+            <p
+              key={i}
+              data-code
+              suppressHydrationWarning
+              className="absolute whitespace-pre font-mono text-[14px] leading-[1.375] text-[#596684]/40"
+              style={{ left: x, top: y }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* shield glyph: green (ON) crossfading with gray (OFF) */}
+      <div className="absolute left-[260px] top-[239px] size-20">
+        <Image
+          ref={greenShieldRef}
+          src="/features/f4-shield.svg"
+          alt=""
+          width={55}
+          height={68}
+          className="absolute left-[12.5px] top-[5.9px] h-[68.3px] w-[54.9px] max-w-none"
+        />
+        {/* same silhouette recolored through a mask — OFF fill #65686D/82 */}
+        <div
+          ref={grayShieldRef}
+          aria-hidden
+          className="absolute left-[12.5px] top-[5.9px] h-[68.3px] w-[54.9px] opacity-0"
+          style={{
+            backgroundColor: "rgba(101,104,109,0.82)",
+            maskImage: "url(/features/f4-shield.svg)",
+            maskSize: "100% 100%",
+            WebkitMaskImage: "url(/features/f4-shield.svg)",
+            WebkitMaskSize: "100% 100%",
+          }}
+        />
+        <p
+          className="absolute left-[35px] top-[29px] bg-clip-text font-mono text-[16px] font-medium uppercase leading-[1.375] tracking-[-0.16px] text-transparent"
+          style={{
+            backgroundImage: "linear-gradient(180deg, #D8C8FF 0%, #ECE3FF 50%, #FFFFFF 100%)",
+          }}
+        >
+          S
+        </p>
+      </div>
+
+      {/* the pair of blur-250 glows — present in both states */}
+      {(["/features/f4-glow-a.svg", "/features/f4-glow-b.svg"] as const).map((src) => (
+        <div key={src} className="pointer-events-none absolute left-[-99px] top-[77px] h-[523px] w-[789px]">
+          <div className="absolute" style={{ inset: "-47.8% -31.69%" }}>
+            <Image src={src} alt="" fill className="max-w-none" />
+          </div>
+        </div>
+      ))}
+
+      {/* security toggle */}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label="Toggle security"
+        onClick={() => setOn((v) => !v)}
+        className="absolute left-[529px] top-[35px] block"
+      >
+        <div
+          ref={pillRef}
+          className="flex h-[18px] w-[30px] items-center justify-end rounded-full bg-[#489C32] pl-[15px] pr-[3px]"
+        >
+          <div ref={knobRef} className="size-3 rounded-full bg-white shadow-[0px_4px_24px_0px_rgba(0,0,0,0.2)]" />
+        </div>
+      </button>
+    </div>
+  );
+}
