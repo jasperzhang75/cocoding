@@ -326,7 +326,16 @@ export default function TerminalCard() {
             onClick={replaySequence}
             className="absolute left-[123px] top-[35.5px] flex size-[17px] items-center justify-center text-text-body/80 opacity-0 transition-colors hover:text-text-body"
           >
-            <svg width="12.5" height="12.5" viewBox="0 0 24 24" fill="none" aria-hidden>
+            {/* Figma bakes a 30-deg rotation into the glyph and flips the
+                frame vertically; rotate innermost, then flip */}
+            <svg
+              width="12.5"
+              height="12.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+              style={{ transform: "scaleY(-1) rotate(30deg)" }}
+            >
               <path
                 d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5"
                 stroke="currentColor"
