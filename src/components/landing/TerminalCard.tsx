@@ -248,12 +248,11 @@ export default function TerminalCard() {
         );
 
         // ---- done: shimmer parks, the restart control spins in --------
-        // a counterclockwise entrance spin (matching the ccw glyph) to
-        // catch the eye as it appears
+        // a clockwise entrance spin to catch the eye as it appears
         tl.set(replay, { autoAlpha: 0 }, 0);
         tl.fromTo(
           replay,
-          { rotation: 270 },
+          { rotation: -270 },
           { rotation: 0, autoAlpha: 1, duration: 0.6, ease: "power2.out" },
           tF + 1.7
         );
