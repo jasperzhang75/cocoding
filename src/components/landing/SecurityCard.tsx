@@ -75,7 +75,7 @@ export default function SecurityCard() {
         scrambleId.current = null;
       }
     } else {
-      gsap.to(breathe, { autoAlpha: 0, duration: dur ?? 0.6 });
+      gsap.to(breathe, { autoAlpha: 0, duration: dur ?? 1.1, ease: "power1.out" });
       gsap.to(grayShieldRef.current, { opacity: 1, duration: dur ?? 0.8 });
       gsap.to(greenShieldRef.current, { opacity: 0, duration: dur ?? 0.8 });
       gsap.to(matrix, { autoAlpha: 1, duration: dur ?? 0.8, delay: reduced ? 0 : 0.15 });
@@ -111,13 +111,16 @@ export default function SecurityCard() {
           "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
       }}
     >
-      {/* breathing light-green inner shadow (ON state) */}
-      <div
-        ref={breatheRef}
-        aria-hidden
-        className="security-breathe pointer-events-none absolute inset-0 rounded-bl-xl"
-        style={{ boxShadow: "inset 0 0 30px 3px rgba(123,255,211,0.25)" }}
-      />
+      {/* breathing light-green inner shadow (ON state). The fade lives on
+          this wrapper — the inner CSS breathe animation owns its own
+          opacity and would override a fade applied to the same element,
+          which is what made the glow vanish in a snap. */}
+      <div ref={breatheRef} aria-hidden className="pointer-events-none absolute inset-0">
+        <div
+          className="security-breathe absolute inset-0 rounded-bl-xl"
+          style={{ boxShadow: "inset 0 0 30px 3px rgba(123,255,211,0.35)" }}
+        />
+      </div>
 
       <div className="absolute left-[33px] top-[35px] w-[496px]">
         <p className="text-heading-sm text-text-primary">Built-in security, by default</p>
@@ -133,9 +136,9 @@ export default function SecurityCard() {
           className="absolute inset-0 opacity-80"
           style={{
             maskImage:
-              "radial-gradient(ellipse 227px 102px at 296px 262px, black 35%, transparent 78%)",
+              "radial-gradient(ellipse 250px 118px at 296px 262px, black 58%, transparent 96%)",
             WebkitMaskImage:
-              "radial-gradient(ellipse 227px 102px at 296px 262px, black 35%, transparent 78%)",
+              "radial-gradient(ellipse 250px 118px at 296px 262px, black 58%, transparent 96%)",
           }}
         >
           {CELLS.map(([x, y], i) => (
