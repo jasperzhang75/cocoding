@@ -267,7 +267,7 @@ export default function TerminalCard() {
   return (
     <div
       ref={rootRef}
-      className="relative h-[611px] w-[600px] overflow-hidden rounded-br-xl border-b border-r border-t border-white/[0.08] bg-black"
+      className="relative h-[611px] w-[600px] overflow-hidden rounded-br-xl bg-black"
     >
       <div className="absolute left-[36px] top-[35px] flex flex-col gap-3" style={{ width: 496 }}>
         <p className="text-heading-sm text-text-primary">Error auto-fix as you move forward</p>
@@ -388,6 +388,9 @@ export default function TerminalCard() {
           </div>
         </div>
       </div>
+
+      {/* inside stroke — overlay ring above the content (Figma strokeAlign INSIDE) */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-br-xl border-b border-r border-t border-white/[0.08]" />
     </div>
   );
 }

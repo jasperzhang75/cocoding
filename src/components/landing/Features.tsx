@@ -104,7 +104,7 @@ function Bleed({
 
 function AgentsCard() {
   return (
-    <div className="relative h-[610px] w-[600px] overflow-hidden rounded-tl-xl border-l border-r border-t border-white/[0.08] bg-black">
+    <div className="relative h-[610px] w-[600px] overflow-hidden rounded-tl-xl bg-black">
       <CardHeader
         left={35}
         title="Go faster with parallel agents"
@@ -171,6 +171,9 @@ function AgentsCard() {
           <AgentsDiagram />
         </div>
       </div>
+
+      {/* inside stroke — overlay ring above the content (Figma strokeAlign INSIDE) */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-tl-xl border-l border-r border-t border-white/[0.08]" />
     </div>
   );
 }

@@ -126,7 +126,7 @@ export default function TokensCard() {
   return (
     <div
       ref={cardRef}
-      className="relative h-[462px] w-[600px] overflow-hidden rounded-tr-xl border-r border-t border-white/[0.08] bg-black"
+      className="relative h-[462px] w-[600px] overflow-hidden rounded-tr-xl bg-black"
     >
       <div className="absolute left-[36px] top-[35px] flex flex-col gap-3" style={{ width: 496 }}>
         <p className="text-heading-sm text-text-primary">Less tokens, more builds</p>
@@ -213,6 +213,10 @@ export default function TokensCard() {
         inset="-200% -92.17%"
         className="pointer-events-none absolute left-[347px] top-[164px] h-[100px] w-[217px]"
       />
+
+      {/* inside stroke — overlay ring above everything, glows included
+          (Figma frame strokes paint over children) */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-tr-xl border-r border-t border-white/[0.08]" />
     </div>
   );
 }

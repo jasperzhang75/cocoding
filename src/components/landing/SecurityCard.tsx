@@ -108,7 +108,7 @@ export default function SecurityCard() {
   return (
     <div
       ref={rootRef}
-      className="relative h-[464px] w-[600px] overflow-hidden rounded-bl-xl border border-white/[0.08]"
+      className="relative h-[464px] w-[600px] overflow-hidden rounded-bl-xl"
       style={{
         background:
           "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
@@ -197,6 +197,12 @@ export default function SecurityCard() {
           </div>
         </div>
       ))}
+
+      {/* inside stroke — an overlay ring ABOVE the glows, so the white/8
+          line composites over the blue underneath (Figma strokeAlign
+          INSIDE); a real CSS border sits outside the overflow clip and
+          reads gray */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-bl-xl border border-white/[0.08]" />
 
       {/* security toggle */}
       <button
