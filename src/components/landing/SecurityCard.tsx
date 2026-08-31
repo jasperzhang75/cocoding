@@ -85,13 +85,16 @@ export default function SecurityCard() {
         const cells = [...matrix.querySelectorAll<HTMLElement>("[data-code]")];
         scrambleId.current = setInterval(() => {
           cells.forEach((el) => {
-            const t = el.textContent ?? "";
+            let t = el.textContent ?? "";
             if (!t) return;
-            const i = Math.floor(Math.random() * t.length);
-            if (t[i] === " ") return;
-            el.textContent = t.slice(0, i) + randChar() + t.slice(i + 1);
+            for (let n = 0; n < 2; n++) {
+              const i = Math.floor(Math.random() * t.length);
+              if (t[i] === " ") continue;
+              t = t.slice(0, i) + randChar() + t.slice(i + 1);
+            }
+            el.textContent = t;
           });
-        }, 90);
+        }, 45);
       }
     }
     return () => {
@@ -118,7 +121,7 @@ export default function SecurityCard() {
       <div ref={breatheRef} aria-hidden className="pointer-events-none absolute inset-0">
         <div
           className="security-breathe absolute inset-0 rounded-bl-xl"
-          style={{ boxShadow: "inset 0 0 30px 3px rgba(123,255,211,0.35)" }}
+          style={{ boxShadow: "inset 0 0 30px 3px rgba(123,255,211,0.45)" }}
         />
       </div>
 
@@ -136,9 +139,9 @@ export default function SecurityCard() {
           className="absolute inset-0 opacity-80"
           style={{
             maskImage:
-              "radial-gradient(ellipse 250px 118px at 296px 262px, black 58%, transparent 96%)",
+              "radial-gradient(ellipse 250px 138px at 296px 279px, black 58%, transparent 96%)",
             WebkitMaskImage:
-              "radial-gradient(ellipse 250px 118px at 296px 262px, black 58%, transparent 96%)",
+              "radial-gradient(ellipse 250px 138px at 296px 279px, black 58%, transparent 96%)",
           }}
         >
           {CELLS.map(([x, y], i) => (
