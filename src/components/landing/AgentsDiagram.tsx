@@ -88,7 +88,8 @@ export default function AgentsDiagram() {
     if (!root) return;
 
     const lights = [...root.querySelectorAll<SVGPathElement>("[data-light]")];
-    const blues = [...root.querySelectorAll<SVGPathElement>("[data-agent-blue]")];
+    const blues = [...root.querySelectorAll<SVGRectElement>("[data-agent-blue]")];
+    const clips = [...root.querySelectorAll<SVGRectElement>("[data-agent-clip]")];
     const fills = [...root.querySelectorAll<HTMLElement>("[data-agent-fill]")];
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -104,10 +105,6 @@ export default function AgentsDiagram() {
       p.style.strokeDasharray = `${SEG} ${len(p) + SEG}`;
       p.style.strokeDashoffset = `${SEG}`;
     });
-    blues.forEach((p) => {
-      p.style.strokeDasharray = `${len(p)}`;
-      p.style.strokeDashoffset = `${len(p)}`;
-    });
     gsap.set(fills, { opacity: 0 });
 
     /* DOM order: lights = 4 connectors then 4 verticals (one hairline path
@@ -116,7 +113,8 @@ export default function AgentsDiagram() {
     const branch = (i: number) => ({
       conn: lights[i],
       vert: lights[4 + i],
-      blues: blues.slice(i * 2, i * 2 + 2),
+      blue: blues[i],
+      clip: clips[i],
       fill: fills[i],
     });
 
@@ -146,15 +144,14 @@ export default function AgentsDiagram() {
           { strokeDashoffset: -(len(b.vert) + SEG), duration: VERT_T, ease: "none" },
           CONN_T + DWELL[i]
         );
-        // the blue closes down over the resting gradient, both sides
-        // meeting at the bottom
-        b.blues.forEach((p) =>
-          c.fromTo(
-            p,
-            { strokeDashoffset: len(p), opacity: 1 },
-            { strokeDashoffset: 0, duration: 0.55, ease: "power1.inOut" },
-            arrive
-          )
+        // the waterline: the clip rect descends, blue washing down over
+        // the gray from where the gradient turns
+        c.set(b.blue, { opacity: 1 }, arrive);
+        c.fromTo(
+          b.clip,
+          { attr: { height: 0 } },
+          { attr: { height: AGENT_H + 4 }, duration: 0.55, ease: "power1.inOut" },
+          arrive
         );
         // the fill BURSTS full, then slowly dissipates on its own
         c.fromTo(
@@ -276,14 +273,30 @@ export default function AgentsDiagram() {
         ))}
 
         {/* per agent: the resting blue-top/gray-bottom stroke is permanent
-            (Figma default); the solid-blue copy sweeps closed over it while
-            lit and drains away with the fill */}
-        {AGENTS.map(({ label, x }) => (
+            (Figma default). The solid-blue outline is revealed by a clip
+            rect descending from the top — a waterline moving down over the
+            whole stroke at once, blue enclosing the gray — then drains
+            away with the hold fade. */}
+        {AGENTS.map(({ label, x }, i) => (
           <g key={label}>
             <path d={halfOutline(x, AGENT_Y, -1)} stroke="url(#ad-agent-stroke)" strokeWidth="0.9" />
             <path d={halfOutline(x, AGENT_Y, 1)} stroke="url(#ad-agent-stroke)" strokeWidth="0.9" />
-            <path data-agent-blue d={halfOutline(x, AGENT_Y, -1)} stroke="#4C8BE9" strokeOpacity="0.7" strokeWidth="0.9" />
-            <path data-agent-blue d={halfOutline(x, AGENT_Y, 1)} stroke="#4C8BE9" strokeOpacity="0.7" strokeWidth="0.9" />
+            <clipPath id={`ad-blue-clip-${i}`}>
+              <rect data-agent-clip x={x - 2} y={AGENT_Y - 2} width={AGENT_W + 4} height="0" />
+            </clipPath>
+            <rect
+              data-agent-blue
+              x={x}
+              y={AGENT_Y}
+              width={AGENT_W}
+              height={AGENT_H}
+              rx={R}
+              fill="none"
+              stroke="#4C8BE9"
+              strokeOpacity="0.7"
+              strokeWidth="0.9"
+              clipPath={`url(#ad-blue-clip-${i})`}
+            />
           </g>
         ))}
       </svg>
