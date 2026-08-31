@@ -60,6 +60,11 @@ const todayShort = () => {
   const d = new Date();
   return `${MONTHS[d.getMonth()]} ${ordinal(d.getDate())}`;
 };
+/* the three log lines run a minute apart, anchored to the viewer's clock */
+const timeAt = (offsetMin: number) => {
+  const d = new Date(Date.now() + offsetMin * 60_000);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
 
 function Bleed({ src, inset, className }: { src: string; inset: string; className?: string }) {
   return (
@@ -149,12 +154,15 @@ const STRIP_STAGE = [151, 0, -130];
 export default function TerminalCard() {
   const rootRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
+  const replayRef = useRef<HTMLButtonElement>(null);
+  const tlRef = useRef<gsap.core.Timeline | null>(null);
   const blockRefs = useRef<(HTMLDivElement | null)[]>([null, null, null]);
 
   useEffect(() => {
     const root = rootRef.current;
     const strip = stripRef.current;
-    if (!root || !strip) return;
+    const replay = replayRef.current;
+    if (!root || !strip || !replay) return;
     const [building, errorB, fixing] = blockRefs.current;
     if (!building || !errorB || !fixing) return;
 
@@ -169,11 +177,13 @@ export default function TerminalCard() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       gsap.set(strip, { y: STRIP_STAGE[2] });
       gsap.set([errorB, fixing], { opacity: 1 });
+      gsap.set(replay, { autoAlpha: 0 });
       return;
     }
 
     // arm: strip below, future blocks invisible, checks/rows/counts at zero
     gsap.set(strip, { y: STRIP_STAGE[0] });
+    gsap.set(replay, { autoAlpha: 0 });
     gsap.set([errorB, fixing], { opacity: 0 });
     gsap.set(checksOf(building), { opacity: 0 });
     gsap.set([...rowsOf(errorB), ...rowsOf(fixing)], { opacity: 0 });
@@ -196,6 +206,7 @@ export default function TerminalCard() {
         io.disconnect();
 
         tl = gsap.timeline();
+        tlRef.current = tl;
         // ---- phase 1: BUILDING on stage -------------------------------
         tl.add(countTween(counts[0], 42, 0.9), 0);
         tl.to(
@@ -215,16 +226,21 @@ export default function TerminalCard() {
           tE + 0.5
         );
 
-        // ---- phase 3: FIXING plays at the window's edge, then slides --
+        // ---- phase 3: the strip slides up AS fixing starts, so the main
+        // view during its typing is fixing itself ---------------------
         const tF = tE + 1.9;
+        tl.to(strip, { y: STRIP_STAGE[2], duration: 0.8, ease: "power2.inOut" }, tF);
         tl.to(fixing, { opacity: 1, duration: 0.3 }, tF);
-        tl.add(countTween(counts[2], 3, 0.5), tF + 0.2);
+        tl.add(countTween(counts[2], 3, 0.5), tF + 0.35);
         tl.to(
           rowsOf(fixing),
           { opacity: 1, duration: 0.25, stagger: 0.35, ease: "power2.out" },
-          tF + 0.35
+          tF + 0.5
         );
-        tl.to(strip, { y: STRIP_STAGE[2], duration: 0.8, ease: "power2.inOut" }, tF + 1.65);
+
+        // ---- done: the restart control fades in ----------------------
+        tl.set(replay, { autoAlpha: 0 }, 0);
+        tl.to(replay, { autoAlpha: 1, duration: 0.35 }, tF + 1.7);
       },
       { threshold: 0.4 }
     );
@@ -232,8 +248,11 @@ export default function TerminalCard() {
     return () => {
       io.disconnect();
       tl?.kill();
+      tlRef.current = null;
     };
   }, []);
+
+  const replaySequence = () => tlRef.current?.restart();
 
   return (
     <div
@@ -281,6 +300,25 @@ export default function TerminalCard() {
           <p className="processing-shimmer absolute left-[35.5px] top-[35px] bg-clip-text font-mono text-[13px] uppercase leading-[1.375] text-transparent">
             Processing/
           </p>
+          {/* replay — appears once the sequence finishes (Figma
+              lucide/rotate-ccw at panel 125.5,39) */}
+          <button
+            ref={replayRef}
+            type="button"
+            aria-label="Replay"
+            onClick={replaySequence}
+            className="absolute left-[123px] top-[36.5px] flex size-[17px] items-center justify-center text-text-body opacity-0 transition-colors hover:text-text-primary"
+          >
+            <svg width="12.5" height="12.5" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path
+                d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5"
+                stroke="currentColor"
+                strokeWidth="2.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
 
           {/* the log window: feathered band, with the strip sliding behind */}
           <div className="absolute inset-0" style={windowMask}>
@@ -294,7 +332,7 @@ export default function TerminalCard() {
                 countLabel=" files"
                 countTo={42}
                 metaX={143}
-                time="20:10"
+                time={timeAt(0)}
                 rows={[
                   { text: "Generating routes ", check: "dim" },
                   { text: "Linking auth state", check: "dim" },
@@ -311,7 +349,7 @@ export default function TerminalCard() {
                 countLabel=" issues"
                 countTo={3}
                 metaX={166}
-                time="20:11"
+                time={timeAt(1)}
                 rows={[
                   { text: "auth.ts   :   9", error: "undefined ref" },
                   { text: "api/users.ts   :   121", error: "type mismatch" },
@@ -327,7 +365,7 @@ export default function TerminalCard() {
                 countLabel=" fixed"
                 countTo={3}
                 metaX={166}
-                time="20:12"
+                time={timeAt(2)}
                 rows={[
                   { text: "auth.ts   :   9", check: "lit" },
                   { text: "api/users.ts   :   121", check: "lit" },
