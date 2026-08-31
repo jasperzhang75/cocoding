@@ -71,7 +71,7 @@ export default function TokensCard() {
     const tip = tipRef.current;
     if (!card || !tip) return;
 
-    const RANGE = 20; // px each way
+    const RANGE = 10; // px each way
     let target = 0;
     let current = 0;
     let raf = 0;
