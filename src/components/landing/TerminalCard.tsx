@@ -247,9 +247,16 @@ export default function TerminalCard() {
           tF + 0.85
         );
 
-        // ---- done: shimmer parks, the restart control fades in --------
+        // ---- done: shimmer parks, the restart control spins in --------
+        // a counterclockwise entrance spin (matching the ccw glyph) to
+        // catch the eye as it appears
         tl.set(replay, { autoAlpha: 0 }, 0);
-        tl.to(replay, { autoAlpha: 1, duration: 0.35 }, tF + 1.7);
+        tl.fromTo(
+          replay,
+          { rotation: 270 },
+          { rotation: 0, autoAlpha: 1, duration: 0.6, ease: "power2.out" },
+          tF + 1.7
+        );
         tl.call(() => { if (shimmer) shimmer.style.animationPlayState = "paused"; }, [], tF + 1.7);
       },
       { threshold: 0.4 }
