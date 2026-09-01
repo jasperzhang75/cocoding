@@ -290,14 +290,15 @@ export default function Infrastructure() {
   const goFrame5Ref = useRef<() => void>(() => {});
   const backFrame4Ref = useRef<() => void>(() => {});
 
-  /* Server-light flicker: whenever the mark lights up, its bright and dim
-     rows trade places a few quick times before settling — a small
-     attention call. Skipped under reduced motion. */
-  const flickerMark = () => {
+  /* Mark flicker: whenever a lid mark lights up, its bright and dim rows
+     trade places — fast at first, each gap 1.5x the last — before
+     settling. Serves both lid marks: frame 4's server and frame 5's
+     arrow. Skipped under reduced motion. */
+  const flickerMark = (five = false) => {
     const svg = svgRef.current;
     if (!svg) return;
-    const a = svg.querySelector("[data-mark-a]");
-    const b = svg.querySelector("[data-mark-b]");
+    const a = svg.querySelector(five ? "[data-mark5-a]" : "[data-mark-a]");
+    const b = svg.querySelector(five ? "[data-mark5-b]" : "[data-mark-b]");
     if (!a || !b) return;
     flickerRef.current?.kill();
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -357,10 +358,8 @@ export default function Infrastructure() {
     fade(`[data-face-lit="${face}"]`, 1, 0.35);
     const mark = frame === 5 ? "[data-mark5]" : "[data-cube-mark]";
     fade(mark, face === "lid" ? 1 : 0, 0.3);
-    if (frame === 4) {
-      if (face === "lid") flickerMark();
-      else flickerRef.current?.kill();
-    }
+    if (face === "lid") flickerMark(frame === 5);
+    else flickerRef.current?.kill();
   };
 
   /* Reset a frame's callout internals to its default holder (lid) — run
@@ -541,6 +540,14 @@ export default function Infrastructure() {
           { height: scalH, opacity: 1, marginTop: 12, duration: 0.5, ease: "power2.inOut" },
           0.5
         );
+        // the arrow flickers awake as it lights (not when reversing out)
+        t.call(
+          () => {
+            if (!t.reversed()) flickerMark(true);
+          },
+          [],
+          1.0
+        );
         // returning to frame 4 re-lights the server mark
         t.eventCallback("onReverseComplete", () => flickerMark());
         tl3 = t;
@@ -567,6 +574,7 @@ export default function Infrastructure() {
       const backFrame4 = () => {
         if (frameRef.current !== 5) return;
         frameRef.current = 4;
+        flickerRef.current?.kill();
         normalizeToLid();
         gsap.delayedCall(0.35, () => resetCallouts(5));
         const t = ensureTl3();
