@@ -18,7 +18,8 @@ import { HyperText } from "@/components/magicui/hyper-text";
      verbatim. Stage 1 stacks all three in one spot (y294.6) with a BUILD
      callout; stage 2 spreads them to 240/294.6/348.3 under FRONTEND /
      BACKEND / DATABASE callouts; stage 3 shrinks the squares to 65.8 and
-     settles them at x372, y302.7/326.1/343.5 with a faint blue glow.
+     settles them at x372, y302.7/326.1/343.5. The faint blue glow at the
+     panel top rides along through all three stages.
    - Faces: black fill, stroke = A8A8A8 -> 424242 linear at 50%, dashed
      1.8/1.8 at 0.9. The group composites through Plus lighter at 90%,
      reaching 100% as the stack settles.
@@ -88,7 +89,6 @@ export default function Infrastructure() {
       );
       const rects = faces.map((f) => f.querySelector("rect")!);
       const cube = svg.querySelector("[data-cube]");
-      const glow = svg.querySelector("[data-glow]");
       const build = svg.querySelector("[data-build]");
       const line = (k: string) => svg.querySelector(`[data-line="${k}"]`);
       const label = (k: string) => svg.querySelector(`[data-label="${k}"]`);
@@ -97,30 +97,35 @@ export default function Infrastructure() {
 
       /* 0.00-0.10 rests at stage 1 so it registers while entering. */
 
-      // stage 1 -> 2: the block splits into layers, callouts fan out
+      // stage 1 -> 2: the block splits into layers, and the BUILD hairline
+      // splits with it — two clones ride up and down IN SYNC with the
+      // faces (same span, same ease), each staying centered on its layer
       tl.to(build, { opacity: 0, duration: 0.1, ease: "power1.out" }, 0.1);
       tl.to(faces[2], { y: SPREAD_Y[2], duration: 0.33, ease: "power2.inOut" }, 0.12);
       tl.to(faces[0], { y: SPREAD_Y[0], duration: 0.33, ease: "power2.inOut" }, 0.12);
-      tl.to(line("top"), { attr: { x2: 715 }, duration: 0.16, ease: "power2.out" }, 0.28);
-      tl.to(line("bot"), { attr: { x2: 715 }, duration: 0.16, ease: "power2.out" }, 0.32);
-      tl.to(label("top"), { opacity: 1, duration: 0.12 }, 0.34);
-      tl.to(label("mid"), { opacity: 1, duration: 0.12 }, 0.38);
-      tl.to(label("bot"), { opacity: 1, duration: 0.12 }, 0.42);
+      tl.to(line("top"), { attr: { y1: 286, y2: 286 }, duration: 0.33, ease: "power2.inOut" }, 0.12);
+      tl.to(line("bot"), { attr: { y1: 394, y2: 394 }, duration: 0.33, ease: "power2.inOut" }, 0.12);
+      // the clones surface while still overlapping the original, so no pop
+      tl.to([line("top"), line("bot")], { opacity: 1, duration: 0.08 }, 0.12);
 
-      /* 0.52-0.60 rests at stage 2. */
+      // only once the split has landed do the three labels appear
+      tl.to(label("top"), { opacity: 1, duration: 0.12 }, 0.45);
+      tl.to(label("mid"), { opacity: 1, duration: 0.12 }, 0.49);
+      tl.to(label("bot"), { opacity: 1, duration: 0.12 }, 0.53);
+
+      /* 0.65-0.70 rests at stage 2. */
 
       // stage 2 -> 3: callouts fall away, the layers settle into the stack
       tl.to(
         [line("top"), line("mid"), line("bot"), label("top"), label("mid"), label("bot")],
-        { opacity: 0, duration: 0.12 },
-        0.6
+        { opacity: 0, duration: 0.1 },
+        0.7
       );
       faces.forEach((f, i) => {
-        tl.to(f, { x: STACK.x, y: STACK.y[i], duration: 0.32, ease: "power2.inOut" }, 0.64);
+        tl.to(f, { x: STACK.x, y: STACK.y[i], duration: 0.26, ease: "power2.inOut" }, 0.72);
       });
-      tl.to(rects, { attr: { width: STACK.size, height: STACK.size }, duration: 0.32, ease: "power2.inOut" }, 0.64);
-      tl.to(cube, { opacity: 1, duration: 0.32 }, 0.64);
-      tl.to(glow, { opacity: 1, duration: 0.16, ease: "power1.in" }, 0.84);
+      tl.to(rects, { attr: { width: STACK.size, height: STACK.size }, duration: 0.26, ease: "power2.inOut" }, 0.72);
+      tl.to(cube, { opacity: 1, duration: 0.26 }, 0.72);
 
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         tl.progress(1);
@@ -276,10 +281,8 @@ export default function Infrastructure() {
               </filter>
             </defs>
 
-            {/* stage-3 glow, revealed as the stack settles */}
+            {/* the blue wash rides along through all three stages */}
             <g
-              data-glow
-              style={{ opacity: 0 }}
               transform="translate(-15 219) scale(1 -1)"
               filter="url(#infra-glow-blur)"
             >
@@ -313,18 +316,20 @@ export default function Infrastructure() {
             </g>
 
             {/* callouts — the middle line doubles as BUILD's in stage 1;
-                the other two draw out during the split */}
+                the other two are full-width clones parked on top of it,
+                hidden until they ride out with the split */}
             {CALLOUTS.map((c) => (
               <g key={c.key}>
                 <line
                   data-line={c.key}
                   x1="475"
-                  y1={c.y}
-                  x2={c.key === "mid" ? 715 : 475}
-                  y2={c.y}
+                  y1={340}
+                  x2={715}
+                  y2={340}
                   stroke="#FFFFFF"
                   strokeOpacity="0.1"
                   strokeWidth="0.9"
+                  style={c.key === "mid" ? undefined : { opacity: 0 }}
                 />
                 <text
                   data-label={c.key}
