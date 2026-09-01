@@ -3,6 +3,7 @@ import Hero from "@/components/landing/Hero";
 import TrendingProjects from "@/components/landing/TrendingProjects";
 import LogoMarquee from "@/components/landing/LogoMarquee";
 import Features from "@/components/landing/Features";
+import Infrastructure from "@/components/landing/Infrastructure";
 
 export default function Home() {
   return (
@@ -28,6 +29,7 @@ export default function Home() {
       <TrendingProjects />
       <LogoMarquee />
       <Features />
+      <Infrastructure />
     </>
   );
 }
