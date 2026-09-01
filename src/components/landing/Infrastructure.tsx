@@ -576,49 +576,19 @@ export default function Infrastructure() {
         return t;
       };
 
-      /* The 5 -> 6 transition (INTEGRATIONS): frame 5's LEFT FACE is the
-         seed — everything else of the open cube leaves, the face flies to
-         the first card's spot while shrinking, the lit card crossfades
-         over it, and the other five cards accordion out to the right on a
-         rubber-band ease (spacing overshoots, then snaps back). Lazy for
-         fresh height measurements, like tl3. */
-      let tl4: gsap.core.Timeline | null = null;
-      const ensureTl4 = () => {
-        if (tl4) return tl4;
+      /* The transitions INTO frame 6 (INTEGRATIONS), one per origin —
+         both share the same self-contained entrance: the leaving frame
+         simply fades out wholesale, then the leftmost card appears alone
+         and the other five accordion out to the right on the rubber-band
+         ease. Reversing one restores exactly the frame it left. */
+      const appendEntrance6 = (t: gsap.core.Timeline) => {
         const sq = (sel: string) => svg.querySelector(sel);
-        const sqa = (sel: string) => svg.querySelectorAll(sel);
-        const scalDesc = section.querySelector<HTMLElement>('[data-item-desc="scalability"]')!;
-        const intDesc = section.querySelector<HTMLElement>('[data-item-desc="integrations"]')!;
-        gsap.set(intDesc, { display: "block", height: "auto", opacity: 0 });
-        const intH = intDesc.offsetHeight;
-        gsap.set(intDesc, { height: 0, marginTop: 0 });
-        const leftFace = sq('[data-cube-face="left"]');
-        const t = gsap.timeline({ paused: true });
-        // frame 5 leaves — all but the left face
-        t.to(
-          [
-            sq("[data-env5-callouts]"),
-            sq("[data-mark5]"),
-            sq("[data-env-legend]"),
-            sq('[data-cube-face="lid"]'),
-            sq('[data-cube-face="right"]'),
-          ],
-          { opacity: 0, duration: 0.3 },
-          0
-        );
-        t.set(sq("[data-env5-callouts]"), { pointerEvents: "none" }, 0.01);
-        t.to(sqa("[data-face], [data-face-x]"), { opacity: 0, duration: 0.3 }, 0.05);
-        // the left face flies to the first card's spot, shrinking
-        t.to(leftFace, { attr: { transform: "matrix(0.87 0.5 0 1 204 256.25)" }, duration: 0.55, ease: "power2.inOut" }, 0.1);
-        t.to(sqa('[data-cube-face="left"] rect'), { attr: { width: 77.5, height: 77.5 }, duration: 0.55, ease: "power2.inOut" }, 0.1);
-        // stack the six cards on that spot, then reveal the group — the
-        // lit card crossfades over the arriving face
-        t.set(sqa("[data-card6]"), { x: 204, y: 256.25 }, 0.45);
-        t.set(sq("[data-frame6]"), { opacity: 1 }, 0.45);
+        t.set(svg.querySelectorAll("[data-card6]"), { x: 204, y: 256.25 }, 0.35);
+        t.set(sq("[data-frame6]"), { opacity: 1 }, 0.35);
+        // the leftmost card appears first, alone
+        t.fromTo(sq('[data-card6="storage"]'), { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.4);
         t.fromTo(sq("[data-f6-tab]"), { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.6);
-        t.fromTo(sq("[data-f6-callout]"), { opacity: 0 }, { opacity: 1, duration: 0.35 }, 1.15);
-        t.fromTo(sq('[data-card6="storage"]'), { opacity: 0 }, { opacity: 1, duration: 0.25 }, 0.5);
-        t.to(leftFace, { opacity: 0, duration: 0.2 }, 0.6);
+        t.fromTo(sq("[data-f6-callout]"), { opacity: 0 }, { opacity: 1, duration: 0.35 }, 1.2);
         // accordion: cards spring right, overshooting their spacing like a
         // rubber band before settling (DOM order is reversed, so element i
         // is CARDS6[5 - i]; storage, drawn last, stays put)
@@ -628,28 +598,75 @@ export default function Infrastructure() {
           t.to(
             el,
             { x: card.x, y: card.y, duration: 1.1, ease: "elastic.out(1, 0.62)" },
-            0.62 + (5 - i) * 0.055
+            0.68 + (5 - i) * 0.055
           );
         });
-        // left column: Scalability folds, Integrations expands
-        t.to(section.querySelector('[data-item-title="scalability"]'), { opacity: 0.2, duration: 0.4 }, 0.1);
-        t.to(scalDesc, { height: 0, opacity: 0, marginTop: 0, duration: 0.45, ease: "power2.inOut" }, 0.1);
-        t.set(scalDesc, { display: "none" }, 0.56);
-        t.to(section.querySelector('[data-item-title="integrations"]'), { opacity: 1, duration: 0.4 }, 0.45);
+      };
+      const appendItemSwap = (
+        t: gsap.core.Timeline,
+        foldKey: string,
+        openKey: string
+      ) => {
+        const fold = section.querySelector<HTMLElement>(`[data-item-desc="${foldKey}"]`)!;
+        const open = section.querySelector<HTMLElement>(`[data-item-desc="${openKey}"]`)!;
+        gsap.set(open, { display: "block", height: "auto", opacity: 0 });
+        const openH = open.offsetHeight;
+        gsap.set(open, { height: 0, marginTop: 0 });
+        t.to(section.querySelector(`[data-item-title="${foldKey}"]`), { opacity: 0.2, duration: 0.4 }, 0.1);
+        t.to(fold, { height: 0, opacity: 0, marginTop: 0, duration: 0.45, ease: "power2.inOut" }, 0.1);
+        t.set(fold, { display: "none" }, 0.56);
+        t.to(section.querySelector(`[data-item-title="${openKey}"]`), { opacity: 1, duration: 0.4 }, 0.45);
         t.fromTo(
-          intDesc,
+          open,
           { height: 0, opacity: 0, marginTop: 0 },
-          { height: intH, opacity: 1, marginTop: 12, duration: 0.5, ease: "power2.inOut" },
+          { height: openH, opacity: 1, marginTop: 12, duration: 0.5, ease: "power2.inOut" },
           0.5
         );
-        // returning to frame 5 re-lights the arrow
+      };
+      let tl56: gsap.core.Timeline | null = null;
+      const ensureTl56 = () => {
+        if (tl56) return tl56;
+        const sq = (sel: string) => svg.querySelector(sel);
+        const t = gsap.timeline({ paused: true });
+        // frame 5 fades out wholesale
+        t.to(
+          [sq("[data-env5-callouts]"), sq("[data-env-legend]"), sq("[data-env-cube]")],
+          { opacity: 0, duration: 0.3 },
+          0
+        );
+        t.to(svg.querySelectorAll("[data-face], [data-face-x]"), { opacity: 0, duration: 0.3 }, 0.05);
+        t.set([sq("[data-env5-callouts]"), sq("[data-env-cube]")], { pointerEvents: "none" }, 0.01);
+        appendEntrance6(t);
+        appendItemSwap(t, "scalability", "integrations");
+        // returning to frame 5 re-lights the arrow; a queued continuation
+        // (6 -> 4 when frame 6 was entered from 5) runs after
         t.eventCallback("onReverseComplete", () => {
           flickerMark(true);
-          const f = afterTl4Reverse;
-          afterTl4Reverse = null;
+          const f = afterTl56Reverse;
+          afterTl56Reverse = null;
           f?.();
         });
-        tl4 = t;
+        tl56 = t;
+        return t;
+      };
+      let tl46: gsap.core.Timeline | null = null;
+      const ensureTl46 = () => {
+        if (tl46) return tl46;
+        const sq = (sel: string) => svg.querySelector(sel);
+        const t = gsap.timeline({ paused: true });
+        // frame 4 fades out wholesale
+        t.to(
+          [sq("[data-env-callouts]"), sq("[data-env-legend]"), sq("[data-env-cube]")],
+          { opacity: 0, duration: 0.3 },
+          0
+        );
+        t.to(svg.querySelectorAll("[data-face]"), { opacity: 0, duration: 0.3 }, 0.05);
+        t.set([sq("[data-env-callouts]"), sq("[data-env-cube]")], { pointerEvents: "none" }, 0.01);
+        appendEntrance6(t);
+        appendItemSwap(t, "env", "integrations");
+        // returning to frame 4 re-lights the server
+        t.eventCallback("onReverseComplete", () => flickerMark());
+        tl46 = t;
         return t;
       };
 
@@ -661,9 +678,10 @@ export default function Infrastructure() {
         }
       };
 
-      /* One-shot chain hooks so 4 <-> 6 can pass through 5. */
+      /* One-shot chain hooks. */
       let afterTl3Complete: (() => void) | null = null;
-      let afterTl4Reverse: (() => void) | null = null;
+      let afterTl56Reverse: (() => void) | null = null;
+      let enteredSixVia: 4 | 5 = 5; // which exit timeline carried us into 6
 
       const stepTo5 = () => {
         frameRef.current = 5;
@@ -678,8 +696,9 @@ export default function Infrastructure() {
         });
         if (reduced) {
           t.progress(1);
-          afterTl3Complete?.();
+          const f = afterTl3Complete;
           afterTl3Complete = null;
+          f?.();
         } else t.play();
       };
       const stepBack4 = () => {
@@ -691,23 +710,24 @@ export default function Infrastructure() {
         if (reduced) t.progress(0);
         else t.reverse();
       };
-      const stepTo6 = () => {
+      const stepTo6 = (from: 4 | 5) => {
         frameRef.current = 6;
+        enteredSixVia = from;
         flickerRef.current?.kill();
         normalizeToLid();
-        gsap.delayedCall(0.35, () => resetCallouts(5));
-        const t = ensureTl4();
-        if (reduced) {
-          t.progress(1);
-        } else t.play();
+        gsap.delayedCall(0.35, () => resetCallouts(from));
+        const t = from === 5 ? ensureTl56() : ensureTl46();
+        if (reduced) t.progress(1);
+        else t.play();
       };
-      const stepBack5 = () => {
-        frameRef.current = 5;
+      const leaveSix = () => {
+        // reverse the timeline that brought us in, landing on its origin
+        frameRef.current = enteredSixVia;
         flickerRef.current?.kill();
-        const t = ensureTl4();
+        const t = enteredSixVia === 5 ? ensureTl56() : ensureTl46();
         if (reduced) {
           t.progress(0);
-          afterTl4Reverse = null;
+          afterTl56Reverse = null;
         } else t.reverse();
       };
 
@@ -717,19 +737,27 @@ export default function Infrastructure() {
         if (cur === 4 && tl2.progress() < 1) return; // frame 4 not landed
         if (target > cur) {
           if (cur === 4) {
-            if (target === 6) afterTl3Complete = () => stepTo6();
-            stepTo5();
+            if (target === 6) stepTo6(4);
+            else stepTo5();
           } else if (cur === 5) {
             if (ensureTl3().isActive()) {
-              afterTl3Complete = () => stepTo6(); // mid 4->5: queue it
-              return;
+              if (target === 6) afterTl3Complete = () => stepTo6(5);
+              return; // mid 4->5: queue and let it land
             }
-            stepTo6();
+            stepTo6(5);
           }
         } else {
           if (cur === 6) {
-            if (target === 4) afterTl4Reverse = () => stepBack4();
-            stepBack5();
+            /* leaving 6 returns to wherever we came from; if the ask was
+               to go further down (6 -> 4 having entered from 5), chain a
+               second step after the reverse lands */
+            if (target === 4 && enteredSixVia === 5) {
+              afterTl56Reverse = () => stepBack4();
+              leaveSix();
+              if (reduced) stepBack4();
+            } else {
+              leaveSix();
+            }
           } else if (cur === 5) {
             stepBack4();
           }
