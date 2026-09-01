@@ -386,8 +386,8 @@ export default function Infrastructure() {
                 <stop stopColor="#577ADC" />
                 <stop offset="1" stopColor="#D5D9E5" />
               </linearGradient>
-              <clipPath id="infra-e91-clip">
-                <ellipse cx="317.5" cy="295.5" rx="162.5" ry="177.5" />
+              <clipPath id="infra-grain-clip">
+                <ellipse cx="368.5" cy="370.5" rx="162.5" ry="177.5" />
               </clipPath>
               <clipPath id="infra-e88-clip">
                 <ellipse cx="370.5" cy="344.5" rx="149.5" ry="107.5" />
@@ -400,27 +400,11 @@ export default function Infrastructure() {
                 it at LIGHTEN — live in an isolated group so the lighten
                 stays inside the paint stack, as in Figma. */}
             <g data-env-back>
-              {/* Ellipse 21891's sharp radial reads as a solid disc in the
-                  browser no matter how it's composited (confirmed by
-                  deleting it in devtools against the Figma render), so the
-                  halo keeps only its GRAIN — one 355.3px tile (2048 x sf
-                  0.1735) clipped to the ellipse; the blue comes from the
-                  blurred ambient below. */}
-              <g style={{ isolation: "isolate" }}>
-                <image
-                  data-noise
-                  x="155"
-                  y="118"
-                  width="355.3"
-                  height="355.3"
-                  preserveAspectRatio="none"
-                  clipPath="url(#infra-e91-clip)"
-                  opacity="0.23"
-                  style={{ mixBlendMode: "lighten" }}
-                />
-              </g>
               {/* Ellipse 21888 — the ambient, layer-blurred 300; its grain
-                  tile is 241.4px (sf 0.1178), two columns cover the box */}
+                  tile is 241.4px (sf 0.1178), two columns cover the box.
+                  (21891's sharp radial is dropped — browser compositing
+                  turns it into a solid disc; its grain lives at the bottom
+                  of the cube group, where the design keeps it.) */}
               <g style={{ isolation: "isolate" }} filter="url(#infra-env-blur)">
                 <ellipse
                   cx="370.5"
@@ -471,6 +455,18 @@ export default function Infrastructure() {
 
             {/* the three layers, authored coincident (stage 1) */}
             <g data-cube opacity="0.9" style={{ mixBlendMode: "plus-lighter" }}>
+              {/* the halo grain — bottom of the cube group per the design,
+                  one 355.3px tile clipped to Ellipse 21891's spot, at 18% */}
+              <image
+                data-noise
+                x="206"
+                y="193"
+                width="355.3"
+                height="355.3"
+                preserveAspectRatio="none"
+                clipPath="url(#infra-grain-clip)"
+                opacity="0.18"
+              />
               {SPREAD_Y.map((y) => (
                 <g key={y} data-face transform="translate(375.5 294.6)">
                   <rect
@@ -504,32 +500,14 @@ export default function Infrastructure() {
                 />
               </g>
               {/* side faces: the design stacks two translucent fills, so
-                  two rects each — blue below, white (with the stroke) on top */}
+                  two rects each — blue below, white on top; no strokes */}
               <g transform={CUBE.left}>
                 <rect width="85.3" height="85.1" rx="8" fill="#617FDC" fillOpacity="0.1" />
-                <rect
-                  width="85.3"
-                  height="85.1"
-                  rx="8"
-                  fill="#FFFFFF"
-                  fillOpacity="0.05"
-                  stroke="#909090"
-                  strokeOpacity="0.22"
-                  strokeWidth="0.9"
-                />
+                <rect width="85.3" height="85.1" rx="8" fill="#FFFFFF" fillOpacity="0.05" />
               </g>
               <g transform={CUBE.right}>
                 <rect width="85.3" height="85.1" rx="8" fill="#617CCE" fillOpacity="0.1" />
-                <rect
-                  width="85.3"
-                  height="85.1"
-                  rx="8"
-                  fill="#FFFFFF"
-                  fillOpacity="0.03"
-                  stroke="#909090"
-                  strokeOpacity="0.22"
-                  strokeWidth="0.9"
-                />
+                <rect width="85.3" height="85.1" rx="8" fill="#FFFFFF" fillOpacity="0.03" />
               </g>
               {/* lucide/server riding the lid */}
               <g
