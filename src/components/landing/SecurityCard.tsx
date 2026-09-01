@@ -164,8 +164,8 @@ export default function SecurityCard() {
       </div>
 
       <div className="px-7 pb-6 pt-8 md:absolute md:left-[33px] md:top-[35px] md:w-[496px] md:p-0">
-        <p className="pr-12 text-heading-sm text-text-primary md:pr-0">Built-in security, by default</p>
-        <p className="mt-3 text-body-md text-text-body md:w-[394px]">
+        <p className="pr-12 text-body-md text-text-primary md:pr-0 md:text-heading-sm">Built-in security, by default</p>
+        <p className="mt-3 text-body-sm text-text-body md:text-body-md md:w-[394px]">
           With robust security safeguards already in place, your data and user information stay protected as you build.
         </p>
       </div>

@@ -277,8 +277,8 @@ export default function TerminalCard() {
       className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black md:h-[611px] md:w-[600px] md:max-w-none xl:absolute xl:left-[600px] xl:top-[462px] xl:rounded-none xl:rounded-br-xl xl:border-l-0"
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 md:absolute md:left-[36px] md:top-[35px] md:w-[496px] md:p-0">
-        <p className="text-heading-sm text-text-primary">Error auto-fix as you move forward</p>
-        <p className="text-body-md text-text-body md:w-[359px]">
+        <p className="text-body-md text-text-primary md:text-heading-sm">Error auto-fix as you move forward</p>
+        <p className="text-body-sm text-text-body md:text-body-md md:w-[359px]">
           Dedicated debugging agent checks and fixes errors automatically during production.
         </p>
       </div>

@@ -130,8 +130,8 @@ export default function TokensCard() {
       className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black md:h-[462px] md:w-[600px] md:max-w-none xl:absolute xl:left-[600px] xl:top-0 xl:rounded-none xl:rounded-tr-xl xl:border-b-0 xl:border-l-0"
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 md:absolute md:left-[36px] md:top-[35px] md:w-[496px] md:p-0">
-        <p className="text-heading-sm text-text-primary">Less tokens, more builds</p>
-        <p className="text-body-md text-text-body md:w-[370px]">
+        <p className="text-body-md text-text-primary md:text-heading-sm">Less tokens, more builds</p>
+        <p className="text-body-sm text-text-body md:text-body-md md:w-[370px]">
           Optimized call to LLMs and smart search in big code base to allow more efficient token usage.
         </p>
       </div>

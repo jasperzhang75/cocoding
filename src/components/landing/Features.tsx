@@ -72,8 +72,8 @@ function CardHeader({
     <div
       className={`flex flex-col gap-3 px-7 pb-6 pt-8 md:absolute md:top-[35px] md:w-[496px] md:p-0 ${leftClass}`}
     >
-      <p className="text-heading-sm text-text-primary">{title}</p>
-      <p className={`text-body-md text-text-body ${descWidthClass}`}>{desc}</p>
+      <p className="text-body-md text-text-primary md:text-heading-sm">{title}</p>
+      <p className={`text-body-sm text-text-body md:text-body-md ${descWidthClass}`}>{desc}</p>
     </div>
   );
 }
