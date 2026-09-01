@@ -8,13 +8,17 @@ import { cn } from "@/lib/utils";
    vectors and animations are all pinned to it — so instead of refloating
    anything we scale the whole stage.
 
-   Purely measurement-driven — no breakpoints in here:
-   - container >= 600px wide (the xl bento, where className places it
-     absolute inset-0 over the fixed card): pass-through, desktop geometry
-     byte-identical.
-   - container < 600px (base single column and the md two-up grid): the
-     stage scales by width/600 (origin top-left), shifted up by `crop` to
-     trim the design's headroom; wrapper height follows the scaled art. */
+   Pass-through is decided by POSITIONING, not width: at xl the className
+   makes this wrapper `absolute inset-0` over the card's fixed 600x-H box,
+   so the stage sits unscaled and the desktop geometry is byte-identical.
+   Anywhere else the wrapper is in flow, and the stage scales by width/600
+   (origin top-left), shifted up by `crop` to trim the design's headroom,
+   with the wrapper's height following the scaled art.
+
+   Width alone is NOT a safe test: at ~1270-1279px (and ~637-767px) the
+   flowed wrapper measures 596-599px, which any near-600 threshold reads
+   as "desktop" — it would then drop the explicit height and collapse the
+   poster to zero. */
 
 export default function PosterViewport({
   designHeight,
@@ -38,22 +42,26 @@ export default function PosterViewport({
     if (!wrap || !stage) return;
 
     const apply = () => {
-      const k = wrap.clientWidth / 600;
-      /* at xl the wrapper is inset-0 INSIDE the card's 1px borders, so it
-         measures 598 — treat near-1 as pass-through or the desktop bento
-         would get a phantom 0.997 scale and its crop applied */
-      if (k >= 0.99) {
+      if (getComputedStyle(wrap).position === "absolute") {
         wrap.style.removeProperty("height");
         stage.style.removeProperty("transform");
         return;
       }
+      const k = wrap.clientWidth / 600;
       wrap.style.height = `${(designHeight - crop) * k}px`;
       stage.style.transform = `translateY(${-crop * k}px) scale(${k})`;
     };
     apply();
     const ro = new ResizeObserver(apply);
     ro.observe(wrap);
-    return () => ro.disconnect();
+    /* crossing xl flips the wrapper between flow and absolute without
+       necessarily changing its width, which ResizeObserver would miss */
+    const mq = window.matchMedia("(min-width: 1280px)");
+    mq.addEventListener("change", apply);
+    return () => {
+      ro.disconnect();
+      mq.removeEventListener("change", apply);
+    };
   }, [designHeight, crop]);
 
   return (
