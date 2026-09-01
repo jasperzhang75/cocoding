@@ -124,6 +124,26 @@ export default function TokensCard() {
     });
   };
 
+  // touch devices never fire hover; draw the arrow once when the card
+  // scrolls into view there
+  useEffect(() => {
+    if (window.matchMedia("(hover: hover)").matches) return;
+    const card = cardRef.current;
+    if (!card) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          io.disconnect();
+          drawArrow();
+        }
+      },
+      { threshold: 0.6 }
+    );
+    io.observe(card);
+    return () => io.disconnect();
+  }, []);
+
+
   return (
     <div
       ref={cardRef}
