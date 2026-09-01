@@ -57,6 +57,17 @@ const ITEMS: { title: string; desc?: string }[] = [
 const SPREAD_Y = [348.3, 294.6, 240];
 const STACK = { x: 372, y: [343.5, 326.1, 302.7], size: 65.8 };
 
+/* Frame 4 poses the settled stack ~8px lower with 80% faces. */
+const ENV_STACK_Y = [351.7, 334.3, 311];
+
+/* The 3 -> 4 handoff is a PIN: at xl the block goes sticky exactly where
+   stage 3 completes, and the next RUNWAY px of scroll are consumed in
+   place — the first DEAD share as a pure hold (the "catch" the user
+   feels), the rest scrubbing the frame-4 entrance. Scrolling back plays
+   it all in reverse and un-pins. */
+const RUNWAY = 640;
+const DEAD = 0.35;
+
 /* Right-hand callouts: a hairline from x475 to x715 with a 13px mono label
    hanging under its right end. BUILD (stage 1) sits on the same middle
    line the BACKEND callout uses in stage 2. */
@@ -141,6 +152,7 @@ function makeNoiseTexture(): string {
 
 export default function Infrastructure() {
   const sectionRef = useRef<HTMLElement>(null);
+  const stickyRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -200,20 +212,39 @@ export default function Infrastructure() {
       tl.to(rects, { attr: { width: STACK.size, height: STACK.size }, duration: 0.26, ease: "power2.inOut" }, 0.72);
       tl.to(cube, { opacity: 1, duration: 0.26 }, 0.72);
 
-      /* TEMP — frame 4 (ENVIRONMENT) static review: park the story at its
-         settled end and pose the stack per 17205:87852 — 8px lower, faces
-         at 80%, the stage-1-3 wash off. The 3 -> 4 transition will fold
-         all of this into the timeline and restore the scroll binding. */
-      tl.progress(1);
-      gsap.set(faces[0], { y: 351.7, opacity: 0.8 });
-      gsap.set(faces[1], { y: 334.3, opacity: 0.8 });
-      gsap.set(faces[2], { y: 311, opacity: 0.8 });
-      gsap.set(svg.querySelector("[data-wash]"), { opacity: 0 });
-      const parkedForReview = true as boolean;
-      if (parkedForReview) return;
+      /* The 3 -> 4 entrance, scrubbed through the pinned runway: the wash
+         dissolves, the legend surfaces, the cube's other faces materialize
+         while the stack eases into its frame-4 pose, and the ambient glow
+         blooms from its center outward. Callouts trail in last. */
+      const env = {
+        wash: svg.querySelector("[data-wash]"),
+        cube: svg.querySelector("[data-env-cube]"),
+        legend: svg.querySelector("[data-env-legend]"),
+        callouts: svg.querySelector("[data-env-callouts]"),
+        ambient: svg.querySelector("[data-env-back]"),
+      };
+      const tl2 = gsap.timeline({ paused: true, defaults: { ease: "none" } });
+      tl2.to(env.wash, { opacity: 0, duration: 0.3, ease: "power1.out" }, 0);
+      tl2.to(env.legend, { opacity: 1, duration: 0.35, ease: "power1.out" }, 0.1);
+      tl2.to(env.cube, { opacity: 1, duration: 0.45, ease: "power2.out" }, 0.15);
+      faces.forEach((f, i) => {
+        tl2.to(
+          f,
+          { y: ENV_STACK_Y[i], opacity: 0.8, duration: 0.4, ease: "power2.inOut" },
+          0.15
+        );
+      });
+      tl2.fromTo(
+        env.ambient,
+        { opacity: 0, scale: 0.3, svgOrigin: "370.5 344.5" },
+        { opacity: 1, scale: 1, duration: 0.75, ease: "power2.out" },
+        0.25
+      );
+      tl2.to(env.callouts, { opacity: 1, duration: 0.2, ease: "power1.out" }, 0.8);
 
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         tl.progress(1);
+        tl2.progress(1);
         return;
       }
 
@@ -235,6 +266,8 @@ export default function Infrastructure() {
                 the full story reachable now and retires itself as later
                 sections add scroll room below.
          Direct progress writes — no smoothing. */
+      const sticky = stickyRef.current!;
+      const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
       const apply = () => {
         const r = panel.getBoundingClientRect();
         const k = r.height / 679; // render scale of the 751x679 stage
@@ -244,8 +277,29 @@ export default function Infrastructure() {
         const minTop = r.top - Math.max(0, maxScroll); // panel.top at page bottom
         const r0 = vh - 460 * k;
         const r1 = Math.max(vh / 2 - 340 * k, minTop);
-        const p = (r0 - r.top) / Math.max(r0 - r1, 1);
-        tl.progress(Math.min(1, Math.max(0, p)));
+        tl.progress(clamp01((r0 - r.top) / Math.max(r0 - r1, 1)));
+
+        /* Phase B — the pinned runway. At xl the sticky child's offset
+           inside the section runs 0 -> RUNWAY while pinned; the first DEAD
+           share holds (the felt "catch"), the rest scrubs the entrance.
+           Below xl there is no pin yet (responsive pass pending): the
+           entrance simply scrubs over 300px of overtravel past stage 3. */
+        let q: number;
+        if (window.matchMedia("(min-width: 1280px)").matches) {
+          const secTop = section.getBoundingClientRect().top;
+          const stickyTop = sticky.getBoundingClientRect().top;
+          /* the page currently ends right after this section, so at some
+             viewport heights the full runway isn't reachable — scale to
+             what today's page allows; retires itself as sections follow */
+          const reachable = Math.min(
+            RUNWAY,
+            stickyTop - (secTop - Math.max(0, maxScroll))
+          );
+          q = (stickyTop - secTop) / Math.max(1, reachable);
+        } else {
+          q = (r1 - r.top) / 300;
+        }
+        tl2.progress(clamp01((clamp01(q) - DEAD) / (1 - DEAD)));
       };
 
       let listening = false;
@@ -285,7 +339,13 @@ export default function Infrastructure() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="px-5 pt-24 md:px-10 xl:px-0 xl:pt-[120px]">
+    <section ref={sectionRef} className="px-5 md:px-10 xl:px-0">
+      {/* sticks exactly where stage 3 completes: panel.top = 50vh - 340,
+          i.e. this block's top at 50vh - 340 - 127 (pt-120 + panel y7) */}
+      <div
+        ref={stickyRef}
+        className="pt-24 xl:sticky xl:top-[calc(50vh-467px)] xl:pt-[120px]"
+      >
       <div className="relative mx-auto max-w-[600px] md:max-w-none xl:h-[686px] xl:w-[1200px] xl:max-w-none">
         {/* left column */}
         <div className="xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
@@ -399,12 +459,12 @@ export default function Infrastructure() {
                 two Figma fills — the 52% radial with the grain tiled over
                 it at LIGHTEN — live in an isolated group so the lighten
                 stays inside the paint stack, as in Figma. */}
-            <g data-env-back>
+            <g data-env-back style={{ opacity: 0 }}>
               {/* Ellipse 21888 — the ambient, layer-blurred 300; its grain
                   tile is 241.4px (sf 0.1178), two columns cover the box.
+                  Hidden until the 3 -> 4 entrance blooms it from center.
                   (21891's sharp radial is dropped — browser compositing
-                  turns it into a solid disc; its grain lives at the bottom
-                  of the cube group, where the design keeps it.) */}
+                  turns it into a solid disc.) */}
               <g style={{ isolation: "isolate" }} filter="url(#infra-env-blur)">
                 <ellipse
                   cx="370.5"
@@ -488,8 +548,9 @@ export default function Infrastructure() {
             </g>
 
             {/* frame 4: the cube around the stack, its mark, the legend,
-                and the ENVIRONMENT callouts */}
-            <g data-env-front>
+                and the ENVIRONMENT callouts — three groups so the 3 -> 4
+                entrance can stage them separately, all hidden until then */}
+            <g data-env-cube style={{ opacity: 0 }}>
               {/* lid */}
               <g transform={CUBE.lid}>
                 <rect
@@ -528,8 +589,10 @@ export default function Infrastructure() {
                 <path d="M5 5H5.00833" strokeWidth="0.75" />
                 <path d="M5 15H5.00833" strokeOpacity="0.3" strokeWidth="0.75" />
               </g>
+            </g>
 
-              {/* legend */}
+            {/* legend */}
+            <g data-env-legend style={{ opacity: 0 }}>
               <rect x="36" y="36" width="28" height="28" rx="8" fill="#617CCE" fillOpacity="0.1" />
               <text
                 x="76"
@@ -561,7 +624,9 @@ export default function Infrastructure() {
               >
                 BUILD
               </text>
+            </g>
 
+            <g data-env-callouts style={{ opacity: 0 }}>
               {/* NETWORK ISOLATION — highlighted, with its description */}
               <line x1="483" y1="281" x2="715" y2="281" stroke="#FFFFFF" strokeOpacity="0.1" strokeWidth="0.9" />
               <text
@@ -653,6 +718,11 @@ export default function Infrastructure() {
           </svg>
         </div>
       </div>
+      </div>
+
+      {/* pin runway — the scroll consumed by the stage-3 hold and the
+          3 -> 4 entrance while the block above stays put */}
+      <div aria-hidden className="hidden xl:block" style={{ height: RUNWAY }} />
     </section>
   );
 }
