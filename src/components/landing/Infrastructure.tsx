@@ -93,6 +93,52 @@ const CUBE = {
 const GLOW_PATH =
   "M 108.96 275.17 C -90.13 262.91 29.3 52.8 108.96 47.23 C 174.8 42.62 181.3 164.63 246.79 174.68 C 304.18 183.48 330.26 125.58 387.43 114.63 C 436.34 105.26 514.01 114.63 514.01 114.63 C 514.01 114.63 619 123.82 658.41 68.06 C 672.13 48.65 671.59 29.52 685.6 10.46 C 736.96 -59.39 742.8 242.9 708.11 256.78 C 673.41 270.67 591.84 296 591.84 296 C 591.84 296 308.05 287.42 108.96 275.17 Z";
 
+/* The design's grain is generated, not painted: a Figma shader plugin
+   whose recipe the designer handed over. Ported here as a one-time canvas
+   render instead of shipping the exported raster (Figma's fill-stack
+   blending never quite matched in the browser). Per the shader uniforms:
+   1024px canvas on a 2px cell grid, 50% of cells visible (u_amount .5),
+   duo-tone — each dot flips a coin between #1F1F1F and its inverse
+   #E0E0E0 (u_tone Duo) — random per-dot opacity, and a radial fade that
+   zeroes out 0.4386 of the canvas from center (u_fade_position). GPU and
+   CPU hashes can't match bit-for-bit, so a seeded PRNG stands in — the
+   statistics, which are the look, are the same on every load. */
+function makeNoiseTexture(): string {
+  const SIZE = 1024;
+  const CELL = 2;
+  const N = SIZE / CELL;
+  const MAXD = 0.5 - 0.06140350877192979; // shader's radial fade extent
+  const cv = document.createElement("canvas");
+  cv.width = SIZE;
+  cv.height = SIZE;
+  const ctx = cv.getContext("2d");
+  if (!ctx) return "";
+  let s = 0x12622121; // fixed seed, like the plugin's u_random_seed
+  const rnd = () => {
+    s |= 0;
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  for (let iy = 0; iy < N; iy++) {
+    for (let ix = 0; ix < N; ix++) {
+      const visible = rnd() > 0.5;
+      const light = rnd() > 0.5;
+      const op = rnd();
+      if (!visible) continue;
+      const dist = Math.hypot(ix / N - 0.5, iy / N - 0.5);
+      const fade = 1 - Math.min(1, dist / MAXD);
+      if (fade <= 0) continue;
+      ctx.fillStyle = light ? "#E0E0E0" : "#1F1F1F";
+      // x0.8 ~ the area of the shader's per-cell circle vs our square
+      ctx.globalAlpha = op * fade * 0.8;
+      ctx.fillRect(ix * CELL, iy * CELL, CELL, CELL);
+    }
+  }
+  return cv.toDataURL("image/png");
+}
+
 export default function Infrastructure() {
   const sectionRef = useRef<HTMLElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -103,6 +149,12 @@ export default function Infrastructure() {
     const panel = panelRef.current;
     const svg = svgRef.current;
     if (!section || !panel || !svg) return;
+
+    // the code-drawn grain (see makeNoiseTexture) feeds every noise slot
+    const noiseUrl = makeNoiseTexture();
+    svg.querySelectorAll<SVGImageElement>("[data-noise]").forEach((im) => {
+      im.setAttribute("href", noiseUrl);
+    });
 
     const ctx = gsap.context(() => {
       const faces = Array.from(
@@ -334,14 +386,12 @@ export default function Infrastructure() {
                 <stop stopColor="#577ADC" />
                 <stop offset="1" stopColor="#D5D9E5" />
               </linearGradient>
-              <pattern
-                id="infra-noise"
-                patternUnits="userSpaceOnUse"
-                width="512"
-                height="512"
-              >
-                <image href="/infra/noise-512.png" width="512" height="512" />
-              </pattern>
+              <clipPath id="infra-e91-clip">
+                <ellipse cx="317.5" cy="295.5" rx="162.5" ry="177.5" />
+              </clipPath>
+              <clipPath id="infra-e88-clip">
+                <ellipse cx="370.5" cy="344.5" rx="149.5" ry="107.5" />
+              </clipPath>
             </defs>
 
             {/* frame-4 glows behind everything, both compositing NORMALLY
@@ -350,7 +400,9 @@ export default function Infrastructure() {
                 it at LIGHTEN — live in an isolated group so the lighten
                 stays inside the paint stack, as in Figma. */}
             <g data-env-back>
-              {/* Ellipse 21891 — the cube halo, sharp */}
+              {/* Ellipse 21891 — the cube halo, sharp. Its grain tiles at
+                  the design's 355.3px (2048 x sf 0.1735 — one tile covers
+                  the ellipse), lightening the gradient at 23%. */}
               <g style={{ isolation: "isolate" }}>
                 <ellipse
                   cx="317.5"
@@ -360,17 +412,20 @@ export default function Infrastructure() {
                   fill="url(#infra-env-radial)"
                   opacity="0.52"
                 />
-                <ellipse
-                  cx="317.5"
-                  cy="295.5"
-                  rx="162.5"
-                  ry="177.5"
-                  fill="url(#infra-noise)"
+                <image
+                  data-noise
+                  x="155"
+                  y="118"
+                  width="355.3"
+                  height="355.3"
+                  preserveAspectRatio="none"
+                  clipPath="url(#infra-e91-clip)"
                   opacity="0.23"
                   style={{ mixBlendMode: "lighten" }}
                 />
               </g>
-              {/* Ellipse 21888 — the ambient, layer-blurred 300 */}
+              {/* Ellipse 21888 — the ambient, layer-blurred 300; its grain
+                  tile is 241.4px (sf 0.1178), two columns cover the box */}
               <g style={{ isolation: "isolate" }} filter="url(#infra-env-blur)">
                 <ellipse
                   cx="370.5"
@@ -380,12 +435,24 @@ export default function Infrastructure() {
                   fill="url(#infra-env-radial)"
                   opacity="0.52"
                 />
-                <ellipse
-                  cx="370.5"
-                  cy="344.5"
-                  rx="149.5"
-                  ry="107.5"
-                  fill="url(#infra-noise)"
+                <image
+                  data-noise
+                  x="221"
+                  y="237"
+                  width="241.4"
+                  height="241.4"
+                  preserveAspectRatio="none"
+                  clipPath="url(#infra-e88-clip)"
+                  style={{ mixBlendMode: "lighten" }}
+                />
+                <image
+                  data-noise
+                  x="462.4"
+                  y="237"
+                  width="241.4"
+                  height="241.4"
+                  preserveAspectRatio="none"
+                  clipPath="url(#infra-e88-clip)"
                   style={{ mixBlendMode: "lighten" }}
                 />
               </g>
