@@ -230,6 +230,11 @@ export default function Infrastructure() {
     fade(`[data-co-active="${key}"]`, 1, 0.35);
     fade(`[data-co-base="${key}"]`, 0, 0.35);
     fade(`[data-co-desc="${key}"]`, 1, 0.3, 0.12);
+    // the light moves across the cube with the selection; the server mark
+    // exists only while the lid holds it
+    fade(`[data-face-lit="${prev}"]`, 0, 0.35);
+    fade(`[data-face-lit="${key}"]`, 1, 0.35);
+    fade("[data-cube-mark]", key === "ni" ? 1 : 0, 0.3);
   };
 
   useEffect(() => {
@@ -320,7 +325,7 @@ export default function Infrastructure() {
       );
       tl2.to(env.callouts, { opacity: 1, duration: 0.28, ease: "power1.out" }, 1.12);
       // clicks arm only once the entrance lands; reversing re-disarms them
-      tl2.set(env.callouts, { pointerEvents: "auto" }, 1.38);
+      tl2.set([env.callouts, env.cube], { pointerEvents: "auto" }, 1.38);
 
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         tl.progress(1);
@@ -639,10 +644,21 @@ export default function Infrastructure() {
             {/* frame 4: the cube around the stack, its mark, the legend,
                 and the ENVIRONMENT callouts — three groups so the 3 -> 4
                 entrance can stage them separately, all hidden until then */}
-            <g data-env-cube style={{ opacity: 0 }}>
-              {/* lid */}
-              <g transform={CUBE.lid}>
+            {/* every face is a click target for its callout: lid = NETWORK
+                ISOLATION, left = AUTOMATED BACKUP, right = HIGH
+                AVAILABILITY. Each carries its dim skin (the translucent
+                pair) with a lit overlay (the lid's gradient in its own
+                local space) crossfaded by the swap. */}
+            <g data-env-cube style={{ opacity: 0, pointerEvents: "none" }}>
+              <g
+                transform={CUBE.lid}
+                onClick={() => swapCallout("ni")}
+                style={{ cursor: "pointer" }}
+              >
+                <rect width="85.2" height="85.2" rx="6" fill="#617FDC" fillOpacity="0.1" />
+                <rect width="85.2" height="85.2" rx="6" fill="#FFFFFF" fillOpacity="0.05" />
                 <rect
+                  data-face-lit="ni"
                   width="85.2"
                   height="85.2"
                   rx="6"
@@ -652,18 +668,48 @@ export default function Infrastructure() {
                   strokeWidth="0.9"
                 />
               </g>
-              {/* side faces: the design stacks two translucent fills, so
-                  two rects each — blue below, white on top; no strokes */}
-              <g transform={CUBE.left}>
+              <g
+                transform={CUBE.left}
+                onClick={() => swapCallout("ab")}
+                style={{ cursor: "pointer" }}
+              >
                 <rect width="85.3" height="85.1" rx="8" fill="#617FDC" fillOpacity="0.1" />
                 <rect width="85.3" height="85.1" rx="8" fill="#FFFFFF" fillOpacity="0.05" />
+                <rect
+                  data-face-lit="ab"
+                  width="85.3"
+                  height="85.1"
+                  rx="8"
+                  fill="url(#infra-lid)"
+                  stroke="#6C91F9"
+                  strokeOpacity="0.06"
+                  strokeWidth="0.9"
+                  style={{ opacity: 0 }}
+                />
               </g>
-              <g transform={CUBE.right}>
+              <g
+                transform={CUBE.right}
+                onClick={() => swapCallout("ha")}
+                style={{ cursor: "pointer" }}
+              >
                 <rect width="85.3" height="85.1" rx="8" fill="#617CCE" fillOpacity="0.1" />
                 <rect width="85.3" height="85.1" rx="8" fill="#FFFFFF" fillOpacity="0.03" />
+                <rect
+                  data-face-lit="ha"
+                  width="85.3"
+                  height="85.1"
+                  rx="8"
+                  fill="url(#infra-lid)"
+                  stroke="#6C91F9"
+                  strokeOpacity="0.06"
+                  strokeWidth="0.9"
+                  style={{ opacity: 0 }}
+                />
               </g>
-              {/* lucide/server riding the lid */}
+              {/* lucide/server riding the lid — present only while the lid
+                  holds the light */}
               <g
+                data-cube-mark
                 transform={CUBE.icon}
                 fill="none"
                 stroke="#FFFFFF"
