@@ -75,19 +75,26 @@ export default function SecurityCard() {
       maskEl.style.webkitMaskImage = img;
     };
 
-    if (on) {
-      gsap.to(breathe, { autoAlpha: 1, duration: dur ?? 0.6 });
-      gsap.to(grayShieldRef.current, { opacity: 0, duration: dur ?? 0.8 });
-      gsap.to(greenShieldRef.current, { opacity: 1, duration: dur ?? 0.8 });
-      gsap.to(maskProg.current, {
-        k: 0, duration: dur ?? 0.7, ease: "power2.in", overwrite: true, onUpdate: applyMask,
-      });
-      gsap.to(knobRef.current, { x: 0, duration: dur ?? 0.25, ease: "power2.out" });
-      gsap.to(pillRef.current, { backgroundColor: "#489C32", duration: dur ?? 0.25 });
+    const stopScramble = () => {
       if (scrambleId.current) {
         clearInterval(scrambleId.current);
         scrambleId.current = null;
       }
+    };
+
+    if (on) {
+      gsap.to(breathe, { autoAlpha: 1, duration: dur ?? 0.6 });
+      gsap.to(grayShieldRef.current, { opacity: 0, duration: dur ?? 0.8 });
+      gsap.to(greenShieldRef.current, { opacity: 1, duration: dur ?? 0.8 });
+      // keep scrambling while the mask swallows the codes; stop only once
+      // they are fully hidden (if the user flips back mid-shrink, the
+      // overwrite kills this tween and the interval just keeps running)
+      gsap.to(maskProg.current, {
+        k: 0, duration: dur ?? 0.7, ease: "power2.in", overwrite: true,
+        onUpdate: applyMask, onComplete: stopScramble,
+      });
+      gsap.to(knobRef.current, { x: 0, duration: dur ?? 0.25, ease: "power2.out" });
+      gsap.to(pillRef.current, { backgroundColor: "#489C32", duration: dur ?? 0.25 });
     } else {
       gsap.to(breathe, { autoAlpha: 0, duration: dur ?? 1.1, ease: "power1.out" });
       gsap.to(grayShieldRef.current, { opacity: 1, duration: dur ?? 0.8 });
@@ -113,13 +120,12 @@ export default function SecurityCard() {
         }, 45);
       }
     }
-    return () => {
-      if (scrambleId.current) {
-        clearInterval(scrambleId.current);
-        scrambleId.current = null;
-      }
-    };
   }, [on]);
+
+  // unmount only — per-toggle stopping is handled by the shrink tween
+  useEffect(() => () => {
+    if (scrambleId.current) clearInterval(scrambleId.current);
+  }, []);
 
   return (
     <div
