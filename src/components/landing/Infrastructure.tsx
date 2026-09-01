@@ -222,16 +222,21 @@ export default function Infrastructure() {
       gsap.set(b, { opacity: 0.3 });
       return;
     }
+    /* decaying oscillation: quick swaps at first, each gap 1.5x the last,
+       so the flicker audibly "settles" instead of cutting off */
     const DIM = 0.3;
-    const STEP = 0.09;
     const fl = gsap.timeline();
-    for (let i = 0; i < 5; i++) {
+    let t = 0;
+    let step = 0.06;
+    for (let i = 0; i < 6; i++) {
       const swapped = i % 2 === 0;
-      fl.set(a, { opacity: swapped ? DIM : 1 }, i * STEP);
-      fl.set(b, { opacity: swapped ? 1 : DIM }, i * STEP);
+      fl.set(a, { opacity: swapped ? DIM : 1 }, t);
+      fl.set(b, { opacity: swapped ? 1 : DIM }, t);
+      t += step;
+      step *= 1.5;
     }
-    fl.set(a, { opacity: 1 }, 5 * STEP);
-    fl.set(b, { opacity: DIM }, 5 * STEP);
+    fl.set(a, { opacity: 1 }, t);
+    fl.set(b, { opacity: DIM }, t);
     flickerRef.current = fl;
   };
 
