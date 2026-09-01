@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import gsap from "gsap";
 import { HyperText } from "@/components/magicui/hyper-text";
+import { ICONS6 } from "./infra-icons";
 
 /* Infrastructure — the isometric story (Figma 17205:89133 -> 87420 ->
    87636), scrubbed by scroll. The three approved frames are keyframes on
@@ -54,7 +55,11 @@ const ITEMS: { key: string; title: string; desc?: string; open?: boolean }[] = [
     title: "Scalability",
     desc: "Go further with built-in scalable infrastructure, enabling builds to auto-scale with demand, serve users globally through CDN edge delivery, and deploy updates without downtime.",
   },
-  { key: "integrations", title: "Integrations" },
+  {
+    key: "integrations",
+    title: "Integrations",
+    desc: "Meet the core needs of product launch with built-in infrastructure and external connectors, including authentication, database, file storage, payments, deployment, monitoring, and third-party integrations.",
+  },
   { key: "analytics", title: "Analytics and SEO" },
 ];
 
@@ -226,6 +231,22 @@ const FACE_MAP: Record<number, Record<string, string>> = {
   4: { lid: "ni", left: "ab", right: "ha" },
   5: { lid: "as", left: "zdd", right: "ged" },
 };
+
+/* Frame 6 (INTEGRATIONS, Figma 16533:14745): the cube scene gives way to
+   six tilted connector cards receding to the right, first card lit and
+   raised with a STORAGE callout hanging below it, under a centered
+   BUILD-IN / CONNECTORS tab header. Cards are 77.5 squares through
+   matrix(0.87 0.5 0 1) — lit: r6 + the accent gradient + 6% stroke;
+   dim: r8, translucent pair, #909090 9% stroke. Icons are the design's
+   filled 24-grid exports, each with its own slight iso squash. */
+const CARDS6 = [
+  { key: "storage", icon: "database", label: "STORAGE", x: 204, y: 256.25, iconT: "matrix(0.898 0.439 0 1 23 40.75)" },
+  { key: "payments", icon: "creditCard", label: "PAYMENTS", x: 259.1, y: 281.25, iconT: "matrix(0.857 0.514 0 1 22.883 39.75)" },
+  { key: "monitoring", icon: "eye", label: "MONITORING", x: 314.2, y: 281.3, iconT: "matrix(0.882 0.471 0 1 22.766 40.75)" },
+  { key: "auth", icon: "lock", label: "AUTHENTICATION", x: 369.4, y: 281.3, iconT: "matrix(0.857 0.514 0 1 23.648 39.75)" },
+  { key: "database", icon: "dresser", label: "DATABASE", x: 424.5, y: 281.3, iconT: "matrix(0.866 0.5 0 1 23.531 40)" },
+  { key: "deployment", icon: "rocket", label: "DEPLOYMENT", x: 479.6, y: 281, iconT: "matrix(0.832 0.555 0 1 23.414 39)" },
+];
 
 /* Figma's Vector 24 — the stage-3 wash at the top of the panel: a blob at
    9% #2D69B7 with a white 26% hairline, layer-blurred 60.6 (feGaussianBlur
@@ -584,6 +605,31 @@ export default function Infrastructure() {
       goFrame5Ref.current = goFrame5;
       backFrame4Ref.current = backFrame4;
 
+      /* TEMP — frame 6 (INTEGRATIONS) static review: run the story
+         through frame 5, then pose frame 6. The 5 -> 6 transition will
+         fold these sets into a timeline and restore the scroll binding. */
+      tl.progress(1);
+      tl2.progress(1);
+      frameRef.current = 5;
+      ensureTl3().progress(1);
+      flickerRef.current?.kill();
+      const S6 = (sel: string, vars: gsap.TweenVars) =>
+        gsap.set(svg.querySelectorAll(sel), vars);
+      S6("[data-env5-callouts]", { opacity: 0 });
+      S6("[data-mark5]", { opacity: 0 });
+      S6("[data-env-legend]", { opacity: 0 });
+      S6("[data-env-cube]", { opacity: 0 });
+      S6("[data-face], [data-face-x]", { opacity: 0 });
+      S6("[data-frame6]", { opacity: 1 });
+      const H6 = (sel: string, vars: gsap.TweenVars) =>
+        gsap.set(section.querySelectorAll(sel), vars);
+      H6('[data-item-title="scalability"]', { opacity: 0.2 });
+      H6('[data-item-desc="scalability"]', { display: "none" });
+      H6('[data-item-title="integrations"]', { opacity: 1 });
+      H6('[data-item-desc="integrations"]', { display: "block", height: "auto", opacity: 1, marginTop: 12 });
+      const parkedForFrame6 = true as boolean;
+      if (parkedForFrame6) return;
+
       if (reduced) {
         tl.progress(1);
         tl2.progress(1);
@@ -832,6 +878,14 @@ export default function Infrastructure() {
               <linearGradient id="infra-as-label" x1="0" y1="0" x2="1" y2="0">
                 <stop stopColor="#6C91F9" />
                 <stop offset="1" stopColor="#FFFFFF" />
+              </linearGradient>
+              <linearGradient id="infra-card-lit" x1="0" y1="0" x2="0" y2="1">
+                <stop stopColor="#6C91F9" stopOpacity="0.75" />
+                <stop offset="1" stopColor="#FFFFFF" stopOpacity="0.82" />
+              </linearGradient>
+              <linearGradient id="infra-icon-dim" x1="0" y1="0" x2="0" y2="1">
+                <stop stopColor="#FFFFFF" />
+                <stop offset="1" stopColor="#999999" />
               </linearGradient>
               <clipPath id="infra-grain-clip">
                 <ellipse cx="368.5" cy="370.5" rx="162.5" ry="177.5" />
@@ -1192,6 +1246,95 @@ export default function Infrastructure() {
                   </g>
                 );
               })}
+            </g>
+
+            {/* frame 6: the connector cards under the BUILD-IN/CONNECTORS
+                tab, first card lit with its STORAGE callout. Static — the
+                5 -> 6 transition and card interactivity come next. */}
+            <g data-frame6 style={{ opacity: 0 }}>
+              <text
+                x="299"
+                y="216.5"
+                fill="#EBEBEB"
+                fontSize="13"
+                style={{ fontFamily: "var(--font-geist-mono)" }}
+              >
+                BUILD-IN
+              </text>
+              <rect x="299" y="222.5" width="63" height="1" fill="#EBEBEB" />
+              <text
+                x="374"
+                y="216.5"
+                fill="#EBEBEB"
+                fillOpacity="0.2"
+                fontSize="13"
+                style={{ fontFamily: "var(--font-geist-mono)" }}
+              >
+                CONNECTORS
+              </text>
+
+              {[...CARDS6].reverse().map((c) => {
+                const lit = c.key === "storage";
+                return (
+                  <g key={c.key} data-card6={c.key} transform={`translate(${c.x} ${c.y})`}>
+                    <g transform="matrix(0.87 0.5 0 1 0 0)">
+                      {lit ? (
+                        <rect
+                          width="77.5"
+                          height="77.5"
+                          rx="6"
+                          fill="url(#infra-card-lit)"
+                          stroke="#6C91F9"
+                          strokeOpacity="0.06"
+                          strokeWidth="0.9"
+                        />
+                      ) : (
+                        <>
+                          <rect width="77.5" height="77.5" rx="8" fill="#617FDC" fillOpacity="0.1" />
+                          <rect
+                            width="77.5"
+                            height="77.5"
+                            rx="8"
+                            fill="#FFFFFF"
+                            fillOpacity="0.05"
+                            stroke="#909090"
+                            strokeOpacity="0.09"
+                            strokeWidth="0.9"
+                          />
+                        </>
+                      )}
+                    </g>
+                    <g transform={c.iconT}>
+                      <path
+                        d={ICONS6[c.icon]}
+                        fill={lit ? "#FFFFFF" : "url(#infra-icon-dim)"}
+                        fillOpacity={lit ? 1 : 0.2}
+                      />
+                    </g>
+                  </g>
+                );
+              })}
+
+              {/* STORAGE callout hanging under the lit card */}
+              <line
+                x1="238"
+                y1="391"
+                x2="238"
+                y2="480"
+                stroke="#FFFFFF"
+                strokeOpacity="0.1"
+                strokeWidth="0.9"
+              />
+              <text
+                x="238.5"
+                y="499.5"
+                textAnchor="middle"
+                fill="#EDEDED"
+                fontSize="13"
+                style={{ fontFamily: "var(--font-geist-mono)" }}
+              >
+                STORAGE
+              </text>
             </g>
 
             {/* frame 5's callouts — same click-to-light structure as frame
