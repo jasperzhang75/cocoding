@@ -148,6 +148,21 @@ export default function SecurityCard() {
         />
       </div>
 
+      {/* the pair of blur-250 glows — the card's blue field. Card-level (not
+          in the poster) so the mobile top-crop can't clip them: at base they
+          cover the whole card; from md up they sit at the design geometry. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl md:overflow-visible xl:rounded-none xl:rounded-bl-xl">
+        <div className="absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 md:left-[-99px] md:top-[77px] md:h-[523px] md:w-[789px] md:translate-x-0 md:translate-y-0">
+          {(["/features/f4-glow-a.svg", "/features/f4-glow-b.svg"] as const).map((src) => (
+            <div key={src} className="absolute inset-0">
+              <div className="absolute" style={{ inset: "-47.8% -31.69%" }}>
+                <Image src={src} alt="" fill className="max-w-none" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="px-7 pb-6 pt-8 md:absolute md:left-[33px] md:top-[35px] md:w-[496px] md:p-0">
         <p className="pr-12 text-heading-sm text-text-primary md:pr-0">Built-in security, by default</p>
         <p className="mt-3 text-body-md text-text-body md:w-[394px]">
@@ -213,15 +228,6 @@ export default function SecurityCard() {
           S
         </p>
       </div>
-
-      {/* the pair of blur-250 glows — present in both states */}
-      {(["/features/f4-glow-a.svg", "/features/f4-glow-b.svg"] as const).map((src) => (
-        <div key={src} className="pointer-events-none absolute left-[-99px] top-[77px] h-[523px] w-[789px]">
-          <div className="absolute" style={{ inset: "-47.8% -31.69%" }}>
-            <Image src={src} alt="" fill className="max-w-none" />
-          </div>
-        </div>
-      ))}
 
       </PosterViewport>
 
