@@ -453,8 +453,9 @@ export default function Infrastructure() {
               />
             </g>
 
-            {/* the halo grain — one layer beneath the cube group, one
-                355.3px tile clipped to Ellipse 21891's spot, at 18% */}
+            {/* the halo grain — kept but hidden: neither in nor under the
+                cube group read well in review. The generator stays for a
+                possible retune. */}
             <image
               data-noise
               x="206"
@@ -464,6 +465,7 @@ export default function Infrastructure() {
               preserveAspectRatio="none"
               clipPath="url(#infra-grain-clip)"
               opacity="0.18"
+              style={{ display: "none" }}
             />
 
             {/* the three layers, authored coincident (stage 1) */}
