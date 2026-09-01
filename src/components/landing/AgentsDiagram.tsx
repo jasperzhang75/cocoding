@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import gsap from "gsap";
+import { setLoopPlayState } from "@/lib/use-in-view";
 
 /* The agents-card diagram (chips, connectors, verticals) plus its scroll-in
    animation. Vector geometry extracted from Figma via vectorPaths, in PANEL
@@ -172,15 +173,29 @@ export default function AgentsDiagram() {
       return c;
     };
 
+    // Start the loop the first time it scrolls into view, then pause it
+    // whenever it leaves and resume on return — this timeline drives the
+    // heaviest paint on the page (blur + plus-lighter blend), so idling it
+    // off-screen is the biggest battery win.
     let master: gsap.core.Timeline | undefined;
+    // the CSS building-mark shimmer lives on the same card; pause it with us
+    const card = root.closest<HTMLElement>("[data-agents-card]");
     const io = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
-        io.disconnect();
-        master = gsap.timeline({ repeat: -1, repeatDelay: GAP });
-        master.add(makeCycle());
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          if (!master) {
+            master = gsap.timeline({ repeat: -1, repeatDelay: GAP });
+            master.add(makeCycle());
+          } else {
+            master.resume();
+          }
+          setLoopPlayState(card, true);
+        } else {
+          master?.pause();
+          setLoopPlayState(card, false);
+        }
       },
-      { threshold: 0.45 }
+      { rootMargin: "200px", threshold: 0 }
     );
     io.observe(root);
     return () => {

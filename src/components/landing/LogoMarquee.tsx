@@ -1,5 +1,9 @@
+"use client";
+
 import Image from "next/image";
+import { useEffect } from "react";
 import { PARTNER_LOGOS } from "@/lib/trending-projects";
+import { useInView, setLoopPlayState } from "@/lib/use-in-view";
 
 /* Figma node 16710:20517 — 80px vertical padding, 40px logo height, and a
    128px fade at each edge. The design's fade is #0a0a0a; it uses the page
@@ -30,9 +34,14 @@ function LogoRun({ ariaHidden }: { ariaHidden?: boolean }) {
 }
 
 export default function LogoMarquee() {
+  const { ref, inView } = useInView<HTMLElement>();
+  useEffect(() => {
+    setLoopPlayState(ref.current, inView);
+  }, [ref, inView]);
+
   return (
-    <section className="relative overflow-hidden py-20">
-      <div className="marquee-track flex w-max">
+    <section ref={ref} className="relative overflow-hidden py-20">
+      <div data-loop className="marquee-track flex w-max">
         <LogoRun />
         <LogoRun ariaHidden />
       </div>

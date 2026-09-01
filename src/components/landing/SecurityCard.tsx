@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import PosterViewport from "./PosterViewport";
+import { setLoopPlayState } from "@/lib/use-in-view";
 
 /* Card 4 — built-in security, now interactive. Two states, both read from
    Figma (ON: 16629:18699, OFF: 17175:8667):
@@ -52,12 +53,50 @@ export default function SecurityCard() {
   const pillRef = useRef<HTMLDivElement>(null);
   const scrambleId = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const startScramble = () => {
+    const matrix = matrixRef.current;
+    if (!matrix || scrambleId.current) return;
+    const cells = [...matrix.querySelectorAll<HTMLElement>("[data-code]")];
+    scrambleId.current = setInterval(() => {
+      cells.forEach((el) => {
+        let t = el.textContent ?? "";
+        if (!t) return;
+        for (let n = 0; n < 2; n++) {
+          const i = Math.floor(Math.random() * t.length);
+          if (t[i] === " ") continue;
+          t = t.slice(0, i) + randChar() + t.slice(i + 1);
+        }
+        el.textContent = t;
+      });
+    }, 45);
+  };
+
   // populate codes after mount (random content can't be server-rendered)
   useEffect(() => {
     matrixRef.current
       ?.querySelectorAll("[data-code]")
       .forEach((el) => (el.textContent = randCode()));
   }, []);
+
+  // pause the breathing shimmer (and any active scramble) while off-screen
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        setLoopPlayState(root, entry.isIntersecting);
+        if (!entry.isIntersecting && scrambleId.current) {
+          clearInterval(scrambleId.current);
+          scrambleId.current = null;
+        } else if (entry.isIntersecting && !on && !scrambleId.current) {
+          startScramble();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    io.observe(root);
+    return () => io.disconnect();
+  }, [on]);
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -105,21 +144,7 @@ export default function SecurityCard() {
       });
       gsap.to(knobRef.current, { x: -12, duration: dur ?? 0.25, ease: "power2.out" });
       gsap.to(pillRef.current, { backgroundColor: "rgba(181,181,181,0.5)", duration: dur ?? 0.25 });
-      if (!reduced && !scrambleId.current) {
-        const cells = [...matrix.querySelectorAll<HTMLElement>("[data-code]")];
-        scrambleId.current = setInterval(() => {
-          cells.forEach((el) => {
-            let t = el.textContent ?? "";
-            if (!t) return;
-            for (let n = 0; n < 2; n++) {
-              const i = Math.floor(Math.random() * t.length);
-              if (t[i] === " ") continue;
-              t = t.slice(0, i) + randChar() + t.slice(i + 1);
-            }
-            el.textContent = t;
-          });
-        }, 45);
-      }
+      if (!reduced) startScramble();
     }
   }, [on]);
 
@@ -143,6 +168,7 @@ export default function SecurityCard() {
           which is what made the glow vanish in a snap. */}
       <div ref={breatheRef} aria-hidden className="pointer-events-none absolute inset-0">
         <div
+          data-loop
           className="security-breathe absolute inset-0 rounded-xl xl:rounded-none xl:rounded-bl-xl"
           style={{ boxShadow: "inset 0 0 30px 3px rgba(123,255,211,0.45)" }}
         />

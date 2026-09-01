@@ -103,7 +103,7 @@ function Bleed({
 
 function AgentsCard() {
   return (
-    <div className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black md:h-[610px] md:w-[600px] md:max-w-none xl:absolute xl:left-0 xl:top-0 xl:rounded-none xl:rounded-tl-xl xl:border-b-0">
+    <div data-agents-card className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black md:h-[610px] md:w-[600px] md:max-w-none xl:absolute xl:left-0 xl:top-0 xl:rounded-none xl:rounded-tl-xl xl:border-b-0">
       <CardHeader
         leftClass="md:left-[35px]"
         title="Go faster with parallel agents"
@@ -136,6 +136,7 @@ function AgentsCard() {
           <div className="absolute left-[35px] top-[35px] flex items-center gap-2 mix-blend-plus-lighter">
             <div
               aria-hidden
+              data-loop
               className="building-mark h-[9px] w-[17px]"
               style={{
                 maskImage: "url(/features/f1-logo-mark.svg)",
