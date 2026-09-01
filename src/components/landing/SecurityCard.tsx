@@ -91,7 +91,7 @@ export default function SecurityCard() {
       // they are fully hidden (if the user flips back mid-shrink, the
       // overwrite kills this tween and the interval just keeps running)
       gsap.to(maskProg.current, {
-        k: 0, duration: dur ?? 0.7, ease: "power2.in", overwrite: true,
+        k: 0, duration: dur ?? 0.45, ease: "power2.in", overwrite: true,
         onUpdate: applyMask, onComplete: stopScramble,
       });
       gsap.to(knobRef.current, { x: 0, duration: dur ?? 0.25, ease: "power2.out" });
@@ -101,7 +101,7 @@ export default function SecurityCard() {
       gsap.to(grayShieldRef.current, { opacity: 1, duration: dur ?? 0.8 });
       gsap.to(greenShieldRef.current, { opacity: 0, duration: dur ?? 0.8 });
       gsap.to(maskProg.current, {
-        k: 1, duration: dur ?? 0.9, ease: "power2.out", delay: reduced ? 0 : 0.15, overwrite: true, onUpdate: applyMask,
+        k: 1, duration: dur ?? 0.6, ease: "power2.out", delay: reduced ? 0 : 0.1, overwrite: true, onUpdate: applyMask,
       });
       gsap.to(knobRef.current, { x: -12, duration: dur ?? 0.25, ease: "power2.out" });
       gsap.to(pillRef.current, { backgroundColor: "rgba(181,181,181,0.5)", duration: dur ?? 0.25 });

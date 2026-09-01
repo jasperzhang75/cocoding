@@ -152,7 +152,7 @@ export default function TokensCard() {
           backdrop blur 1.75px. Five hidden shadows omitted as intended. */}
       <div
         ref={tipRef}
-        className="absolute left-[409px] top-[214px] h-[90px] w-[155px] rounded-md px-[18px] py-3 backdrop-blur-[1.75px]"
+        className="absolute left-[409px] top-[214px] w-max min-w-[155px] rounded-md px-[18px] py-3 backdrop-blur-[1.75px]"
         style={{
           background:
             "linear-gradient(0deg, rgba(96,96,96,0.04), rgba(96,96,96,0.04)), linear-gradient(0deg, rgba(13,14,16,0.64), rgba(13,14,16,0.64))",
@@ -166,7 +166,7 @@ export default function TokensCard() {
           style={ring("linear-gradient(180deg, rgba(255,255,255,0.09), rgba(100,100,100,0.09))")}
         />
         <div className="flex flex-col gap-1.5">
-          <p className="text-body-xs text-white/50">
+          <p className="whitespace-nowrap text-body-xs text-white/50">
             <TodayDate />
           </p>
           <div className="flex items-center gap-3">
