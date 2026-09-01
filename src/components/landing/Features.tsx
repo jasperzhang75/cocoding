@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { CSSProperties } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
 import AgentsDiagram from "./AgentsDiagram";
+import PosterViewport from "./PosterViewport";
 import TokensCard from "./TokensCard";
 import TerminalCard from "./TerminalCard";
 import SecurityCard from "./SecurityCard";
@@ -58,23 +59,21 @@ const ring = (gradient: string): CSSProperties => ({
 function CardHeader({
   title,
   desc,
-  descWidth,
-  left = 36,
+  descWidthClass,
+  leftClass = "md:left-[36px]",
 }: {
   title: string;
   desc: string;
-  descWidth: number;
-  left?: number;
+  /** e.g. "md:w-[332px]" — the design's fixed copy width from md up */
+  descWidthClass: string;
+  leftClass?: string;
 }) {
   return (
     <div
-      className="absolute top-[35px] flex flex-col gap-3"
-      style={{ left, width: 496 }}
+      className={`flex flex-col gap-3 px-7 pb-6 pt-8 md:absolute md:top-[35px] md:w-[496px] md:p-0 ${leftClass}`}
     >
       <p className="text-heading-sm text-text-primary">{title}</p>
-      <p className="text-body-md text-text-body" style={{ width: descWidth }}>
-        {desc}
-      </p>
+      <p className={`text-body-md text-text-body ${descWidthClass}`}>{desc}</p>
     </div>
   );
 }
@@ -104,14 +103,15 @@ function Bleed({
 
 function AgentsCard() {
   return (
-    <div className="relative h-[610px] w-[600px] overflow-hidden rounded-tl-xl border-l border-r border-t border-white/[0.08] bg-black">
+    <div className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black md:h-[610px] md:w-[600px] md:max-w-none xl:absolute xl:left-0 xl:top-0 xl:rounded-none xl:rounded-tl-xl xl:border-b-0">
       <CardHeader
-        left={35}
+        leftClass="md:left-[35px]"
         title="Go faster with parallel agents"
         desc="Multiple agents run in parallel to handle tasks simultaneously and speed up every build."
-        descWidth={332}
+        descWidthClass="md:w-[332px]"
       />
 
+      <PosterViewport designHeight={610} crop={120} className="md:absolute md:inset-0">
       <div
         className="absolute inset-0"
         style={mask("/features/f1-mask-outer.svg", "970px 814px", "-223px -69px")}
@@ -171,6 +171,7 @@ function AgentsCard() {
           <AgentsDiagram />
         </div>
       </div>
+      </PosterViewport>
     </div>
   );
 }
@@ -180,7 +181,7 @@ function AgentsCard() {
 
 export default function Features() {
   return (
-    <section className="px-10 pt-[71px]">
+    <section className="px-5 pt-[71px] md:px-10">
       <div className="mx-auto w-full max-w-[1200px]">
         {/* Magic UI HyperText: scrambles 400ms after first scroll into view,
             one-shot (hover re-scramble off). */}
@@ -194,7 +195,7 @@ export default function Features() {
         >
           Features
         </HyperText>
-        <h2 className="mt-3 text-display text-text-primary">
+        <h2 className="mt-3 text-heading-lg text-text-primary md:text-display">
           Build faster.
           <br />
           Spend less. Stay in control.
@@ -202,15 +203,14 @@ export default function Features() {
 
         {/* flush bento: columns and rows touch; each card carries exactly
             the edges and corner radii the design gives it */}
-        <div className="mt-[73px] flex justify-center">
-          <div className="flex flex-col">
-            <AgentsCard />
-            <SecurityCard />
-          </div>
-          <div className="flex flex-col">
-            <TokensCard />
-            <TerminalCard />
-          </div>
+        {/* three tiers: base/md stack the cards (independent 12px corners,
+            24px gap, narrative order); xl restores the flush bento with
+            absolute coordinates on each card */}
+        <div className="mt-12 flex flex-col items-center gap-6 md:mt-[73px] xl:relative xl:mx-auto xl:block xl:h-[1074px] xl:w-[1200px]">
+          <AgentsCard />
+          <TokensCard />
+          <TerminalCard />
+          <SecurityCard />
         </div>
       </div>
     </section>

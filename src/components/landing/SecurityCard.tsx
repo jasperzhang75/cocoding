@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
+import PosterViewport from "./PosterViewport";
 
 /* Card 4 — built-in security, now interactive. Two states, both read from
    Figma (ON: 16629:18699, OFF: 17175:8667):
@@ -130,7 +131,7 @@ export default function SecurityCard() {
   return (
     <div
       ref={rootRef}
-      className="relative h-[464px] w-[600px] overflow-hidden rounded-bl-xl border border-white/[0.08]"
+      className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] md:h-[464px] md:w-[600px] md:max-w-none xl:absolute xl:left-0 xl:top-[610px] xl:rounded-none xl:rounded-bl-xl"
       style={{
         background:
           "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
@@ -142,18 +143,19 @@ export default function SecurityCard() {
           which is what made the glow vanish in a snap. */}
       <div ref={breatheRef} aria-hidden className="pointer-events-none absolute inset-0">
         <div
-          className="security-breathe absolute inset-0 rounded-bl-xl"
+          className="security-breathe absolute inset-0 rounded-xl xl:rounded-none xl:rounded-bl-xl"
           style={{ boxShadow: "inset 0 0 30px 3px rgba(123,255,211,0.45)" }}
         />
       </div>
 
-      <div className="absolute left-[33px] top-[35px] w-[496px]">
-        <p className="text-heading-sm text-text-primary">Built-in security, by default</p>
-        <p className="mt-3 w-[394px] text-body-md text-text-body">
+      <div className="px-7 pb-6 pt-8 md:absolute md:left-[33px] md:top-[35px] md:w-[496px] md:p-0">
+        <p className="pr-12 text-heading-sm text-text-primary md:pr-0">Built-in security, by default</p>
+        <p className="mt-3 text-body-md text-text-body md:w-[394px]">
           With robust security safeguards already in place, your data and user information stay protected as you build.
         </p>
       </div>
 
+      <PosterViewport designHeight={464} crop={130} className="md:absolute md:inset-0">
       {/* scrambling pass-codes, clipped to the design's soft blob (OFF).
           Outer div = show/hide (animated); inner keeps the design's 80%. */}
       <div ref={matrixRef} aria-hidden className="pointer-events-none absolute inset-0">
@@ -221,14 +223,17 @@ export default function SecurityCard() {
         </div>
       ))}
 
-      {/* security toggle */}
+      </PosterViewport>
+
+      {/* security toggle — card-level: in the header row at every size
+          (right-anchored at base, the design's absolute spot from md up) */}
       <button
         type="button"
         role="switch"
         aria-checked={on}
         aria-label="Toggle security"
         onClick={() => setOn((v) => !v)}
-        className="absolute left-[529px] top-[35px] block"
+        className="absolute right-7 top-[33px] block md:left-[529px] md:right-auto md:top-[35px]"
       >
         <div
           ref={pillRef}

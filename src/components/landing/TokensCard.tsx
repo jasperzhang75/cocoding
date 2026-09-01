@@ -6,6 +6,7 @@ import type { CSSProperties, ReactNode } from "react";
 import gsap from "gsap";
 import TodayDate from "./TodayDate";
 import DashboardChart from "./DashboardChart";
+import PosterViewport from "./PosterViewport";
 
 /* Card 2 — the tokens dashboard, now a client component for two touches:
    - the dated tooltip drifts a few px against page scroll (subtle parallax
@@ -126,11 +127,11 @@ export default function TokensCard() {
   return (
     <div
       ref={cardRef}
-      className="relative h-[462px] w-[600px] overflow-hidden rounded-tr-xl border-r border-t border-white/[0.08] bg-black"
+      className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black md:h-[462px] md:w-[600px] md:max-w-none xl:absolute xl:left-[600px] xl:top-0 xl:rounded-none xl:rounded-tr-xl xl:border-b-0 xl:border-l-0"
     >
-      <div className="absolute left-[36px] top-[35px] flex flex-col gap-3" style={{ width: 496 }}>
+      <div className="flex flex-col gap-3 px-7 pb-6 pt-8 md:absolute md:left-[36px] md:top-[35px] md:w-[496px] md:p-0">
         <p className="text-heading-sm text-text-primary">Less tokens, more builds</p>
-        <p className="w-[370px] text-body-md text-text-body">
+        <p className="text-body-md text-text-body md:w-[370px]">
           Optimized call to LLMs and smart search in big code base to allow more efficient token usage.
         </p>
       </div>
@@ -139,6 +140,7 @@ export default function TokensCard() {
           chart < tooltip < stats < dashboard label < the two #2E3046 glows,
           which sit ON TOP of everything and tint the whole dashboard. */}
 
+      <PosterViewport designHeight={462} crop={150} className="md:absolute md:inset-0">
       {/* chart — data-driven inline SVG rebuilt from the Figma vectors
           (framer.com-style); see DashboardChart for the layer/mask map */}
       <DashboardChart />
@@ -213,6 +215,7 @@ export default function TokensCard() {
         inset="-200% -92.17%"
         className="pointer-events-none absolute left-[347px] top-[164px] h-[100px] w-[217px]"
       />
+      </PosterViewport>
     </div>
   );
 }
