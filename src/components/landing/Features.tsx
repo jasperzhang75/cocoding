@@ -72,8 +72,8 @@ function CardHeader({
     <div
       className={`flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:top-[35px] xl:w-[496px] xl:p-0 ${leftClass}`}
     >
-      <p className="text-body-md text-text-primary md:text-heading-sm">{title}</p>
-      <p className={`text-body-sm text-text-body md:text-body-md ${descWidthClass}`}>{desc}</p>
+      <p className="text-body-md text-text-primary xl:text-heading-sm">{title}</p>
+      <p className={`text-body-sm text-text-body xl:text-body-md ${descWidthClass}`}>{desc}</p>
     </div>
   );
 }
@@ -103,7 +103,7 @@ function Bleed({
 
 function AgentsCard() {
   return (
-    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
+    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.08] bg-black md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
       <CardHeader
         leftClass="xl:left-[35px]"
         title="Go faster with parallel agents"
@@ -196,7 +196,7 @@ export default function Features() {
         >
           Features
         </HyperText>
-        <h2 className="mt-3 text-heading-lg text-text-primary md:text-display">
+        <h2 className="mt-3 text-heading-lg text-text-primary xl:text-display">
           Build faster.
           <br />
           Spend less. Stay in control.

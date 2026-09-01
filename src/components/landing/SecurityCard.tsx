@@ -156,7 +156,7 @@ export default function SecurityCard() {
   return (
     <div
       ref={rootRef}
-      className="order-4 relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] md:rounded-none md:rounded-bl-xl xl:absolute xl:left-0 xl:top-[610px] xl:h-[464px] xl:w-[600px] xl:max-w-none"
+      className="order-4 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.08] md:rounded-none md:rounded-bl-xl xl:absolute xl:left-0 xl:top-[610px] xl:h-[464px] xl:w-[600px] xl:max-w-none"
       style={{
         background:
           "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
@@ -169,7 +169,7 @@ export default function SecurityCard() {
       <div ref={breatheRef} aria-hidden className="pointer-events-none absolute inset-0">
         <div
           data-loop
-          className="security-breathe absolute inset-0 rounded-xl md:rounded-none md:rounded-bl-xl"
+          className="security-breathe absolute inset-0 rounded-md md:rounded-none md:rounded-bl-xl"
           style={{ boxShadow: "inset 0 0 30px 3px rgba(123,255,211,0.45)" }}
         />
       </div>
@@ -177,7 +177,7 @@ export default function SecurityCard() {
       {/* the pair of blur-250 glows — the card's blue field. Card-level (not
           in the poster) so the mobile top-crop can't clip them: at base they
           cover the whole card; from md up they sit at the design geometry. */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl md:rounded-none md:rounded-bl-xl xl:overflow-visible">
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-md md:rounded-none md:rounded-bl-xl xl:overflow-visible">
         <div className="absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 xl:left-[-99px] xl:top-[77px] xl:h-[523px] xl:w-[789px] xl:translate-x-0 xl:translate-y-0">
           {(["/features/f4-glow-a.svg", "/features/f4-glow-b.svg"] as const).map((src) => (
             <div key={src} className="absolute inset-0">
@@ -190,8 +190,8 @@ export default function SecurityCard() {
       </div>
 
       <div className="px-7 pb-6 pt-8 xl:absolute xl:left-[33px] xl:top-[35px] xl:w-[496px] xl:p-0">
-        <p className="pr-12 text-body-md text-text-primary md:text-heading-sm xl:pr-0">Built-in security, by default</p>
-        <p className="mt-3 text-body-sm text-text-body md:text-body-md xl:w-[394px]">
+        <p className="pr-12 text-body-md text-text-primary xl:pr-0 xl:text-heading-sm">Built-in security, by default</p>
+        <p className="mt-3 text-body-sm text-text-body xl:text-body-md xl:w-[394px]">
           With robust security safeguards already in place, your data and user information stay protected as you build.
         </p>
       </div>
