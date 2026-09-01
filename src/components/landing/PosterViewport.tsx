@@ -48,8 +48,14 @@ export default function PosterViewport({
         return;
       }
       const k = wrap.clientWidth / 600;
-      wrap.style.height = `${(designHeight - crop) * k}px`;
-      stage.style.transform = `translateY(${-crop * k}px) scale(${k})`;
+      /* The crop trims the design's headroom so a shrunken poster still
+         reads. It must FADE OUT as the stage approaches 1:1 — at ~600px
+         wide (a single base column on a large phone/small tablet) the art
+         is essentially full size, and cropping 120-150px off the top there
+         would slice away the subject. */
+      const cropK = crop * Math.min(1, Math.max(0, (1 - k) / 0.25));
+      wrap.style.height = `${(designHeight - cropK) * k}px`;
+      stage.style.transform = `translateY(${-cropK * k}px) scale(${k})`;
     };
     apply();
     const ro = new ResizeObserver(apply);
