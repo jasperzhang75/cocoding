@@ -1,11 +1,11 @@
 import type { CSSProperties } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
 
-/* Infrastructure — the isometric story, currently at stage 2 of 3 (Figma
-   17205:87420): the stacked block split into its three layers, each called
-   out as FRONTEND / BACKEND / DATABASE. Static while the frames are being
-   approved one by one; the scroll scrub that walks 1 -> 2 -> 3 lands after
-   stage 3. Everything is read off the Figma nodes:
+/* Infrastructure — the isometric story, currently at stage 3 of 3 (Figma
+   17205:87636): the three layers settle into a tight stack under a faint
+   blue glow, callouts gone. Static while the frames are being approved one
+   by one; the scroll scrub that walks 1 -> 2 -> 3 comes next. Everything
+   is read off the Figma nodes:
 
    - Each "diamond" is a 90.64x90.64 rounded square (r6) through the
      isometric matrix [[0.866,-0.866],[0.5,0.5]] — the Figma transform
@@ -45,17 +45,18 @@ const ITEMS: { title: string; desc?: string }[] = [
 
 /* Top vertex of each face (Figma y), back-to-front like the Figma children
    order — the front face is the highest one, its black fill occluding the
-   two behind. Stage 2: the stack pulled apart into three layers. All faces
-   share one style: black fill, the A8A8A8 -> 424242 linear stroke at 50%. */
-const FACES = [{ y: 348.3 }, { y: 294.6 }, { y: 240 }];
+   two behind. Stage 3: the layers settle into the tight stack — faces
+   shrink from 90.64 to 65.8 (radius and dashes stay put), the column moves
+   to x372, the callouts are gone, and the group opacity goes 0.9 -> 1. */
+const STACK = { x: 372, size: 65.8 };
+const FACES = [{ y: 343.5 }, { y: 326.1 }, { y: 302.7 }];
 
-/* Right-hand callouts — a hairline from x475 to x715 with a 13px mono label
-   hanging under its right end, one per layer, each centered on its face. */
-const CALLOUTS = [
-  { y: 286, label: "FRONTEND" },
-  { y: 340, label: "BACKEND" },
-  { y: 394, label: "DATABASE" },
-];
+/* The soft blue wash breathing at the top of the panel in this stage:
+   Figma's Vector 24 — a blob at 9% #2D69B7 with a white 26% hairline,
+   layer-blurred 60.6 (feGaussianBlur stdDeviation = radius / 2). Its node
+   transform flips the path vertically into place. */
+const GLOW_PATH =
+  "M 108.96 275.17 C -90.13 262.91 29.3 52.8 108.96 47.23 C 174.8 42.62 181.3 164.63 246.79 174.68 C 304.18 183.48 330.26 125.58 387.43 114.63 C 436.34 105.26 514.01 114.63 514.01 114.63 C 514.01 114.63 619 123.82 658.41 68.06 C 672.13 48.65 671.59 29.52 685.6 10.46 C 736.96 -59.39 742.8 242.9 708.11 256.78 C 673.41 270.67 591.84 296 591.84 296 C 591.84 296 308.05 287.42 108.96 275.17 Z";
 
 export default function Infrastructure() {
   return (
@@ -127,16 +128,40 @@ export default function Infrastructure() {
                 <stop stopColor="#A8A8A8" />
                 <stop offset="1" stopColor="#424242" />
               </linearGradient>
+              <filter
+                id="infra-glow-blur"
+                x="-25%"
+                y="-50%"
+                width="150%"
+                height="200%"
+              >
+                <feGaussianBlur stdDeviation="30.3" />
+              </filter>
             </defs>
 
-            {/* the three layers — group renders at 90% through Plus lighter,
-                exactly the Figma group's blend settings */}
-            <g opacity="0.9" style={{ mixBlendMode: "plus-lighter" }}>
+            {/* the top-of-panel glow sits behind the stack */}
+            <g
+              transform="translate(-15 219) scale(1 -1)"
+              filter="url(#infra-glow-blur)"
+            >
+              <path
+                d={GLOW_PATH}
+                fill="#2D69B7"
+                fillOpacity="0.09"
+                stroke="#FFFFFF"
+                strokeOpacity="0.26"
+                strokeWidth="0.9"
+              />
+            </g>
+
+            {/* the three layers — Plus lighter like the Figma group, now at
+                full opacity for the settled stack */}
+            <g style={{ mixBlendMode: "plus-lighter" }}>
               {FACES.map((f) => (
-                <g key={f.y} transform={`translate(375.5 ${f.y})`}>
+                <g key={f.y} transform={`translate(${STACK.x} ${f.y})`}>
                   <rect
-                    width="90.64"
-                    height="90.64"
+                    width={STACK.size}
+                    height={STACK.size}
                     rx="6"
                     transform="matrix(0.866 0.5 -0.866 0.5 0 0)"
                     fill="#000"
@@ -148,30 +173,6 @@ export default function Infrastructure() {
                 </g>
               ))}
             </g>
-
-            {CALLOUTS.map((c) => (
-              <g key={c.label}>
-                <line
-                  x1="475"
-                  y1={c.y}
-                  x2="715"
-                  y2={c.y}
-                  stroke="#FFFFFF"
-                  strokeOpacity="0.1"
-                  strokeWidth="0.9"
-                />
-                <text
-                  x="715"
-                  y={c.y + 24.5}
-                  textAnchor="end"
-                  fill="#4E4E4E"
-                  fontSize="13"
-                  style={{ fontFamily: "var(--font-geist-mono)" }}
-                >
-                  {c.label}
-                </text>
-              </g>
-            ))}
           </svg>
         </div>
       </div>
