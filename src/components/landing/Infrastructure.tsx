@@ -208,7 +208,8 @@ export default function Infrastructure() {
       gsap.set(faces[0], { y: 351.7, opacity: 0.8 });
       gsap.set(faces[1], { y: 334.3, opacity: 0.8 });
       gsap.set(faces[2], { y: 311, opacity: 0.8 });
-      gsap.set(svg.querySelector("[data-wash]"), { opacity: 0 });
+      // Vector 24 (the wash) stays visible in this frame while its role
+      // in stage 4 is being decided
       const parkedForReview = true as boolean;
       if (parkedForReview) return;
 
@@ -456,7 +457,8 @@ export default function Infrastructure() {
             {/* the three layers, authored coincident (stage 1) */}
             <g data-cube opacity="0.9" style={{ mixBlendMode: "plus-lighter" }}>
               {/* the halo grain — bottom of the cube group per the design,
-                  one 355.3px tile clipped to Ellipse 21891's spot, at 18% */}
+                  one 355.3px tile clipped to Ellipse 21891's spot, at 18%.
+                  Hidden for now — didn't read well; under review. */}
               <image
                 data-noise
                 x="206"
@@ -466,6 +468,7 @@ export default function Infrastructure() {
                 preserveAspectRatio="none"
                 clipPath="url(#infra-grain-clip)"
                 opacity="0.18"
+                style={{ display: "none" }}
               />
               {SPREAD_Y.map((y) => (
                 <g key={y} data-face transform="translate(375.5 294.6)">
