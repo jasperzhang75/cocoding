@@ -73,7 +73,7 @@ function CardHeader({
       className={`flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:top-[35px] xl:w-[496px] xl:p-0 ${leftClass}`}
     >
       <p className="text-body-md text-text-primary xl:text-heading-sm">{title}</p>
-      <p className={`text-body-sm text-text-body xl:text-body-md ${descWidthClass}`}>{desc}</p>
+      <p className={`text-balance text-body-sm text-text-body xl:text-wrap xl:text-body-md ${descWidthClass}`}>{desc}</p>
     </div>
   );
 }
@@ -209,7 +209,7 @@ export default function Features() {
             DESKTOP pairing — two flush columns (1+4 | 2+3), no gap, desktop
             corner scheme, only the posters scale. xl: the absolute bento
             canvas (wrappers dissolve again). */}
-        <div className="mt-12 flex flex-col items-center gap-6 md:mt-[73px] md:flex-row md:items-start md:justify-center md:gap-0 xl:relative xl:mx-auto xl:block xl:h-[1074px] xl:w-[1200px]">
+        <div className="mt-12 flex flex-col items-center gap-6 md:mt-[73px] md:flex-row md:items-stretch md:justify-center md:gap-0 xl:relative xl:mx-auto xl:block xl:h-[1074px] xl:w-[1200px]">
           <div className="contents md:flex md:w-1/2 md:max-w-[600px] md:flex-col xl:contents">
             <AgentsCard />
             <SecurityCard />

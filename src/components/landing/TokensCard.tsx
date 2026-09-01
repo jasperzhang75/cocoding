@@ -151,7 +151,7 @@ export default function TokensCard() {
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="text-body-md text-text-primary xl:text-heading-sm">Less tokens, more builds</p>
-        <p className="text-body-sm text-text-body xl:text-body-md xl:w-[370px]">
+        <p className="text-balance text-body-sm text-text-body xl:text-wrap xl:text-body-md xl:w-[370px]">
           Optimized call to LLMs and smart search in big code base to allow more efficient token usage.
         </p>
       </div>

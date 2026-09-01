@@ -156,7 +156,7 @@ export default function SecurityCard() {
   return (
     <div
       ref={rootRef}
-      className="order-4 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.08] md:rounded-none md:rounded-bl-xl xl:absolute xl:left-0 xl:top-[610px] xl:h-[464px] xl:w-[600px] xl:max-w-none"
+      className="order-4 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.08] md:grow md:rounded-none md:rounded-bl-xl xl:block xl:grow-0 xl:absolute xl:left-0 xl:top-[610px] xl:h-[464px] xl:w-[600px] xl:max-w-none"
       style={{
         background:
           "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
@@ -191,12 +191,12 @@ export default function SecurityCard() {
 
       <div className="px-7 pb-6 pt-8 xl:absolute xl:left-[33px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="pr-12 text-body-md text-text-primary xl:pr-0 xl:text-heading-sm">Built-in security, by default</p>
-        <p className="mt-3 text-body-sm text-text-body xl:text-body-md xl:w-[394px]">
+        <p className="mt-3 text-balance text-body-sm text-text-body xl:text-wrap xl:text-body-md xl:w-[394px]">
           With robust security safeguards already in place, your data and user information stay protected as you build.
         </p>
       </div>
 
-      <PosterViewport designHeight={464} crop={130} className="xl:absolute xl:inset-0">
+      <PosterViewport designHeight={464} crop={130} className="md:mt-auto xl:mt-0 xl:absolute xl:inset-0">
       {/* scrambling pass-codes, clipped to the design's soft blob (OFF).
           Outer div = show/hide (animated); inner keeps the design's 80%. */}
       <div ref={matrixRef} aria-hidden className="pointer-events-none absolute inset-0">
