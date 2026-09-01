@@ -60,6 +60,52 @@ const STACK = { x: 372, y: [343.5, 326.1, 302.7], size: 65.8 };
 /* Frame 4 poses the settled stack ~8px lower with 80% faces. */
 const ENV_STACK_Y = [351.7, 334.3, 311];
 
+/* Frame 4's interactive callouts. One is "lit" at a time: gradient label
+   plus its description; the others rest gray. Clicking any of them takes
+   the light. Copy per the design brief; the 3-line wraps mirror the
+   NETWORK ISOLATION block's measure. */
+const ENV_CALLOUTS = [
+  {
+    key: "ni",
+    label: "NETWORK ISOLATION",
+    x1: 483,
+    x2: 715,
+    y: 281,
+    anchor: "end" as const,
+    desc: [
+      "Firewall exists between each",
+      "module to keep it isolated for",
+      "security",
+    ],
+  },
+  {
+    key: "ab",
+    label: "AUTOMATED BACKUP",
+    x1: 37,
+    x2: 257,
+    y: 359,
+    anchor: "start" as const,
+    desc: [
+      "Application data is backed up",
+      "automatically and ready to",
+      "recover when needed.",
+    ],
+  },
+  {
+    key: "ha",
+    label: "HIGH AVAILABILITY",
+    x1: 483,
+    x2: 715,
+    y: 426,
+    anchor: "end" as const,
+    desc: [
+      "Application stays available",
+      "even when individual services",
+      "encounter issues.",
+    ],
+  },
+];
+
 /* The 3 -> 4 handoff is a PIN plus a TRIGGER: at xl the block goes
    sticky exactly where stage 3 completes and the next RUNWAY px of
    scroll are consumed in place. Unlike stages 1-3 this is NOT scrubbed —
@@ -158,6 +204,33 @@ export default function Infrastructure() {
   const stickyRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const activeCalloutRef = useRef("ni");
+
+  /* Click any callout: it takes the lit style (gradient label + its
+     description), the previously lit one falls back to gray and its
+     description fades away. */
+  const swapCallout = (key: string) => {
+    const svg = svgRef.current;
+    if (!svg || key === activeCalloutRef.current) return;
+    const prev = activeCalloutRef.current;
+    activeCalloutRef.current = key;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const q = (sel: string) => svg.querySelector(sel);
+    const fade = (sel: string, opacity: number, duration: number, delay = 0) =>
+      gsap.to(q(sel), {
+        opacity,
+        duration: reduced ? 0 : duration,
+        delay: reduced ? 0 : delay,
+        ease: "power1.inOut",
+        overwrite: "auto",
+      });
+    fade(`[data-co-active="${prev}"]`, 0, 0.35);
+    fade(`[data-co-base="${prev}"]`, 1, 0.35);
+    fade(`[data-co-desc="${prev}"]`, 0, 0.25);
+    fade(`[data-co-active="${key}"]`, 1, 0.35);
+    fade(`[data-co-base="${key}"]`, 0, 0.35);
+    fade(`[data-co-desc="${key}"]`, 1, 0.3, 0.12);
+  };
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -246,6 +319,8 @@ export default function Infrastructure() {
         0.35
       );
       tl2.to(env.callouts, { opacity: 1, duration: 0.28, ease: "power1.out" }, 1.12);
+      // clicks arm only once the entrance lands; reversing re-disarms them
+      tl2.set(env.callouts, { pointerEvents: "auto" }, 1.38);
 
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         tl.progress(1);
@@ -640,53 +715,83 @@ export default function Infrastructure() {
               </text>
             </g>
 
-            <g data-env-callouts style={{ opacity: 0 }}>
-              {/* NETWORK ISOLATION — highlighted, with its description */}
-              <line x1="483" y1="281" x2="715" y2="281" stroke="#FFFFFF" strokeOpacity="0.1" strokeWidth="0.9" />
-              <text
-                x="715"
-                y="305.5"
-                textAnchor="end"
-                fill="url(#infra-ni-label)"
-                fontSize="13"
-                style={{ fontFamily: "var(--font-geist-mono)" }}
-              >
-                NETWORK ISOLATION
-              </text>
-              <text
-                textAnchor="end"
-                fill="#A1A1A1"
-                fillOpacity="0.6"
-                fontSize="13"
-                style={{ fontFamily: "var(--font-geist-sans)" }}
-              >
-                <tspan x="715" y="330.1">Firewall exists between each</tspan>
-                <tspan x="715" y="349.6">module to keep it isolated for</tspan>
-                <tspan x="715" y="369.1">security</tspan>
-              </text>
-
-              {/* AUTOMATED BACKUP (left) and HIGH AVAILABILITY */}
-              <line x1="37" y1="359" x2="257" y2="359" stroke="#FFFFFF" strokeOpacity="0.1" strokeWidth="0.9" />
-              <text
-                x="37"
-                y="383.5"
-                fill="#4E4E4E"
-                fontSize="13"
-                style={{ fontFamily: "var(--font-geist-mono)" }}
-              >
-                AUTOMATED BACKUP
-              </text>
-              <line x1="483" y1="426" x2="715" y2="426" stroke="#FFFFFF" strokeOpacity="0.1" strokeWidth="0.9" />
-              <text
-                x="715"
-                y="450.5"
-                textAnchor="end"
-                fill="#4E4E4E"
-                fontSize="13"
-                style={{ fontFamily: "var(--font-geist-mono)" }}
-              >
-                HIGH AVAILABILITY
-              </text>
+            {/* interactive callouts — pointer events stay off until the
+                entrance finishes (a .set near the end of tl2) */}
+            <g data-env-callouts style={{ opacity: 0, pointerEvents: "none" }}>
+              {ENV_CALLOUTS.map((c) => {
+                const lx = c.anchor === "end" ? c.x2 : c.x1;
+                const active = c.key === "ni";
+                return (
+                  <g key={c.key}>
+                    <line
+                      x1={c.x1}
+                      y1={c.y}
+                      x2={c.x2}
+                      y2={c.y}
+                      stroke="#FFFFFF"
+                      strokeOpacity="0.1"
+                      strokeWidth="0.9"
+                    />
+                    {/* gray and gradient labels stacked; the swap
+                        crossfades them */}
+                    <text
+                      data-co-base={c.key}
+                      x={lx}
+                      y={c.y + 24.5}
+                      textAnchor={c.anchor}
+                      fill="#4E4E4E"
+                      fontSize="13"
+                      style={{
+                        fontFamily: "var(--font-geist-mono)",
+                        opacity: active ? 0 : 1,
+                      }}
+                    >
+                      {c.label}
+                    </text>
+                    <text
+                      data-co-active={c.key}
+                      x={lx}
+                      y={c.y + 24.5}
+                      textAnchor={c.anchor}
+                      fill="url(#infra-ni-label)"
+                      fontSize="13"
+                      style={{
+                        fontFamily: "var(--font-geist-mono)",
+                        opacity: active ? 1 : 0,
+                      }}
+                    >
+                      {c.label}
+                    </text>
+                    <text
+                      data-co-desc={c.key}
+                      textAnchor={c.anchor}
+                      fill="#A1A1A1"
+                      fillOpacity="0.6"
+                      fontSize="13"
+                      style={{
+                        fontFamily: "var(--font-geist-sans)",
+                        opacity: active ? 1 : 0,
+                      }}
+                    >
+                      {c.desc.map((lineText, i) => (
+                        <tspan key={lineText} x={lx} y={c.y + 49.1 + i * 19.5}>
+                          {lineText}
+                        </tspan>
+                      ))}
+                    </text>
+                    {/* hit zone: the line + label band */}
+                    <rect
+                      x={c.x1}
+                      y={c.y - 10}
+                      width={c.x2 - c.x1}
+                      height={44}
+                      fill="transparent"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => swapCallout(c.key)}
+                    />
+                  </g>
+                );
+              })}
             </g>
 
             {/* callouts — the middle line doubles as BUILD's in stage 1;
