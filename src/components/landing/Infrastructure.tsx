@@ -1,14 +1,18 @@
 import type { CSSProperties } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
 
-/* Infrastructure — stage 1 of the isometric story (Figma 17205:89133).
-   Static for now: the scroll-scrubbed split into three layers arrives with
-   frames 2-3. Everything is read off the Figma nodes:
+/* Infrastructure — the isometric story, currently at stage 2 of 3 (Figma
+   17205:87420): the stacked block split into its three layers, each called
+   out as FRONTEND / BACKEND / DATABASE. Static while the frames are being
+   approved one by one; the scroll scrub that walks 1 -> 2 -> 3 lands after
+   stage 3. Everything is read off the Figma nodes:
 
-   - The "diamond" is a 90.64x90.64 rounded square (r6) through the isometric
-     matrix [[0.866,-0.866],[0.5,0.5]] — same numbers as the Figma transform.
-     The design stacks THREE of them sub-pixel apart (295.3/294.6/295), ready
-     to split; we reproduce all three so later stages only move them.
+   - Each "diamond" is a 90.64x90.64 rounded square (r6) through the
+     isometric matrix [[0.866,-0.866],[0.5,0.5]] — the Figma transform
+     verbatim. Stage 1 stacks all three in one spot (y~295); stage 2 spreads
+     them to 240/294.6/348.3, so animating between stages is pure translation.
+   - Faces: black fill, stroke = A8A8A8 -> 424242 linear at 50%, dashed
+     1.8/1.8 at 0.9. The group composites at 90% via Plus lighter.
    - Panel: 751x679, top corners 10, stroke 0.9 on top/left/right only,
      painted white -> black at 8% (reads as a border fading out downward),
      fill = black under a 2% #3750C8 wash.
@@ -39,13 +43,18 @@ const ITEMS: { title: string; desc?: string }[] = [
   { title: "Analytics and SEO" },
 ];
 
-/* Top vertex of each face (Figma y), bottom-most drawn first. The top two
-   faces sit 0.3-0.7px apart in the design — kept verbatim so this frame is
-   byte-faithful; the split animation will pull them apart later. */
-const FACES = [
-  { y: 295.3, stroke: "#A8A8A8", opacity: 0.5 },
-  { y: 294.6, stroke: "#A8A8A8", opacity: 0.5 },
-  { y: 295, stroke: "url(#infra-face-stroke)", opacity: 1 },
+/* Top vertex of each face (Figma y), back-to-front like the Figma children
+   order — the front face is the highest one, its black fill occluding the
+   two behind. Stage 2: the stack pulled apart into three layers. All faces
+   share one style: black fill, the A8A8A8 -> 424242 linear stroke at 50%. */
+const FACES = [{ y: 348.3 }, { y: 294.6 }, { y: 240 }];
+
+/* Right-hand callouts — a hairline from x475 to x715 with a 13px mono label
+   hanging under its right end, one per layer, each centered on its face. */
+const CALLOUTS = [
+  { y: 286, label: "FRONTEND" },
+  { y: 340, label: "BACKEND" },
+  { y: 394, label: "DATABASE" },
 ];
 
 export default function Infrastructure() {
@@ -113,14 +122,16 @@ export default function Infrastructure() {
             aria-hidden
           >
             <defs>
+              {/* runs down the face's local axis, as the Figma handles do */}
               <linearGradient id="infra-face-stroke" x1="0" y1="0" x2="0" y2="1">
-                <stop stopColor="#8C8C8C" />
-                <stop offset="1" stopColor="#6E6E6E" />
+                <stop stopColor="#A8A8A8" />
+                <stop offset="1" stopColor="#424242" />
               </linearGradient>
             </defs>
 
-            {/* the three coincident layers (group at 90% like the design) */}
-            <g opacity="0.9">
+            {/* the three layers — group renders at 90% through Plus lighter,
+                exactly the Figma group's blend settings */}
+            <g opacity="0.9" style={{ mixBlendMode: "plus-lighter" }}>
               {FACES.map((f) => (
                 <g key={f.y} transform={`translate(375.5 ${f.y})`}>
                   <rect
@@ -129,8 +140,8 @@ export default function Infrastructure() {
                     rx="6"
                     transform="matrix(0.866 0.5 -0.866 0.5 0 0)"
                     fill="#000"
-                    stroke={f.stroke}
-                    strokeOpacity={f.opacity}
+                    stroke="url(#infra-face-stroke)"
+                    strokeOpacity="0.5"
                     strokeWidth="0.9"
                     strokeDasharray="1.8 1.8"
                   />
@@ -138,26 +149,29 @@ export default function Infrastructure() {
               ))}
             </g>
 
-            {/* BUILD callout */}
-            <line
-              x1="475"
-              y1="340"
-              x2="715"
-              y2="340"
-              stroke="#FFFFFF"
-              strokeOpacity="0.1"
-              strokeWidth="0.9"
-            />
-            <text
-              x="715"
-              y="364.5"
-              textAnchor="end"
-              fill="#4E4E4E"
-              fontSize="13"
-              style={{ fontFamily: "var(--font-geist-mono)" }}
-            >
-              BUILD
-            </text>
+            {CALLOUTS.map((c) => (
+              <g key={c.label}>
+                <line
+                  x1="475"
+                  y1={c.y}
+                  x2="715"
+                  y2={c.y}
+                  stroke="#FFFFFF"
+                  strokeOpacity="0.1"
+                  strokeWidth="0.9"
+                />
+                <text
+                  x="715"
+                  y={c.y + 24.5}
+                  textAnchor="end"
+                  fill="#4E4E4E"
+                  fontSize="13"
+                  style={{ fontFamily: "var(--font-geist-mono)" }}
+                >
+                  {c.label}
+                </text>
+              </g>
+            ))}
           </svg>
         </div>
       </div>
