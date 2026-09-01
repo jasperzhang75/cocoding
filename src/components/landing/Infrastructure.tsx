@@ -42,14 +42,20 @@ const ring: CSSProperties = {
 
 /* Seam for part 2 (frames 4-8): the active item will switch and each item
    gets its own scene, so the list is data already. */
-const ITEMS: { title: string; desc?: string }[] = [
+const ITEMS: { key: string; title: string; desc?: string; open?: boolean }[] = [
   {
+    key: "env",
     title: "Production-ready environment",
     desc: "Run builds in a secure production environment with network isolation, high availability, and automated backup — ready for launch.",
+    open: true,
   },
-  { title: "Scalability" },
-  { title: "Integrations" },
-  { title: "Analytics and SEO" },
+  {
+    key: "scalability",
+    title: "Scalability",
+    desc: "Go further with built-in scalable infrastructure, enabling builds to auto-scale with demand, serve users globally through CDN edge delivery, and deploy updates without downtime.",
+  },
+  { key: "integrations", title: "Integrations" },
+  { key: "analytics", title: "Analytics and SEO" },
 ];
 
 /* Face keyframes, back-to-front like the Figma children order (the front
@@ -146,6 +152,56 @@ const CUBE = {
   right: "matrix(0.867 -0.498 -0.002 1 393.38 363.24)",
   icon: "matrix(0.877 0.48 -0.881 0.474 373.729 255)",
 };
+
+/* Frame 5 (SCALABILITY, Figma 16533:14502): the cube OPENS — the lid
+   lifts to y204 and grows to a 97.7 square, the sides spread apart and
+   grow to 111.7, and the stack scales out to SIX thinner layers (59.9
+   squares, solid A8A8A8 50% strokes instead of the gradient) — the
+   auto-scaling picture. A lucide/arrow-down-up mark rides the lifted lid. */
+const CUBE5 = {
+  lid: "matrix(0.866 0.5 -0.866 0.5 375.625 204)",
+  lidSize: 97.7,
+  left: "matrix(0.866 0.5 0 1 291 308.445)",
+  right: "matrix(0.866 -0.5 0 1 362.5 419.288)",
+  sideSize: 111.7,
+  icon: "matrix(0.846 0.534 -0.885 0.465 375.701 212)",
+};
+const STACK5 = { x: 375.85, size: 59.9, y: [370, 352, 333.9], extraY: [318.1, 296.8, 279] };
+
+/* Frame 5's callouts: AUTO-SCALING holds the light (accent -> white
+   gradient label + description at full #A1A1A1, as drawn in this frame). */
+const ENV5_CALLOUTS = [
+  {
+    key: "as",
+    label: "AUTO-SCALING",
+    x1: 475,
+    x2: 715,
+    y: 254,
+    anchor: "end" as const,
+    lit: true,
+    desc: ["Compute and database", "resources scale up and down", "automatically"],
+  },
+  {
+    key: "zdd",
+    label: "ZERO-DOWNTIME DEPLOYS",
+    x1: 37,
+    x2: 257,
+    y: 359,
+    anchor: "start" as const,
+    lit: false,
+    desc: [],
+  },
+  {
+    key: "ged",
+    label: "GLOBAL EDGE DELIVERY",
+    x1: 475,
+    x2: 715,
+    y: 425,
+    anchor: "end" as const,
+    lit: false,
+    desc: [],
+  },
+];
 
 /* Figma's Vector 24 — the stage-3 wash at the top of the panel: a blob at
    9% #2D69B7 with a white 26% hairline, layer-blurred 60.6 (feGaussianBlur
@@ -371,6 +427,51 @@ export default function Infrastructure() {
         0.7
       );
 
+      /* TEMP — frame 5 (SCALABILITY) static review: run the story through
+         frame 4, then pose everything per 16533:14502. The 4 -> 5
+         transition will fold these sets into a timeline and restore the
+         scroll binding. */
+      tl.progress(1);
+      tl2.progress(1);
+      const S = (sel: string, vars: gsap.TweenVars) =>
+        gsap.set(svg.querySelectorAll(sel), vars);
+      // the cube opens
+      S('[data-cube-face="lid"]', { attr: { transform: CUBE5.lid } });
+      S('[data-cube-face="lid"] rect', { attr: { width: CUBE5.lidSize, height: CUBE5.lidSize } });
+      S('[data-cube-face="left"]', { attr: { transform: CUBE5.left } });
+      S('[data-cube-face="right"]', { attr: { transform: CUBE5.right } });
+      S('[data-cube-face="left"] rect, [data-cube-face="right"] rect', {
+        attr: { width: CUBE5.sideSize, height: CUBE5.sideSize },
+      });
+      // frame 5 paints both sides the same
+      S('[data-cube-face="right"] rect:first-child', { attr: { fill: "#617FDC" } });
+      S('[data-cube-face="right"] rect:nth-child(2)', { attr: { "fill-opacity": 0.05 } });
+      // the stack scales out to six thin layers with solid strokes
+      faces.forEach((f, i) => {
+        gsap.set(f, { x: STACK5.x, y: STACK5.y[i] });
+      });
+      S("[data-face] rect", {
+        attr: { width: STACK5.size, height: STACK5.size, stroke: "#A8A8A8" },
+      });
+      S("[data-face-x]", { opacity: 0.8 });
+      // lid mark swaps to the arrow, legend row 1 to INFRASTRUCTURE
+      S("[data-cube-mark]", { opacity: 0 });
+      S("[data-mark5]", { opacity: 1 });
+      S("[data-legend-env]", { opacity: 0 });
+      S("[data-legend-infra]", { opacity: 1 });
+      // callouts swap to the frame-5 trio
+      S("[data-env-callouts]", { opacity: 0 });
+      S("[data-env5-callouts]", { opacity: 1 });
+      // left column: environment folds up, Scalability takes the light
+      const H = (sel: string, vars: gsap.TweenVars) =>
+        gsap.set(section.querySelectorAll(sel), vars);
+      H('[data-item-title="env"]', { opacity: 0.2 });
+      H('[data-item-desc="env"]', { display: "none" });
+      H('[data-item-title="scalability"]', { opacity: 1 });
+      H('[data-item-desc="scalability"]', { display: "block" });
+      const parkedForFrame5 = true as boolean;
+      if (parkedForFrame5) return;
+
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         tl.progress(1);
         tl2.progress(1);
@@ -506,13 +607,14 @@ export default function Infrastructure() {
 
           <div className="mt-[72px] xl:w-[350px]">
             {ITEMS.map((item, i) => (
-              <div key={item.title}>
+              <div key={item.key}>
                 {i > 0 && (
                   <div className="mt-[26px] h-px bg-white/[0.06] opacity-70" />
                 )}
                 <p
+                  data-item-title={item.key}
                   className={
-                    item.desc
+                    item.open
                       ? "text-heading-sm text-text-primary"
                       : "mt-[26px] text-heading-sm text-text-primary opacity-20"
                   }
@@ -520,7 +622,11 @@ export default function Infrastructure() {
                   {item.title}
                 </p>
                 {item.desc && (
-                  <p className="mt-3 text-body-md text-text-body/60">
+                  <p
+                    data-item-desc={item.key}
+                    className="mt-3 text-body-md text-text-body/60"
+                    style={item.open ? undefined : { display: "none" }}
+                  >
                     {item.desc}
                   </p>
                 )}
@@ -583,6 +689,10 @@ export default function Infrastructure() {
               <linearGradient id="infra-ni-label" x1="0" y1="0" x2="1" y2="0">
                 <stop stopColor="#577ADC" />
                 <stop offset="1" stopColor="#D5D9E5" />
+              </linearGradient>
+              <linearGradient id="infra-as-label" x1="0" y1="0" x2="1" y2="0">
+                <stop stopColor="#6C91F9" />
+                <stop offset="1" stopColor="#FFFFFF" />
               </linearGradient>
               <clipPath id="infra-grain-clip">
                 <ellipse cx="368.5" cy="370.5" rx="162.5" ry="177.5" />
@@ -683,6 +793,28 @@ export default function Infrastructure() {
                   />
                 </g>
               ))}
+              {/* frame 5 scales the stack out to six layers — the three
+                  extras exist only from that frame on */}
+              {STACK5.extraY.map((y) => (
+                <g
+                  key={y}
+                  data-face-x
+                  transform={`translate(${STACK5.x} ${y})`}
+                  style={{ opacity: 0 }}
+                >
+                  <rect
+                    width={STACK5.size}
+                    height={STACK5.size}
+                    rx="6"
+                    transform="matrix(0.866 0.5 -0.866 0.5 0 0)"
+                    fill="#000"
+                    stroke="#A8A8A8"
+                    strokeOpacity="0.5"
+                    strokeWidth="0.9"
+                    strokeDasharray="1.8 1.8"
+                  />
+                </g>
+              ))}
             </g>
 
             {/* frame 4: the cube around the stack, its mark, the legend,
@@ -695,6 +827,7 @@ export default function Infrastructure() {
                 local space) crossfaded by the swap. */}
             <g data-env-cube style={{ opacity: 0, pointerEvents: "none" }}>
               <g
+                data-cube-face="lid"
                 transform={CUBE.lid}
                 onClick={() => swapCallout("ni")}
                 style={{ cursor: "pointer" }}
@@ -713,6 +846,7 @@ export default function Infrastructure() {
                 />
               </g>
               <g
+                data-cube-face="left"
                 transform={CUBE.left}
                 onClick={() => swapCallout("ab")}
                 style={{ cursor: "pointer" }}
@@ -732,6 +866,7 @@ export default function Infrastructure() {
                 />
               </g>
               <g
+                data-cube-face="right"
                 transform={CUBE.right}
                 onClick={() => swapCallout("ha")}
                 style={{ cursor: "pointer" }}
@@ -771,12 +906,35 @@ export default function Infrastructure() {
                   <path d="M5 15H5.00833" strokeWidth="0.75" />
                 </g>
               </g>
+              {/* frame 5's lid mark — lucide/arrow-down-up, same lit/dim
+                  split for its own future flicker */}
+              <g
+                data-mark5
+                transform={CUBE5.icon}
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="0.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ opacity: 0 }}
+              >
+                <g data-mark5-a>
+                  <path d="M2.5 13.3333L5.83333 16.6667L9.16667 13.3333" />
+                  <path d="M5.83333 16.6667V3.33333" />
+                </g>
+                <g data-mark5-b opacity="0.3">
+                  <path d="M17.5 6.66667L14.1667 3.33333L10.8333 6.66667" />
+                  <path d="M14.1667 3.33333V16.6667" />
+                </g>
+              </g>
             </g>
 
-            {/* legend */}
+            {/* legend — row 1's label swaps per frame (ENVIRONMENT in
+                frame 4, INFRASTRUCTURE from frame 5 on) */}
             <g data-env-legend style={{ opacity: 0 }}>
               <rect x="36" y="36" width="28" height="28" rx="8" fill="#617CCE" fillOpacity="0.1" />
               <text
+                data-legend-env
                 x="76"
                 y="53.5"
                 fill="#4E4E4E"
@@ -784,6 +942,16 @@ export default function Infrastructure() {
                 style={{ fontFamily: "var(--font-geist-mono)" }}
               >
                 ENVIRONMENT
+              </text>
+              <text
+                data-legend-infra
+                x="76"
+                y="53.5"
+                fill="#4E4E4E"
+                fontSize="13"
+                style={{ fontFamily: "var(--font-geist-mono)", opacity: 0 }}
+              >
+                INFRASTRUCTURE
               </text>
               <rect
                 x="36"
@@ -882,6 +1050,51 @@ export default function Infrastructure() {
                       style={{ cursor: "pointer" }}
                       onClick={() => swapCallout(c.key)}
                     />
+                  </g>
+                );
+              })}
+            </g>
+
+            {/* frame 5's callouts — static for now; interactivity comes
+                with the frame-5 pass */}
+            <g data-env5-callouts style={{ opacity: 0, pointerEvents: "none" }}>
+              {ENV5_CALLOUTS.map((c) => {
+                const lx = c.anchor === "end" ? c.x2 : c.x1;
+                return (
+                  <g key={c.key}>
+                    <line
+                      x1={c.x1}
+                      y1={c.y}
+                      x2={c.x2}
+                      y2={c.y}
+                      stroke="#FFFFFF"
+                      strokeOpacity="0.1"
+                      strokeWidth="0.9"
+                    />
+                    <text
+                      x={lx}
+                      y={c.y + 24.5}
+                      textAnchor={c.anchor}
+                      fill={c.lit ? "url(#infra-as-label)" : "#4E4E4E"}
+                      fontSize="13"
+                      style={{ fontFamily: "var(--font-geist-mono)" }}
+                    >
+                      {c.label}
+                    </text>
+                    {c.desc.length > 0 && (
+                      <text
+                        textAnchor={c.anchor}
+                        fill="#A1A1A1"
+                        fontSize="13"
+                        style={{ fontFamily: "var(--font-geist-sans)" }}
+                      >
+                        {c.desc.map((lineText, i) => (
+                          <tspan key={lineText} x={lx} y={c.y + 49.1 + i * 19.5}>
+                            {lineText}
+                          </tspan>
+                        ))}
+                      </text>
+                    )}
                   </g>
                 );
               })}
