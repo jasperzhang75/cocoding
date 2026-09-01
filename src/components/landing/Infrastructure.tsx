@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { HyperText } from "@/components/magicui/hyper-text";
 
 /* Infrastructure — stage 1 of the isometric story (Figma 17205:89133).
    Static for now: the scroll-scrubbed split into three layers arrives with
@@ -53,9 +54,17 @@ export default function Infrastructure() {
       <div className="relative mx-auto max-w-[600px] md:max-w-none xl:h-[686px] xl:w-[1200px] xl:max-w-none">
         {/* left column */}
         <div className="xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
-          <p className="font-mono text-indicator uppercase text-accent">
+          {/* same one-shot scramble as the FEATURES eyebrow */}
+          <HyperText
+            as="p"
+            startOnView
+            delay={400}
+            duration={800}
+            animateOnHover={false}
+            className="font-mono text-indicator uppercase text-accent"
+          >
             Infrastructure
-          </p>
+          </HyperText>
           <h2 className="mt-3 text-heading-lg text-text-primary xl:text-display">
             Build freely.
             <br />
@@ -78,7 +87,7 @@ export default function Infrastructure() {
                   {item.title}
                 </p>
                 {item.desc && (
-                  <p className="mt-[38px] text-body-md text-text-body/60">
+                  <p className="mt-3 text-body-md text-text-body/60">
                     {item.desc}
                   </p>
                 )}
