@@ -205,6 +205,35 @@ export default function Infrastructure() {
   const panelRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const activeCalloutRef = useRef("ni");
+  const flickerRef = useRef<gsap.core.Timeline | null>(null);
+
+  /* Server-light flicker: whenever the mark lights up, its bright and dim
+     rows trade places a few quick times before settling — a small
+     attention call. Skipped under reduced motion. */
+  const flickerMark = () => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const a = svg.querySelector("[data-mark-a]");
+    const b = svg.querySelector("[data-mark-b]");
+    if (!a || !b) return;
+    flickerRef.current?.kill();
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      gsap.set(a, { opacity: 1 });
+      gsap.set(b, { opacity: 0.3 });
+      return;
+    }
+    const DIM = 0.3;
+    const STEP = 0.09;
+    const fl = gsap.timeline();
+    for (let i = 0; i < 5; i++) {
+      const swapped = i % 2 === 0;
+      fl.set(a, { opacity: swapped ? DIM : 1 }, i * STEP);
+      fl.set(b, { opacity: swapped ? 1 : DIM }, i * STEP);
+    }
+    fl.set(a, { opacity: 1 }, 5 * STEP);
+    fl.set(b, { opacity: DIM }, 5 * STEP);
+    flickerRef.current = fl;
+  };
 
   /* Click any callout: it takes the lit style (gradient label + its
      description), the previously lit one falls back to gray and its
@@ -231,10 +260,12 @@ export default function Infrastructure() {
     fade(`[data-co-base="${key}"]`, 0, 0.35);
     fade(`[data-co-desc="${key}"]`, 1, 0.3, 0.12);
     // the light moves across the cube with the selection; the server mark
-    // exists only while the lid holds it
+    // exists only while the lid holds it, flickering as it lights
     fade(`[data-face-lit="${prev}"]`, 0, 0.35);
     fade(`[data-face-lit="${key}"]`, 1, 0.35);
     fade("[data-cube-mark]", key === "ni" ? 1 : 0, 0.3);
+    if (key === "ni") flickerMark();
+    else flickerRef.current?.kill();
   };
 
   useEffect(() => {
@@ -326,6 +357,14 @@ export default function Infrastructure() {
       tl2.to(env.callouts, { opacity: 1, duration: 0.28, ease: "power1.out" }, 1.12);
       // clicks arm only once the entrance lands; reversing re-disarms them
       tl2.set([env.callouts, env.cube], { pointerEvents: "auto" }, 1.38);
+      // the mark's first light-up flickers too (not when reversing out)
+      tl2.call(
+        () => {
+          if (!tl2.reversed()) flickerMark();
+        },
+        [],
+        0.7
+      );
 
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         tl.progress(1);
@@ -716,13 +755,16 @@ export default function Infrastructure() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <path d="M16.6667 1.66667H3.33333C2.41286 1.66667 1.66667 2.41286 1.66667 3.33333V6.66667C1.66667 7.58714 2.41286 8.33333 3.33333 8.33333H16.6667C17.5871 8.33333 18.3333 7.58714 18.3333 6.66667V3.33333C18.3333 2.41286 17.5871 1.66667 16.6667 1.66667Z" />
-                <path
-                  d="M16.6667 11.6667H3.33333C2.41286 11.6667 1.66667 12.4129 1.66667 13.3333V16.6667C1.66667 17.5871 2.41286 18.3333 3.33333 18.3333H16.6667C17.5871 18.3333 18.3333 17.5871 18.3333 16.6667V13.3333C18.3333 12.4129 17.5871 11.6667 16.6667 11.6667Z"
-                  strokeOpacity="0.3"
-                />
-                <path d="M5 5H5.00833" strokeWidth="0.75" />
-                <path d="M5 15H5.00833" strokeOpacity="0.3" strokeWidth="0.75" />
+                {/* the two server rows, split so the lit/dim halves can
+                    trade places in the attention flicker */}
+                <g data-mark-a>
+                  <path d="M16.6667 1.66667H3.33333C2.41286 1.66667 1.66667 2.41286 1.66667 3.33333V6.66667C1.66667 7.58714 2.41286 8.33333 3.33333 8.33333H16.6667C17.5871 8.33333 18.3333 7.58714 18.3333 6.66667V3.33333C18.3333 2.41286 17.5871 1.66667 16.6667 1.66667Z" />
+                  <path d="M5 5H5.00833" strokeWidth="0.75" />
+                </g>
+                <g data-mark-b opacity="0.3">
+                  <path d="M16.6667 11.6667H3.33333C2.41286 11.6667 1.66667 12.4129 1.66667 13.3333V16.6667C1.66667 17.5871 2.41286 18.3333 3.33333 18.3333H16.6667C17.5871 18.3333 18.3333 17.5871 18.3333 16.6667V13.3333C18.3333 12.4129 17.5871 11.6667 16.6667 11.6667Z" />
+                  <path d="M5 15H5.00833" strokeWidth="0.75" />
+                </g>
               </g>
             </g>
 
