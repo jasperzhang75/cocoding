@@ -344,36 +344,51 @@ export default function Infrastructure() {
               </pattern>
             </defs>
 
-            {/* frame-4 glows behind everything: the blurred ambient
-                (Ellipse 21888) and the cube halo with its grain
-                (Ellipse 21891) */}
-            <g data-env-back style={{ mixBlendMode: "plus-lighter" }}>
-              <ellipse
-                cx="370.5"
-                cy="344.5"
-                rx="149.5"
-                ry="107.5"
-                fill="url(#infra-env-radial)"
-                opacity="0.52"
-                filter="url(#infra-env-blur)"
-              />
-              <ellipse
-                cx="368.5"
-                cy="370.5"
-                rx="162.5"
-                ry="177.5"
-                fill="url(#infra-env-radial)"
-                opacity="0.52"
-              />
-              <ellipse
-                cx="368.5"
-                cy="370.5"
-                rx="162.5"
-                ry="177.5"
-                fill="url(#infra-noise)"
-                opacity="0.23"
-                style={{ mixBlendMode: "lighten" }}
-              />
+            {/* frame-4 glows behind everything, both compositing NORMALLY
+                (adding them was what read as a solid ball). Each ellipse's
+                two Figma fills — the 52% radial with the grain tiled over
+                it at LIGHTEN — live in an isolated group so the lighten
+                stays inside the paint stack, as in Figma. */}
+            <g data-env-back>
+              {/* Ellipse 21891 — the cube halo, sharp */}
+              <g style={{ isolation: "isolate" }}>
+                <ellipse
+                  cx="317.5"
+                  cy="295.5"
+                  rx="162.5"
+                  ry="177.5"
+                  fill="url(#infra-env-radial)"
+                  opacity="0.52"
+                />
+                <ellipse
+                  cx="317.5"
+                  cy="295.5"
+                  rx="162.5"
+                  ry="177.5"
+                  fill="url(#infra-noise)"
+                  opacity="0.23"
+                  style={{ mixBlendMode: "lighten" }}
+                />
+              </g>
+              {/* Ellipse 21888 — the ambient, layer-blurred 300 */}
+              <g style={{ isolation: "isolate" }} filter="url(#infra-env-blur)">
+                <ellipse
+                  cx="370.5"
+                  cy="344.5"
+                  rx="149.5"
+                  ry="107.5"
+                  fill="url(#infra-env-radial)"
+                  opacity="0.52"
+                />
+                <ellipse
+                  cx="370.5"
+                  cy="344.5"
+                  rx="149.5"
+                  ry="107.5"
+                  fill="url(#infra-noise)"
+                  style={{ mixBlendMode: "lighten" }}
+                />
+              </g>
             </g>
 
             {/* the blue wash rides along through stages 1-3 */}
