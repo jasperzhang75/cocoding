@@ -132,8 +132,10 @@ const ENTER = 0.35;
 const BACK = 0.2;
 /* A second runway segment carries the 4 -> 5 handoff with the same
    trigger logic; title clicks in the left column drive the same
-   transition, so the scroll side only acts on threshold CROSSINGS. */
+   transitions, so the scroll side only acts on threshold CROSSINGS.
+   Segment three carries 5 -> 6 the same way. */
 const RUNWAY2 = 560;
+const RUNWAY3 = 560;
 
 /* Right-hand callouts: a hairline from x475 to x715 with a 13px mono label
    hanging under its right end. BUILD (stage 1) sits on the same middle
@@ -308,8 +310,7 @@ export default function Infrastructure() {
   const activeFaceRef = useRef("lid");
   const frameRef = useRef(4); // which scene frame the cube is showing
   const flickerRef = useRef<gsap.core.Timeline | null>(null);
-  const goFrame5Ref = useRef<() => void>(() => {});
-  const backFrame4Ref = useRef<() => void>(() => {});
+  const goToFrameRef = useRef<(target: number) => void>(() => {});
 
   /* Mark flicker: whenever a lid mark lights up, its bright and dim rows
      trade places — fast at first, each gap 1.5x the last — before
@@ -575,6 +576,83 @@ export default function Infrastructure() {
         return t;
       };
 
+      /* The 5 -> 6 transition (INTEGRATIONS): frame 5's LEFT FACE is the
+         seed — everything else of the open cube leaves, the face flies to
+         the first card's spot while shrinking, the lit card crossfades
+         over it, and the other five cards accordion out to the right on a
+         rubber-band ease (spacing overshoots, then snaps back). Lazy for
+         fresh height measurements, like tl3. */
+      let tl4: gsap.core.Timeline | null = null;
+      const ensureTl4 = () => {
+        if (tl4) return tl4;
+        const sq = (sel: string) => svg.querySelector(sel);
+        const sqa = (sel: string) => svg.querySelectorAll(sel);
+        const scalDesc = section.querySelector<HTMLElement>('[data-item-desc="scalability"]')!;
+        const intDesc = section.querySelector<HTMLElement>('[data-item-desc="integrations"]')!;
+        gsap.set(intDesc, { display: "block", height: "auto", opacity: 0 });
+        const intH = intDesc.offsetHeight;
+        gsap.set(intDesc, { height: 0, marginTop: 0 });
+        const leftFace = sq('[data-cube-face="left"]');
+        const t = gsap.timeline({ paused: true });
+        // frame 5 leaves — all but the left face
+        t.to(
+          [
+            sq("[data-env5-callouts]"),
+            sq("[data-mark5]"),
+            sq("[data-env-legend]"),
+            sq('[data-cube-face="lid"]'),
+            sq('[data-cube-face="right"]'),
+          ],
+          { opacity: 0, duration: 0.3 },
+          0
+        );
+        t.set(sq("[data-env5-callouts]"), { pointerEvents: "none" }, 0.01);
+        t.to(sqa("[data-face], [data-face-x]"), { opacity: 0, duration: 0.3 }, 0.05);
+        // the left face flies to the first card's spot, shrinking
+        t.to(leftFace, { attr: { transform: "matrix(0.87 0.5 0 1 204 256.25)" }, duration: 0.55, ease: "power2.inOut" }, 0.1);
+        t.to(sqa('[data-cube-face="left"] rect'), { attr: { width: 77.5, height: 77.5 }, duration: 0.55, ease: "power2.inOut" }, 0.1);
+        // stack the six cards on that spot, then reveal the group — the
+        // lit card crossfades over the arriving face
+        t.set(sqa("[data-card6]"), { x: 204, y: 256.25 }, 0.45);
+        t.set(sq("[data-frame6]"), { opacity: 1 }, 0.45);
+        t.fromTo(sq("[data-f6-tab]"), { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.6);
+        t.fromTo(sq("[data-f6-callout]"), { opacity: 0 }, { opacity: 1, duration: 0.35 }, 1.15);
+        t.fromTo(sq('[data-card6="storage"]'), { opacity: 0 }, { opacity: 1, duration: 0.25 }, 0.5);
+        t.to(leftFace, { opacity: 0, duration: 0.2 }, 0.6);
+        // accordion: cards spring right, overshooting their spacing like a
+        // rubber band before settling (DOM order is reversed, so element i
+        // is CARDS6[5 - i]; storage, drawn last, stays put)
+        svg.querySelectorAll("[data-card6]").forEach((el, i) => {
+          const card = CARDS6[5 - i];
+          if (card.key === "storage") return;
+          t.to(
+            el,
+            { x: card.x, y: card.y, duration: 1.1, ease: "elastic.out(1, 0.62)" },
+            0.62 + (5 - i) * 0.055
+          );
+        });
+        // left column: Scalability folds, Integrations expands
+        t.to(section.querySelector('[data-item-title="scalability"]'), { opacity: 0.2, duration: 0.4 }, 0.1);
+        t.to(scalDesc, { height: 0, opacity: 0, marginTop: 0, duration: 0.45, ease: "power2.inOut" }, 0.1);
+        t.set(scalDesc, { display: "none" }, 0.56);
+        t.to(section.querySelector('[data-item-title="integrations"]'), { opacity: 1, duration: 0.4 }, 0.45);
+        t.fromTo(
+          intDesc,
+          { height: 0, opacity: 0, marginTop: 0 },
+          { height: intH, opacity: 1, marginTop: 12, duration: 0.5, ease: "power2.inOut" },
+          0.5
+        );
+        // returning to frame 5 re-lights the arrow
+        t.eventCallback("onReverseComplete", () => {
+          flickerMark(true);
+          const f = afterTl4Reverse;
+          afterTl4Reverse = null;
+          f?.();
+        });
+        tl4 = t;
+        return t;
+      };
+
       const normalizeToLid = () => {
         if (activeFaceRef.current !== "lid") {
           gsap.to(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1, duration: 0.3, overwrite: "auto" });
@@ -582,18 +660,29 @@ export default function Infrastructure() {
           activeFaceRef.current = "lid";
         }
       };
-      const goFrame5 = () => {
-        if (frameRef.current === 5 || tl2.progress() < 1) return;
+
+      /* One-shot chain hooks so 4 <-> 6 can pass through 5. */
+      let afterTl3Complete: (() => void) | null = null;
+      let afterTl4Reverse: (() => void) | null = null;
+
+      const stepTo5 = () => {
         frameRef.current = 5;
         flickerRef.current?.kill();
         normalizeToLid();
         gsap.delayedCall(0.35, () => resetCallouts(4));
         const t = ensureTl3();
-        if (reduced) t.progress(1);
-        else t.play();
+        t.eventCallback("onComplete", () => {
+          const f = afterTl3Complete;
+          afterTl3Complete = null;
+          f?.();
+        });
+        if (reduced) {
+          t.progress(1);
+          afterTl3Complete?.();
+          afterTl3Complete = null;
+        } else t.play();
       };
-      const backFrame4 = () => {
-        if (frameRef.current !== 5) return;
+      const stepBack4 = () => {
         frameRef.current = 4;
         flickerRef.current?.kill();
         normalizeToLid();
@@ -602,33 +691,51 @@ export default function Infrastructure() {
         if (reduced) t.progress(0);
         else t.reverse();
       };
-      goFrame5Ref.current = goFrame5;
-      backFrame4Ref.current = backFrame4;
+      const stepTo6 = () => {
+        frameRef.current = 6;
+        flickerRef.current?.kill();
+        normalizeToLid();
+        gsap.delayedCall(0.35, () => resetCallouts(5));
+        const t = ensureTl4();
+        if (reduced) {
+          t.progress(1);
+        } else t.play();
+      };
+      const stepBack5 = () => {
+        frameRef.current = 5;
+        flickerRef.current?.kill();
+        const t = ensureTl4();
+        if (reduced) {
+          t.progress(0);
+          afterTl4Reverse = null;
+        } else t.reverse();
+      };
 
-      /* TEMP — frame 6 (INTEGRATIONS) static review: run the story
-         through frame 5, then pose frame 6. The 5 -> 6 transition will
-         fold these sets into a timeline and restore the scroll binding. */
-      tl.progress(1);
-      tl2.progress(1);
-      frameRef.current = 5;
-      ensureTl3().progress(1);
-      flickerRef.current?.kill();
-      const S6 = (sel: string, vars: gsap.TweenVars) =>
-        gsap.set(svg.querySelectorAll(sel), vars);
-      S6("[data-env5-callouts]", { opacity: 0 });
-      S6("[data-mark5]", { opacity: 0 });
-      S6("[data-env-legend]", { opacity: 0 });
-      S6("[data-env-cube]", { opacity: 0 });
-      S6("[data-face], [data-face-x]", { opacity: 0 });
-      S6("[data-frame6]", { opacity: 1 });
-      const H6 = (sel: string, vars: gsap.TweenVars) =>
-        gsap.set(section.querySelectorAll(sel), vars);
-      H6('[data-item-title="scalability"]', { opacity: 0.2 });
-      H6('[data-item-desc="scalability"]', { display: "none" });
-      H6('[data-item-title="integrations"]', { opacity: 1 });
-      H6('[data-item-desc="integrations"]', { display: "block", height: "auto", opacity: 1, marginTop: 12 });
-      const parkedForFrame6 = true as boolean;
-      if (parkedForFrame6) return;
+      const goTo = (target: number) => {
+        const cur = frameRef.current;
+        if (target === cur) return;
+        if (cur === 4 && tl2.progress() < 1) return; // frame 4 not landed
+        if (target > cur) {
+          if (cur === 4) {
+            if (target === 6) afterTl3Complete = () => stepTo6();
+            stepTo5();
+          } else if (cur === 5) {
+            if (ensureTl3().isActive()) {
+              afterTl3Complete = () => stepTo6(); // mid 4->5: queue it
+              return;
+            }
+            stepTo6();
+          }
+        } else {
+          if (cur === 6) {
+            if (target === 4) afterTl4Reverse = () => stepBack4();
+            stepBack5();
+          } else if (cur === 5) {
+            stepBack4();
+          }
+        }
+      };
+      goToFrameRef.current = goTo;
 
       if (reduced) {
         tl.progress(1);
@@ -657,7 +764,8 @@ export default function Infrastructure() {
       const sticky = stickyRef.current!;
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
       let entered = false; // the runway trigger's state (with hysteresis)
-      let prevQ2 = 0; // second segment acts on threshold CROSSINGS only
+      let prevQ2 = 0; // segments 2 and 3 act on threshold CROSSINGS only
+      let prevQ3 = 0;
       // a deep landing can complete frame 4 with no further scroll event;
       // re-check the second segment once the entrance finishes
       tl2.eventCallback("onComplete", () => apply());
@@ -680,14 +788,15 @@ export default function Infrastructure() {
            reads 300px of overtravel past stage 3. */
         let q: number;
         let q2: number;
+        let q3: number;
         if (window.matchMedia("(min-width: 1280px)").matches) {
           const secTop = section.getBoundingClientRect().top;
           const stickyTop = sticky.getBoundingClientRect().top;
           /* the page currently ends right after this section, so at some
-             viewport heights the full runway isn't reachable — both
+             viewport heights the full runway isn't reachable — all
              segments scale to what today's page allows; retires itself as
              sections follow */
-          const total = RUNWAY + RUNWAY2;
+          const total = RUNWAY + RUNWAY2 + RUNWAY3;
           const reachable = Math.min(
             total,
             stickyTop - (secTop - Math.max(0, maxScroll))
@@ -696,12 +805,17 @@ export default function Infrastructure() {
           const travel = stickyTop - secTop;
           q = travel / Math.max(1, RUNWAY * scale);
           q2 = (travel - RUNWAY * scale) / Math.max(1, RUNWAY2 * scale);
+          q3 =
+            (travel - (RUNWAY + RUNWAY2) * scale) /
+            Math.max(1, RUNWAY3 * scale);
         } else {
           q = (r1 - r.top) / 300;
           q2 = (r1 - r.top - 300) / 300;
+          q3 = (r1 - r.top - 600) / 300;
         }
         q = clamp01(q);
         q2 = clamp01(q2);
+        q3 = clamp01(q3);
         if (!entered && q >= ENTER) {
           entered = true;
           tl2.play();
@@ -709,11 +823,14 @@ export default function Infrastructure() {
           entered = false;
           tl2.reverse();
         }
-        /* segment 2 fires only on crossings, so a title-click transition
+        /* segments 2/3 fire only on crossings, so a title-click transition
            isn't fought by the scroll position it happened at */
-        if (prevQ2 < ENTER && q2 >= ENTER) goFrame5();
-        else if (prevQ2 > BACK && q2 <= BACK) backFrame4();
+        if (prevQ2 < ENTER && q2 >= ENTER) goTo(5);
+        else if (prevQ2 > BACK && q2 <= BACK && frameRef.current === 5) goTo(4);
         prevQ2 = q2;
+        if (prevQ3 < ENTER && q3 >= ENTER) goTo(6);
+        else if (prevQ3 > BACK && q3 <= BACK && frameRef.current === 6) goTo(5);
+        prevQ3 = q3;
       };
 
       let listening = false;
@@ -792,16 +909,16 @@ export default function Infrastructure() {
                     (item.open
                       ? "text-heading-sm text-text-primary"
                       : "mt-[26px] text-heading-sm text-text-primary opacity-20") +
-                    (item.key === "env" || item.key === "scalability"
-                      ? " cursor-pointer"
-                      : "")
+                    (item.key !== "analytics" ? " cursor-pointer" : "")
                   }
                   onClick={
-                    item.key === "scalability"
-                      ? () => goFrame5Ref.current()
-                      : item.key === "env"
-                        ? () => backFrame4Ref.current()
-                        : undefined
+                    item.key === "env"
+                      ? () => goToFrameRef.current(4)
+                      : item.key === "scalability"
+                        ? () => goToFrameRef.current(5)
+                        : item.key === "integrations"
+                          ? () => goToFrameRef.current(6)
+                          : undefined
                   }
                 >
                   {item.title}
@@ -1252,6 +1369,7 @@ export default function Infrastructure() {
                 tab, first card lit with its STORAGE callout. Static — the
                 5 -> 6 transition and card interactivity come next. */}
             <g data-frame6 style={{ opacity: 0 }}>
+              <g data-f6-tab>
               <text
                 x="299"
                 y="216.5"
@@ -1272,6 +1390,7 @@ export default function Infrastructure() {
               >
                 CONNECTORS
               </text>
+              </g>
 
               {[...CARDS6].reverse().map((c) => {
                 const lit = c.key === "storage";
@@ -1316,6 +1435,7 @@ export default function Infrastructure() {
               })}
 
               {/* STORAGE callout hanging under the lit card */}
+              <g data-f6-callout>
               <line
                 x1="238"
                 y1="391"
@@ -1335,6 +1455,7 @@ export default function Infrastructure() {
               >
                 STORAGE
               </text>
+              </g>
             </g>
 
             {/* frame 5's callouts — same click-to-light structure as frame
@@ -1463,7 +1584,7 @@ export default function Infrastructure() {
       <div
         aria-hidden
         className="hidden xl:block"
-        style={{ height: RUNWAY + RUNWAY2 }}
+        style={{ height: RUNWAY + RUNWAY2 + RUNWAY3 }}
       />
     </section>
   );
