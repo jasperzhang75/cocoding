@@ -66,13 +66,14 @@ const STACK = { x: 372, y: [343.5, 326.1, 302.7], size: 65.8 };
 /* Frame 4 poses the settled stack ~8px lower with 80% faces. */
 const ENV_STACK_Y = [351.7, 334.3, 311];
 
-/* Frame 4's interactive callouts. One is "lit" at a time: gradient label
-   plus its description; the others rest gray. Clicking any of them takes
-   the light. Copy per the design brief; the 3-line wraps mirror the
-   NETWORK ISOLATION block's measure. */
+/* Interactive callouts, frames 4 and 5. One is "lit" at a time: gradient
+   label plus its description; the others rest gray. Clicking a callout OR
+   its cube face takes the light — `face` binds the two. The line wraps
+   mirror the NETWORK ISOLATION block's measure. */
 const ENV_CALLOUTS = [
   {
     key: "ni",
+    face: "lid",
     label: "NETWORK ISOLATION",
     x1: 483,
     x2: 715,
@@ -86,6 +87,7 @@ const ENV_CALLOUTS = [
   },
   {
     key: "ab",
+    face: "left",
     label: "AUTOMATED BACKUP",
     x1: 37,
     x2: 257,
@@ -99,6 +101,7 @@ const ENV_CALLOUTS = [
   },
   {
     key: "ha",
+    face: "right",
     label: "HIGH AVAILABILITY",
     x1: 483,
     x2: 715,
@@ -122,6 +125,10 @@ const ENV_CALLOUTS = [
 const RUNWAY = 640;
 const ENTER = 0.35;
 const BACK = 0.2;
+/* A second runway segment carries the 4 -> 5 handoff with the same
+   trigger logic; title clicks in the left column drive the same
+   transition, so the scroll side only acts on threshold CROSSINGS. */
+const RUNWAY2 = 560;
 
 /* Right-hand callouts: a hairline from x475 to x715 with a 13px mono label
    hanging under its right end. BUILD (stage 1) sits on the same middle
@@ -168,40 +175,57 @@ const CUBE5 = {
 };
 const STACK5 = { x: 375.85, size: 59.9, y: [370, 352, 333.9], extraY: [318.1, 296.8, 279] };
 
-/* Frame 5's callouts: AUTO-SCALING holds the light (accent -> white
-   gradient label + description at full #A1A1A1, as drawn in this frame). */
+/* Frame 5's callouts: AUTO-SCALING holds the light by default (accent ->
+   white gradient label + description at full #A1A1A1, as this frame draws
+   it). Same click-to-light behavior as frame 4. */
 const ENV5_CALLOUTS = [
   {
     key: "as",
+    face: "lid",
     label: "AUTO-SCALING",
     x1: 475,
     x2: 715,
     y: 254,
     anchor: "end" as const,
-    lit: true,
     desc: ["Compute and database", "resources scale up and down", "automatically"],
   },
   {
     key: "zdd",
+    face: "left",
     label: "ZERO-DOWNTIME DEPLOYS",
     x1: 37,
     x2: 257,
     y: 359,
     anchor: "start" as const,
-    lit: false,
-    desc: [],
+    desc: [
+      "Rolling updates push new",
+      "versions live without",
+      "interrupting active users or",
+      "sessions.",
+    ],
   },
   {
     key: "ged",
+    face: "right",
     label: "GLOBAL EDGE DELIVERY",
     x1: 475,
     x2: 715,
     y: 425,
     anchor: "end" as const,
-    lit: false,
-    desc: [],
+    desc: [
+      "Built-in CDN and edge caching",
+      "serve your app from locations",
+      "closer to each user for faster",
+      "delivery.",
+    ],
   },
 ];
+
+/* Which callout each face lights, per frame. */
+const FACE_MAP: Record<number, Record<string, string>> = {
+  4: { lid: "ni", left: "ab", right: "ha" },
+  5: { lid: "as", left: "zdd", right: "ged" },
+};
 
 /* Figma's Vector 24 — the stage-3 wash at the top of the panel: a blob at
    9% #2D69B7 with a white 26% hairline, layer-blurred 60.6 (feGaussianBlur
@@ -260,8 +284,11 @@ export default function Infrastructure() {
   const stickyRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const activeCalloutRef = useRef("ni");
+  const activeFaceRef = useRef("lid");
+  const frameRef = useRef(4); // which scene frame the cube is showing
   const flickerRef = useRef<gsap.core.Timeline | null>(null);
+  const goFrame5Ref = useRef<() => void>(() => {});
+  const backFrame4Ref = useRef<() => void>(() => {});
 
   /* Server-light flicker: whenever the mark lights up, its bright and dim
      rows trade places a few quick times before settling — a small
@@ -296,37 +323,59 @@ export default function Infrastructure() {
     flickerRef.current = fl;
   };
 
-  /* Click any callout: it takes the lit style (gradient label + its
-     description), the previously lit one falls back to gray and its
-     description fades away. */
-  const swapCallout = (key: string) => {
+  /* Click a cube face or its callout: that face takes the light — the lit
+     overlay crosses to it, its callout gains the gradient label and
+     description, the previous holder falls back. Works in frames 4 and 5,
+     each with its own callout trio (data-co-* vs data-co5-*). */
+  const swapFace = (face: string) => {
     const svg = svgRef.current;
-    if (!svg || key === activeCalloutRef.current) return;
-    const prev = activeCalloutRef.current;
-    activeCalloutRef.current = key;
+    if (!svg || face === activeFaceRef.current) return;
+    const frame = frameRef.current;
+    const prevFace = activeFaceRef.current;
+    activeFaceRef.current = face;
+    const co = FACE_MAP[frame][face];
+    const prevCo = FACE_MAP[frame][prevFace];
+    const p = frame === 5 ? "data-co5" : "data-co";
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const q = (sel: string) => svg.querySelector(sel);
     const fade = (sel: string, opacity: number, duration: number, delay = 0) =>
-      gsap.to(q(sel), {
+      gsap.to(svg.querySelector(sel), {
         opacity,
         duration: reduced ? 0 : duration,
         delay: reduced ? 0 : delay,
         ease: "power1.inOut",
         overwrite: "auto",
       });
-    fade(`[data-co-active="${prev}"]`, 0, 0.35);
-    fade(`[data-co-base="${prev}"]`, 1, 0.35);
-    fade(`[data-co-desc="${prev}"]`, 0, 0.25);
-    fade(`[data-co-active="${key}"]`, 1, 0.35);
-    fade(`[data-co-base="${key}"]`, 0, 0.35);
-    fade(`[data-co-desc="${key}"]`, 1, 0.3, 0.12);
-    // the light moves across the cube with the selection; the server mark
-    // exists only while the lid holds it, flickering as it lights
-    fade(`[data-face-lit="${prev}"]`, 0, 0.35);
-    fade(`[data-face-lit="${key}"]`, 1, 0.35);
-    fade("[data-cube-mark]", key === "ni" ? 1 : 0, 0.3);
-    if (key === "ni") flickerMark();
-    else flickerRef.current?.kill();
+    fade(`[${p}-active="${prevCo}"]`, 0, 0.35);
+    fade(`[${p}-base="${prevCo}"]`, 1, 0.35);
+    fade(`[${p}-desc="${prevCo}"]`, 0, 0.25);
+    fade(`[${p}-active="${co}"]`, 1, 0.35);
+    fade(`[${p}-base="${co}"]`, 0, 0.35);
+    fade(`[${p}-desc="${co}"]`, 1, 0.3, 0.12);
+    // the light crosses the cube; the lid's mark exists only while the
+    // lid holds it (frame 4's server flickers awake, frame 5's arrow not)
+    fade(`[data-face-lit="${prevFace}"]`, 0, 0.35);
+    fade(`[data-face-lit="${face}"]`, 1, 0.35);
+    const mark = frame === 5 ? "[data-mark5]" : "[data-cube-mark]";
+    fade(mark, face === "lid" ? 1 : 0, 0.3);
+    if (frame === 4) {
+      if (face === "lid") flickerMark();
+      else flickerRef.current?.kill();
+    }
+  };
+
+  /* Reset a frame's callout internals to its default holder (lid) — run
+     while that frame's group is hidden during a 4<->5 transition. */
+  const resetCallouts = (frame: number) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const p = frame === 5 ? "data-co5" : "data-co";
+    const def = FACE_MAP[frame].lid;
+    for (const c of frame === 5 ? ENV5_CALLOUTS : ENV_CALLOUTS) {
+      const lit = c.key === def;
+      gsap.set(svg.querySelector(`[${p}-active="${c.key}"]`), { opacity: lit ? 1 : 0 });
+      gsap.set(svg.querySelector(`[${p}-base="${c.key}"]`), { opacity: lit ? 0 : 1 });
+      gsap.set(svg.querySelector(`[${p}-desc="${c.key}"]`), { opacity: lit ? 1 : 0 });
+    }
   };
 
   useEffect(() => {
@@ -427,52 +476,107 @@ export default function Infrastructure() {
         0.7
       );
 
-      /* TEMP — frame 5 (SCALABILITY) static review: run the story through
-         frame 4, then pose everything per 16533:14502. The 4 -> 5
-         transition will fold these sets into a timeline and restore the
-         scroll binding. */
-      tl.progress(1);
-      tl2.progress(1);
-      const S = (sel: string, vars: gsap.TweenVars) =>
-        gsap.set(svg.querySelectorAll(sel), vars);
-      // the cube opens
-      S('[data-cube-face="lid"]', { attr: { transform: CUBE5.lid } });
-      S('[data-cube-face="lid"] rect', { attr: { width: CUBE5.lidSize, height: CUBE5.lidSize } });
-      S('[data-cube-face="left"]', { attr: { transform: CUBE5.left } });
-      S('[data-cube-face="right"]', { attr: { transform: CUBE5.right } });
-      S('[data-cube-face="left"] rect, [data-cube-face="right"] rect', {
-        attr: { width: CUBE5.sideSize, height: CUBE5.sideSize },
-      });
-      // frame 5 paints both sides the same
-      S('[data-cube-face="right"] rect:first-child', { attr: { fill: "#617FDC" } });
-      S('[data-cube-face="right"] rect:nth-child(2)', { attr: { "fill-opacity": 0.05 } });
-      // the stack scales out to six thin layers with solid strokes
-      faces.forEach((f, i) => {
-        gsap.set(f, { x: STACK5.x, y: STACK5.y[i] });
-      });
-      S("[data-face] rect", {
-        attr: { width: STACK5.size, height: STACK5.size, stroke: "#A8A8A8" },
-      });
-      S("[data-face-x]", { opacity: 0.8 });
-      // lid mark swaps to the arrow, legend row 1 to INFRASTRUCTURE
-      S("[data-cube-mark]", { opacity: 0 });
-      S("[data-mark5]", { opacity: 1 });
-      S("[data-legend-env]", { opacity: 0 });
-      S("[data-legend-infra]", { opacity: 1 });
-      // callouts swap to the frame-5 trio
-      S("[data-env-callouts]", { opacity: 0 });
-      S("[data-env5-callouts]", { opacity: 1 });
-      // left column: environment folds up, Scalability takes the light
-      const H = (sel: string, vars: gsap.TweenVars) =>
-        gsap.set(section.querySelectorAll(sel), vars);
-      H('[data-item-title="env"]', { opacity: 0.2 });
-      H('[data-item-desc="env"]', { display: "none" });
-      H('[data-item-title="scalability"]', { opacity: 1 });
-      H('[data-item-desc="scalability"]', { display: "block" });
-      const parkedForFrame5 = true as boolean;
-      if (parkedForFrame5) return;
+      /* The 4 -> 5 transition (SCALABILITY): built lazily on first use so
+         the left column's description heights are measured fresh. Timed
+         (~1.6s) like the frame-4 entrance — fired by threshold crossings
+         in the second runway segment or by clicking the left column's
+         titles; reverse plays it backwards. */
+      const reduced = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+      let tl3: gsap.core.Timeline | null = null;
+      const ensureTl3 = () => {
+        if (tl3) return tl3;
+        const sq = (sel: string) => svg.querySelector(sel);
+        const sqa = (sel: string) => svg.querySelectorAll(sel);
+        const envDesc = section.querySelector<HTMLElement>('[data-item-desc="env"]')!;
+        const scalDesc = section.querySelector<HTMLElement>('[data-item-desc="scalability"]')!;
+        // measure the closed description at today's width
+        gsap.set(scalDesc, { display: "block", height: "auto", opacity: 0 });
+        const scalH = scalDesc.offsetHeight;
+        gsap.set(scalDesc, { height: 0, marginTop: 0 });
+        const OPEN = { duration: 0.9, ease: "power2.inOut" } as const;
+        const t = gsap.timeline({ paused: true });
+        // frame-4 furniture out
+        t.to(sq("[data-env-callouts]"), { opacity: 0, duration: 0.3 }, 0);
+        t.set(sq("[data-env-callouts]"), { pointerEvents: "none" }, 0.01);
+        t.to(sq("[data-legend-env]"), { opacity: 0, duration: 0.3 }, 0.05);
+        t.to(sq("[data-cube-mark]"), { opacity: 0, duration: 0.25 }, 0);
+        // the cube opens and grows
+        t.to(sq('[data-cube-face="lid"]'), { attr: { transform: CUBE5.lid }, ...OPEN }, 0.15);
+        t.to(sqa('[data-cube-face="lid"] rect'), { attr: { width: CUBE5.lidSize, height: CUBE5.lidSize }, ...OPEN }, 0.15);
+        t.to(sq('[data-cube-face="left"]'), { attr: { transform: CUBE5.left }, ...OPEN }, 0.15);
+        t.to(sq('[data-cube-face="right"]'), { attr: { transform: CUBE5.right }, ...OPEN }, 0.15);
+        t.to(sqa('[data-cube-face="left"] rect, [data-cube-face="right"] rect'), { attr: { width: CUBE5.sideSize, height: CUBE5.sideSize }, ...OPEN }, 0.15);
+        t.to(sq('[data-cube-face="right"] rect:first-child'), { fill: "#617FDC", duration: 0.5 }, 0.3);
+        t.to(sq('[data-cube-face="right"] rect:nth-child(2)'), { fillOpacity: 0.05, duration: 0.5 }, 0.3);
+        // the stack shrinks a touch and re-seats...
+        faces.forEach((f, i) => {
+          t.to(f, { x: STACK5.x, y: STACK5.y[i], duration: 0.7, ease: "power2.inOut" }, 0.25);
+        });
+        t.to(sqa("[data-face] rect"), { attr: { width: STACK5.size, height: STACK5.size }, duration: 0.7, ease: "power2.inOut" }, 0.25);
+        t.set(sqa("[data-face] rect"), { attr: { stroke: "#A8A8A8" } }, 0.5);
+        // ...and three extra layers pop out upward, one after another
+        svg.querySelectorAll("[data-face-x]").forEach((x, i) => {
+          t.fromTo(
+            x,
+            { y: STACK5.extraY[i] + 18, opacity: 0 },
+            { y: STACK5.extraY[i], opacity: 0.8, duration: 0.45, ease: "power2.out" },
+            0.6 + i * 0.09
+          );
+        });
+        // legend row 1, lid mark, callouts
+        t.to(sq("[data-legend-infra]"), { opacity: 1, duration: 0.35 }, 0.5);
+        t.to(sq("[data-mark5]"), { opacity: 1, duration: 0.3 }, 0.85);
+        t.to(sq("[data-env5-callouts]"), { opacity: 1, duration: 0.35 }, 0.95);
+        t.set(sq("[data-env5-callouts]"), { pointerEvents: "auto" }, 1.3);
+        // left column: environment folds, Scalability expands
+        t.to(section.querySelector('[data-item-title="env"]'), { opacity: 0.2, duration: 0.4 }, 0.1);
+        t.to(envDesc, { height: 0, opacity: 0, marginTop: 0, duration: 0.45, ease: "power2.inOut" }, 0.1);
+        t.set(envDesc, { display: "none" }, 0.56);
+        t.to(section.querySelector('[data-item-title="scalability"]'), { opacity: 1, duration: 0.4 }, 0.45);
+        t.fromTo(
+          scalDesc,
+          { height: 0, opacity: 0, marginTop: 0 },
+          { height: scalH, opacity: 1, marginTop: 12, duration: 0.5, ease: "power2.inOut" },
+          0.5
+        );
+        // returning to frame 4 re-lights the server mark
+        t.eventCallback("onReverseComplete", () => flickerMark());
+        tl3 = t;
+        return t;
+      };
 
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const normalizeToLid = () => {
+        if (activeFaceRef.current !== "lid") {
+          gsap.to(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1, duration: 0.3, overwrite: "auto" });
+          gsap.to(svg.querySelectorAll('[data-face-lit="left"], [data-face-lit="right"]'), { opacity: 0, duration: 0.3, overwrite: "auto" });
+          activeFaceRef.current = "lid";
+        }
+      };
+      const goFrame5 = () => {
+        if (frameRef.current === 5 || tl2.progress() < 1) return;
+        frameRef.current = 5;
+        flickerRef.current?.kill();
+        normalizeToLid();
+        gsap.delayedCall(0.35, () => resetCallouts(4));
+        const t = ensureTl3();
+        if (reduced) t.progress(1);
+        else t.play();
+      };
+      const backFrame4 = () => {
+        if (frameRef.current !== 5) return;
+        frameRef.current = 4;
+        normalizeToLid();
+        gsap.delayedCall(0.35, () => resetCallouts(5));
+        const t = ensureTl3();
+        if (reduced) t.progress(0);
+        else t.reverse();
+      };
+      goFrame5Ref.current = goFrame5;
+      backFrame4Ref.current = backFrame4;
+
+      if (reduced) {
         tl.progress(1);
         tl2.progress(1);
         return;
@@ -499,6 +603,10 @@ export default function Infrastructure() {
       const sticky = stickyRef.current!;
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
       let entered = false; // the runway trigger's state (with hysteresis)
+      let prevQ2 = 0; // second segment acts on threshold CROSSINGS only
+      // a deep landing can complete frame 4 with no further scroll event;
+      // re-check the second segment once the entrance finishes
+      tl2.eventCallback("onComplete", () => apply());
       const apply = () => {
         const r = panel.getBoundingClientRect();
         const k = r.height / 679; // render scale of the 751x679 stage
@@ -517,21 +625,29 @@ export default function Infrastructure() {
            there is no pin yet (responsive pass pending): the same trigger
            reads 300px of overtravel past stage 3. */
         let q: number;
+        let q2: number;
         if (window.matchMedia("(min-width: 1280px)").matches) {
           const secTop = section.getBoundingClientRect().top;
           const stickyTop = sticky.getBoundingClientRect().top;
           /* the page currently ends right after this section, so at some
-             viewport heights the full runway isn't reachable — scale to
-             what today's page allows; retires itself as sections follow */
+             viewport heights the full runway isn't reachable — both
+             segments scale to what today's page allows; retires itself as
+             sections follow */
+          const total = RUNWAY + RUNWAY2;
           const reachable = Math.min(
-            RUNWAY,
+            total,
             stickyTop - (secTop - Math.max(0, maxScroll))
           );
-          q = (stickyTop - secTop) / Math.max(1, reachable);
+          const scale = reachable / total;
+          const travel = stickyTop - secTop;
+          q = travel / Math.max(1, RUNWAY * scale);
+          q2 = (travel - RUNWAY * scale) / Math.max(1, RUNWAY2 * scale);
         } else {
           q = (r1 - r.top) / 300;
+          q2 = (r1 - r.top - 300) / 300;
         }
         q = clamp01(q);
+        q2 = clamp01(q2);
         if (!entered && q >= ENTER) {
           entered = true;
           tl2.play();
@@ -539,6 +655,11 @@ export default function Infrastructure() {
           entered = false;
           tl2.reverse();
         }
+        /* segment 2 fires only on crossings, so a title-click transition
+           isn't fought by the scroll position it happened at */
+        if (prevQ2 < ENTER && q2 >= ENTER) goFrame5();
+        else if (prevQ2 > BACK && q2 <= BACK) backFrame4();
+        prevQ2 = q2;
       };
 
       let listening = false;
@@ -614,9 +735,19 @@ export default function Infrastructure() {
                 <p
                   data-item-title={item.key}
                   className={
-                    item.open
+                    (item.open
                       ? "text-heading-sm text-text-primary"
-                      : "mt-[26px] text-heading-sm text-text-primary opacity-20"
+                      : "mt-[26px] text-heading-sm text-text-primary opacity-20") +
+                    (item.key === "env" || item.key === "scalability"
+                      ? " cursor-pointer"
+                      : "")
+                  }
+                  onClick={
+                    item.key === "scalability"
+                      ? () => goFrame5Ref.current()
+                      : item.key === "env"
+                        ? () => backFrame4Ref.current()
+                        : undefined
                   }
                 >
                   {item.title}
@@ -829,7 +960,7 @@ export default function Infrastructure() {
               <g
                 data-cube-face="lid"
                 transform={CUBE.lid}
-                onClick={() => swapCallout("ni")}
+                onClick={() => swapFace("lid")}
                 style={{ cursor: "pointer" }}
               >
                 <rect width="85.2" height="85.2" rx="6" fill="#617FDC" fillOpacity="0.1" />
@@ -848,7 +979,7 @@ export default function Infrastructure() {
               <g
                 data-cube-face="left"
                 transform={CUBE.left}
-                onClick={() => swapCallout("ab")}
+                onClick={() => swapFace("left")}
                 style={{ cursor: "pointer" }}
               >
                 <rect width="85.3" height="85.1" rx="8" fill="#617FDC" fillOpacity="0.1" />
@@ -868,7 +999,7 @@ export default function Infrastructure() {
               <g
                 data-cube-face="right"
                 transform={CUBE.right}
-                onClick={() => swapCallout("ha")}
+                onClick={() => swapFace("right")}
                 style={{ cursor: "pointer" }}
               >
                 <rect width="85.3" height="85.1" rx="8" fill="#617CCE" fillOpacity="0.1" />
@@ -1048,18 +1179,19 @@ export default function Infrastructure() {
                       height={44}
                       fill="transparent"
                       style={{ cursor: "pointer" }}
-                      onClick={() => swapCallout(c.key)}
+                      onClick={() => swapFace(c.face)}
                     />
                   </g>
                 );
               })}
             </g>
 
-            {/* frame 5's callouts — static for now; interactivity comes
-                with the frame-5 pass */}
+            {/* frame 5's callouts — same click-to-light structure as frame
+                4's, with its own gradient and full-#A1A1A1 descriptions */}
             <g data-env5-callouts style={{ opacity: 0, pointerEvents: "none" }}>
               {ENV5_CALLOUTS.map((c) => {
                 const lx = c.anchor === "end" ? c.x2 : c.x1;
+                const active = c.face === "lid";
                 return (
                   <g key={c.key}>
                     <line
@@ -1072,29 +1204,58 @@ export default function Infrastructure() {
                       strokeWidth="0.9"
                     />
                     <text
+                      data-co5-base={c.key}
                       x={lx}
                       y={c.y + 24.5}
                       textAnchor={c.anchor}
-                      fill={c.lit ? "url(#infra-as-label)" : "#4E4E4E"}
+                      fill="#4E4E4E"
                       fontSize="13"
-                      style={{ fontFamily: "var(--font-geist-mono)" }}
+                      style={{
+                        fontFamily: "var(--font-geist-mono)",
+                        opacity: active ? 0 : 1,
+                      }}
                     >
                       {c.label}
                     </text>
-                    {c.desc.length > 0 && (
-                      <text
-                        textAnchor={c.anchor}
-                        fill="#A1A1A1"
-                        fontSize="13"
-                        style={{ fontFamily: "var(--font-geist-sans)" }}
-                      >
-                        {c.desc.map((lineText, i) => (
-                          <tspan key={lineText} x={lx} y={c.y + 49.1 + i * 19.5}>
-                            {lineText}
-                          </tspan>
-                        ))}
-                      </text>
-                    )}
+                    <text
+                      data-co5-active={c.key}
+                      x={lx}
+                      y={c.y + 24.5}
+                      textAnchor={c.anchor}
+                      fill="url(#infra-as-label)"
+                      fontSize="13"
+                      style={{
+                        fontFamily: "var(--font-geist-mono)",
+                        opacity: active ? 1 : 0,
+                      }}
+                    >
+                      {c.label}
+                    </text>
+                    <text
+                      data-co5-desc={c.key}
+                      textAnchor={c.anchor}
+                      fill="#A1A1A1"
+                      fontSize="13"
+                      style={{
+                        fontFamily: "var(--font-geist-sans)",
+                        opacity: active ? 1 : 0,
+                      }}
+                    >
+                      {c.desc.map((lineText, i) => (
+                        <tspan key={lineText} x={lx} y={c.y + 49.1 + i * 19.5}>
+                          {lineText}
+                        </tspan>
+                      ))}
+                    </text>
+                    <rect
+                      x={c.x1}
+                      y={c.y - 10}
+                      width={c.x2 - c.x1}
+                      height={44}
+                      fill="transparent"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => swapFace(c.face)}
+                    />
                   </g>
                 );
               })}
@@ -1145,9 +1306,14 @@ export default function Infrastructure() {
       </div>
       </div>
 
-      {/* pin runway — the scroll consumed by the stage-3 hold and the
-          3 -> 4 entrance while the block above stays put */}
-      <div aria-hidden className="hidden xl:block" style={{ height: RUNWAY }} />
+      {/* pin runway — the scroll consumed while the block stays put:
+          segment 1 = the stage-3 hold + frame-4 entrance, segment 2 =
+          the 4 -> 5 handoff */}
+      <div
+        aria-hidden
+        className="hidden xl:block"
+        style={{ height: RUNWAY + RUNWAY2 }}
+      />
     </section>
   );
 }
