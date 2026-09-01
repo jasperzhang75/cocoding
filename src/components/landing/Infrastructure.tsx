@@ -208,8 +208,7 @@ export default function Infrastructure() {
       gsap.set(faces[0], { y: 351.7, opacity: 0.8 });
       gsap.set(faces[1], { y: 334.3, opacity: 0.8 });
       gsap.set(faces[2], { y: 311, opacity: 0.8 });
-      // Vector 24 (the wash) stays visible in this frame while its role
-      // in stage 4 is being decided
+      gsap.set(svg.querySelector("[data-wash]"), { opacity: 0 });
       const parkedForReview = true as boolean;
       if (parkedForReview) return;
 
