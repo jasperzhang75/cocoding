@@ -73,12 +73,14 @@ const GLOW_PATH =
 
 export default function Infrastructure() {
   const sectionRef = useRef<HTMLElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
+    const panel = panelRef.current;
     const svg = svgRef.current;
-    if (!section || !svg) return;
+    if (!section || !panel || !svg) return;
 
     const ctx = gsap.context(() => {
       const faces = Array.from(
@@ -125,14 +127,35 @@ export default function Infrastructure() {
         return;
       }
 
-      /* Scroll binding: p runs 0 (section top at the viewport bottom) to 1
-         (section centered), scaled 1.1 so stage 3 has ALREADY settled just
-         before dead center. Direct progress writes — no smoothing. */
+      /* Scroll binding, anchored to the DIAMOND CLUSTER's own screen
+         position — not the section, whose top runs a full 400px+ ahead of
+         the artwork (anchoring there played the whole split below the
+         fold, so all you ever saw was the tail of the shrink). Fixed
+         design coordinates, no feedback from the animation itself.
+
+         p = 0  when the cluster's full excursion range (y240-439, the
+                split's outermost vertices) has cleared the viewport bottom
+                — the resting diamond rides in as plain scroll before that,
+                and every phase after it plays entirely on screen.
+         p = 1  when the cluster's center line (y340) reaches half-viewport
+                — just before the section is dead center, per the spec —
+                OR at the deepest scroll the page allows today, whichever
+                comes first. The section is currently the page's last block
+                so its center can't reach mid-viewport yet; the clamp makes
+                the full story reachable now and retires itself as later
+                sections add scroll room below.
+         Direct progress writes — no smoothing. */
       const apply = () => {
-        const r = section.getBoundingClientRect();
+        const r = panel.getBoundingClientRect();
+        const k = r.height / 679; // render scale of the 751x679 stage
         const vh = window.innerHeight;
-        const raw = (vh - r.top) / ((vh + r.height) / 2);
-        tl.progress(Math.min(1, Math.max(0, raw * 1.1)));
+        const maxScroll =
+          document.documentElement.scrollHeight - vh - window.scrollY;
+        const minTop = r.top - Math.max(0, maxScroll); // panel.top at page bottom
+        const r0 = vh - 460 * k;
+        const r1 = Math.max(vh / 2 - 340 * k, minTop);
+        const p = (r0 - r.top) / Math.max(r0 - r1, 1);
+        tl.progress(Math.min(1, Math.max(0, p)));
       };
 
       let listening = false;
@@ -220,6 +243,7 @@ export default function Infrastructure() {
 
         {/* stage panel — bottom edge runs off the section (no border there) */}
         <div
+          ref={panelRef}
           className="relative mt-12 aspect-[751/679] w-full overflow-hidden rounded-t-lg xl:absolute xl:left-[449px] xl:top-[7px] xl:mt-0 xl:aspect-auto xl:h-[679px] xl:w-[751px]"
           style={{
             background:
