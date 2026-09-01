@@ -274,11 +274,11 @@ export default function TerminalCard() {
   return (
     <div
       ref={rootRef}
-      className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black xl:h-[611px] xl:w-[600px] xl:max-w-none xl:absolute xl:left-[600px] xl:top-[462px] xl:rounded-none xl:rounded-br-xl xl:border-l-0"
+      className="order-3 relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black md:rounded-none md:rounded-br-xl md:border-l-0 xl:absolute xl:left-[600px] xl:top-[462px] xl:h-[611px] xl:w-[600px] xl:max-w-none"
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
-        <p className="text-body-md text-text-primary xl:text-heading-sm">Error auto-fix as you move forward</p>
-        <p className="text-body-sm text-text-body xl:text-body-md xl:w-[359px]">
+        <p className="text-body-md text-text-primary md:text-heading-sm">Error auto-fix as you move forward</p>
+        <p className="text-body-sm text-text-body md:text-body-md xl:w-[359px]">
           Dedicated debugging agent checks and fixes errors automatically during production.
         </p>
       </div>

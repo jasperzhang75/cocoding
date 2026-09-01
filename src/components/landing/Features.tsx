@@ -72,8 +72,8 @@ function CardHeader({
     <div
       className={`flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:top-[35px] xl:w-[496px] xl:p-0 ${leftClass}`}
     >
-      <p className="text-body-md text-text-primary xl:text-heading-sm">{title}</p>
-      <p className={`text-body-sm text-text-body xl:text-body-md ${descWidthClass}`}>{desc}</p>
+      <p className="text-body-md text-text-primary md:text-heading-sm">{title}</p>
+      <p className={`text-body-sm text-text-body md:text-body-md ${descWidthClass}`}>{desc}</p>
     </div>
   );
 }
@@ -103,7 +103,7 @@ function Bleed({
 
 function AgentsCard() {
   return (
-    <div data-agents-card className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black xl:h-[610px] xl:w-[600px] xl:max-w-none xl:absolute xl:left-0 xl:top-0 xl:rounded-none xl:rounded-tl-xl xl:border-b-0">
+    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
       <CardHeader
         leftClass="xl:left-[35px]"
         title="Go faster with parallel agents"
@@ -204,14 +204,20 @@ export default function Features() {
 
         {/* flush bento: columns and rows touch; each card carries exactly
             the edges and corner radii the design gives it */}
-        {/* three tiers: base/md stack the cards (independent 12px corners,
-            24px gap, narrative order); xl restores the flush bento with
-            absolute coordinates on each card */}
-        <div className="mt-12 flex flex-col items-center gap-6 md:mt-[73px] md:grid md:grid-cols-2 md:items-stretch xl:relative xl:mx-auto xl:block xl:h-[1074px] xl:w-[1200px]">
-          <AgentsCard />
-          <TokensCard />
-          <TerminalCard />
-          <SecurityCard />
+        {/* three tiers. base: single stack, narrative order via order-N
+            (the column wrappers dissolve to display:contents). md: the
+            DESKTOP pairing — two flush columns (1+4 | 2+3), no gap, desktop
+            corner scheme, only the posters scale. xl: the absolute bento
+            canvas (wrappers dissolve again). */}
+        <div className="mt-12 flex flex-col items-center gap-6 md:mt-[73px] md:flex-row md:items-start md:justify-center md:gap-0 xl:relative xl:mx-auto xl:block xl:h-[1074px] xl:w-[1200px]">
+          <div className="contents md:flex md:w-1/2 md:max-w-[600px] md:flex-col xl:contents">
+            <AgentsCard />
+            <SecurityCard />
+          </div>
+          <div className="contents md:flex md:w-1/2 md:max-w-[600px] md:flex-col xl:contents">
+            <TokensCard />
+            <TerminalCard />
+          </div>
         </div>
       </div>
     </section>
