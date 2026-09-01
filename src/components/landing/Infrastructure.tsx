@@ -227,8 +227,8 @@ export default function Infrastructure() {
     const DIM = 0.3;
     const fl = gsap.timeline();
     let t = 0;
-    let step = 0.06;
-    for (let i = 0; i < 6; i++) {
+    let step = 0.065;
+    for (let i = 0; i < 8; i++) {
       const swapped = i % 2 === 0;
       fl.set(a, { opacity: swapped ? DIM : 1 }, t);
       fl.set(b, { opacity: swapped ? 1 : DIM }, t);
