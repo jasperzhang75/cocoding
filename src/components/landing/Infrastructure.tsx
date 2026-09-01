@@ -453,22 +453,21 @@ export default function Infrastructure() {
               />
             </g>
 
+            {/* the halo grain — one layer beneath the cube group, one
+                355.3px tile clipped to Ellipse 21891's spot, at 18% */}
+            <image
+              data-noise
+              x="206"
+              y="193"
+              width="355.3"
+              height="355.3"
+              preserveAspectRatio="none"
+              clipPath="url(#infra-grain-clip)"
+              opacity="0.18"
+            />
+
             {/* the three layers, authored coincident (stage 1) */}
             <g data-cube opacity="0.9" style={{ mixBlendMode: "plus-lighter" }}>
-              {/* the halo grain — bottom of the cube group per the design,
-                  one 355.3px tile clipped to Ellipse 21891's spot, at 18%.
-                  Hidden for now — didn't read well; under review. */}
-              <image
-                data-noise
-                x="206"
-                y="193"
-                width="355.3"
-                height="355.3"
-                preserveAspectRatio="none"
-                clipPath="url(#infra-grain-clip)"
-                opacity="0.18"
-                style={{ display: "none" }}
-              />
               {SPREAD_Y.map((y) => (
                 <g key={y} data-face transform="translate(375.5 294.6)">
                   <rect
