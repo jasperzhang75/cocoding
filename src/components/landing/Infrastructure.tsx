@@ -1,21 +1,29 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
+import gsap from "gsap";
 import { HyperText } from "@/components/magicui/hyper-text";
 
-/* Infrastructure — the isometric story, currently at stage 3 of 3 (Figma
-   17205:87636): the three layers settle into a tight stack under a faint
-   blue glow, callouts gone. Static while the frames are being approved one
-   by one; the scroll scrub that walks 1 -> 2 -> 3 comes next. Everything
-   is read off the Figma nodes:
+/* Infrastructure — the isometric story (Figma 17205:89133 -> 87420 ->
+   87636), scrubbed by scroll. The three approved frames are keyframes on
+   one paused timeline whose progress is bound directly to the section's
+   position in the viewport: it starts as the section enters from below and
+   the stack has settled (stage 3) just before the section is centered.
+   No easing chase — scroll stops, the drawing stops; scroll back up, it
+   plays backwards. All geometry is read off the Figma nodes:
 
    - Each "diamond" is a 90.64x90.64 rounded square (r6) through the
      isometric matrix [[0.866,-0.866],[0.5,0.5]] — the Figma transform
-     verbatim. Stage 1 stacks all three in one spot (y~295); stage 2 spreads
-     them to 240/294.6/348.3, so animating between stages is pure translation.
+     verbatim. Stage 1 stacks all three in one spot (y294.6) with a BUILD
+     callout; stage 2 spreads them to 240/294.6/348.3 under FRONTEND /
+     BACKEND / DATABASE callouts; stage 3 shrinks the squares to 65.8 and
+     settles them at x372, y302.7/326.1/343.5 with a faint blue glow.
    - Faces: black fill, stroke = A8A8A8 -> 424242 linear at 50%, dashed
-     1.8/1.8 at 0.9. The group composites at 90% via Plus lighter.
+     1.8/1.8 at 0.9. The group composites through Plus lighter at 90%,
+     reaching 100% as the stack settles.
    - Panel: 751x679, top corners 10, stroke 0.9 on top/left/right only,
-     painted white -> black at 8% (reads as a border fading out downward),
-     fill = black under a 2% #3750C8 wash.
+     painted white -> black at 8%, fill = black under a 2% #3750C8 wash.
    - Left column tokens as bound in Figma: Indicator+Accent eyebrow,
      Display h2, Heading/sm titles, Body/md desc at Text/Body 60%. */
 
@@ -43,24 +51,128 @@ const ITEMS: { title: string; desc?: string }[] = [
   { title: "Analytics and SEO" },
 ];
 
-/* Top vertex of each face (Figma y), back-to-front like the Figma children
-   order — the front face is the highest one, its black fill occluding the
-   two behind. Stage 3: the layers settle into the tight stack — faces
-   shrink from 90.64 to 65.8 (radius and dashes stay put), the column moves
-   to x372, the callouts are gone, and the group opacity goes 0.9 -> 1. */
-const STACK = { x: 372, size: 65.8 };
-const FACES = [{ y: 343.5 }, { y: 326.1 }, { y: 302.7 }];
+/* Face keyframes, back-to-front like the Figma children order (the front
+   face is the highest one, its black fill occluding the two behind). */
+const SPREAD_Y = [348.3, 294.6, 240];
+const STACK = { x: 372, y: [343.5, 326.1, 302.7], size: 65.8 };
 
-/* The soft blue wash breathing at the top of the panel in this stage:
-   Figma's Vector 24 — a blob at 9% #2D69B7 with a white 26% hairline,
-   layer-blurred 60.6 (feGaussianBlur stdDeviation = radius / 2). Its node
-   transform flips the path vertically into place. */
+/* Right-hand callouts: a hairline from x475 to x715 with a 13px mono label
+   hanging under its right end. BUILD (stage 1) sits on the same middle
+   line the BACKEND callout uses in stage 2. */
+const CALLOUTS = [
+  { key: "top", y: 286, label: "FRONTEND" },
+  { key: "mid", y: 340, label: "BACKEND" },
+  { key: "bot", y: 394, label: "DATABASE" },
+];
+
+/* Figma's Vector 24 — the stage-3 wash at the top of the panel: a blob at
+   9% #2D69B7 with a white 26% hairline, layer-blurred 60.6 (feGaussianBlur
+   stdDeviation = radius / 2), flipped into place by its node transform. */
 const GLOW_PATH =
   "M 108.96 275.17 C -90.13 262.91 29.3 52.8 108.96 47.23 C 174.8 42.62 181.3 164.63 246.79 174.68 C 304.18 183.48 330.26 125.58 387.43 114.63 C 436.34 105.26 514.01 114.63 514.01 114.63 C 514.01 114.63 619 123.82 658.41 68.06 C 672.13 48.65 671.59 29.52 685.6 10.46 C 736.96 -59.39 742.8 242.9 708.11 256.78 C 673.41 270.67 591.84 296 591.84 296 C 591.84 296 308.05 287.42 108.96 275.17 Z";
 
 export default function Infrastructure() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    const svg = svgRef.current;
+    if (!section || !svg) return;
+
+    const ctx = gsap.context(() => {
+      const faces = Array.from(
+        svg.querySelectorAll<SVGGElement>("[data-face]")
+      );
+      const rects = faces.map((f) => f.querySelector("rect")!);
+      const cube = svg.querySelector("[data-cube]");
+      const glow = svg.querySelector("[data-glow]");
+      const build = svg.querySelector("[data-build]");
+      const line = (k: string) => svg.querySelector(`[data-line="${k}"]`);
+      const label = (k: string) => svg.querySelector(`[data-label="${k}"]`);
+
+      const tl = gsap.timeline({ paused: true, defaults: { ease: "none" } });
+
+      /* 0.00-0.10 rests at stage 1 so it registers while entering. */
+
+      // stage 1 -> 2: the block splits into layers, callouts fan out
+      tl.to(build, { opacity: 0, duration: 0.1, ease: "power1.out" }, 0.1);
+      tl.to(faces[2], { y: SPREAD_Y[2], duration: 0.33, ease: "power2.inOut" }, 0.12);
+      tl.to(faces[0], { y: SPREAD_Y[0], duration: 0.33, ease: "power2.inOut" }, 0.12);
+      tl.to(line("top"), { attr: { x2: 715 }, duration: 0.16, ease: "power2.out" }, 0.28);
+      tl.to(line("bot"), { attr: { x2: 715 }, duration: 0.16, ease: "power2.out" }, 0.32);
+      tl.to(label("top"), { opacity: 1, duration: 0.12 }, 0.34);
+      tl.to(label("mid"), { opacity: 1, duration: 0.12 }, 0.38);
+      tl.to(label("bot"), { opacity: 1, duration: 0.12 }, 0.42);
+
+      /* 0.52-0.60 rests at stage 2. */
+
+      // stage 2 -> 3: callouts fall away, the layers settle into the stack
+      tl.to(
+        [line("top"), line("mid"), line("bot"), label("top"), label("mid"), label("bot")],
+        { opacity: 0, duration: 0.12 },
+        0.6
+      );
+      faces.forEach((f, i) => {
+        tl.to(f, { x: STACK.x, y: STACK.y[i], duration: 0.32, ease: "power2.inOut" }, 0.64);
+      });
+      tl.to(rects, { attr: { width: STACK.size, height: STACK.size }, duration: 0.32, ease: "power2.inOut" }, 0.64);
+      tl.to(cube, { opacity: 1, duration: 0.32 }, 0.64);
+      tl.to(glow, { opacity: 1, duration: 0.16, ease: "power1.in" }, 0.84);
+
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        tl.progress(1);
+        return;
+      }
+
+      /* Scroll binding: p runs 0 (section top at the viewport bottom) to 1
+         (section centered), scaled 1.1 so stage 3 has ALREADY settled just
+         before dead center. Direct progress writes — no smoothing. */
+      const apply = () => {
+        const r = section.getBoundingClientRect();
+        const vh = window.innerHeight;
+        const raw = (vh - r.top) / ((vh + r.height) / 2);
+        tl.progress(Math.min(1, Math.max(0, raw * 1.1)));
+      };
+
+      let listening = false;
+      const on = () => {
+        if (listening) return;
+        listening = true;
+        window.addEventListener("scroll", apply, { passive: true });
+        window.addEventListener("resize", apply, { passive: true });
+      };
+      const off = () => {
+        if (!listening) return;
+        listening = false;
+        window.removeEventListener("scroll", apply);
+        window.removeEventListener("resize", apply);
+      };
+
+      apply();
+      on();
+      // detach the listeners whenever the section is far off screen
+      const io = new IntersectionObserver(
+        ([entry]) => {
+          apply();
+          if (entry.isIntersecting) on();
+          else off();
+        },
+        { rootMargin: "200px" }
+      );
+      io.observe(section);
+
+      return () => {
+        io.disconnect();
+        off();
+      };
+    }, svg);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <section className="px-5 pt-24 md:px-10 xl:px-0 xl:pt-[120px]">
+    <section ref={sectionRef} className="px-5 pt-24 md:px-10 xl:px-0 xl:pt-[120px]">
       <div className="relative mx-auto max-w-[600px] md:max-w-none xl:h-[686px] xl:w-[1200px] xl:max-w-none">
         {/* left column */}
         <div className="xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
@@ -117,6 +229,7 @@ export default function Infrastructure() {
           <div aria-hidden className="pointer-events-none absolute inset-0 rounded-t-lg" style={ring} />
 
           <svg
+            ref={svgRef}
             viewBox="0 0 751 679"
             className="absolute inset-0 size-full"
             fill="none"
@@ -139,8 +252,10 @@ export default function Infrastructure() {
               </filter>
             </defs>
 
-            {/* the top-of-panel glow sits behind the stack */}
+            {/* stage-3 glow, revealed as the stack settles */}
             <g
+              data-glow
+              style={{ opacity: 0 }}
               transform="translate(-15 219) scale(1 -1)"
               filter="url(#infra-glow-blur)"
             >
@@ -154,14 +269,13 @@ export default function Infrastructure() {
               />
             </g>
 
-            {/* the three layers — Plus lighter like the Figma group, now at
-                full opacity for the settled stack */}
-            <g style={{ mixBlendMode: "plus-lighter" }}>
-              {FACES.map((f) => (
-                <g key={f.y} transform={`translate(${STACK.x} ${f.y})`}>
+            {/* the three layers, authored coincident (stage 1) */}
+            <g data-cube opacity="0.9" style={{ mixBlendMode: "plus-lighter" }}>
+              {SPREAD_Y.map((y) => (
+                <g key={y} data-face transform="translate(375.5 294.6)">
                   <rect
-                    width={STACK.size}
-                    height={STACK.size}
+                    width="90.64"
+                    height="90.64"
                     rx="6"
                     transform="matrix(0.866 0.5 -0.866 0.5 0 0)"
                     fill="#000"
@@ -173,6 +287,45 @@ export default function Infrastructure() {
                 </g>
               ))}
             </g>
+
+            {/* callouts — the middle line doubles as BUILD's in stage 1;
+                the other two draw out during the split */}
+            {CALLOUTS.map((c) => (
+              <g key={c.key}>
+                <line
+                  data-line={c.key}
+                  x1="475"
+                  y1={c.y}
+                  x2={c.key === "mid" ? 715 : 475}
+                  y2={c.y}
+                  stroke="#FFFFFF"
+                  strokeOpacity="0.1"
+                  strokeWidth="0.9"
+                />
+                <text
+                  data-label={c.key}
+                  x="715"
+                  y={c.y + 24.5}
+                  textAnchor="end"
+                  fill="#4E4E4E"
+                  fontSize="13"
+                  style={{ fontFamily: "var(--font-geist-mono)", opacity: 0 }}
+                >
+                  {c.label}
+                </text>
+              </g>
+            ))}
+            <text
+              data-build
+              x="715"
+              y="364.5"
+              textAnchor="end"
+              fill="#4E4E4E"
+              fontSize="13"
+              style={{ fontFamily: "var(--font-geist-mono)" }}
+            >
+              BUILD
+            </text>
           </svg>
         </div>
       </div>
