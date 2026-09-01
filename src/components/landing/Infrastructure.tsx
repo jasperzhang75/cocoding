@@ -400,18 +400,13 @@ export default function Infrastructure() {
                 it at LIGHTEN — live in an isolated group so the lighten
                 stays inside the paint stack, as in Figma. */}
             <g data-env-back>
-              {/* Ellipse 21891 — the cube halo, sharp. Its grain tiles at
-                  the design's 355.3px (2048 x sf 0.1735 — one tile covers
-                  the ellipse), lightening the gradient at 23%. */}
+              {/* Ellipse 21891's sharp radial reads as a solid disc in the
+                  browser no matter how it's composited (confirmed by
+                  deleting it in devtools against the Figma render), so the
+                  halo keeps only its GRAIN — one 355.3px tile (2048 x sf
+                  0.1735) clipped to the ellipse; the blue comes from the
+                  blurred ambient below. */}
               <g style={{ isolation: "isolate" }}>
-                <ellipse
-                  cx="317.5"
-                  cy="295.5"
-                  rx="162.5"
-                  ry="177.5"
-                  fill="url(#infra-env-radial)"
-                  opacity="0.52"
-                />
                 <image
                   data-noise
                   x="155"
