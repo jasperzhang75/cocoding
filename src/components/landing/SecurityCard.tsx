@@ -45,6 +45,8 @@ export default function SecurityCard() {
   const grayShieldRef = useRef<HTMLDivElement>(null);
   const greenShieldRef = useRef<HTMLImageElement>(null);
   const matrixRef = useRef<HTMLDivElement>(null);
+  const maskRef = useRef<HTMLDivElement>(null);
+  const maskProg = useRef({ k: 0 });
   const knobRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const scrambleId = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -61,13 +63,25 @@ export default function SecurityCard() {
     const dur = reduced ? 0 : undefined;
     const breathe = breatheRef.current;
     const matrix = matrixRef.current;
-    if (!breathe || !matrix) return;
+    const maskEl = maskRef.current;
+    if (!breathe || !matrix || !maskEl) return;
+
+    /* the code field reveals by GROWING its soft mask from the center and
+       hides by shrinking it back — the radii scale with k in [0,1] */
+    const applyMask = () => {
+      const { k } = maskProg.current;
+      const img = `radial-gradient(ellipse ${250 * k}px ${138 * k}px at 296px 279px, black 58%, transparent 96%)`;
+      maskEl.style.maskImage = img;
+      maskEl.style.webkitMaskImage = img;
+    };
 
     if (on) {
       gsap.to(breathe, { autoAlpha: 1, duration: dur ?? 0.6 });
       gsap.to(grayShieldRef.current, { opacity: 0, duration: dur ?? 0.8 });
       gsap.to(greenShieldRef.current, { opacity: 1, duration: dur ?? 0.8 });
-      gsap.to(matrix, { autoAlpha: 0, duration: dur ?? 0.5 });
+      gsap.to(maskProg.current, {
+        k: 0, duration: dur ?? 0.7, ease: "power2.in", overwrite: true, onUpdate: applyMask,
+      });
       gsap.to(knobRef.current, { x: 0, duration: dur ?? 0.25, ease: "power2.out" });
       gsap.to(pillRef.current, { backgroundColor: "#489C32", duration: dur ?? 0.25 });
       if (scrambleId.current) {
@@ -78,7 +92,9 @@ export default function SecurityCard() {
       gsap.to(breathe, { autoAlpha: 0, duration: dur ?? 1.1, ease: "power1.out" });
       gsap.to(grayShieldRef.current, { opacity: 1, duration: dur ?? 0.8 });
       gsap.to(greenShieldRef.current, { opacity: 0, duration: dur ?? 0.8 });
-      gsap.to(matrix, { autoAlpha: 1, duration: dur ?? 0.8, delay: reduced ? 0 : 0.15 });
+      gsap.to(maskProg.current, {
+        k: 1, duration: dur ?? 0.9, ease: "power2.out", delay: reduced ? 0 : 0.15, overwrite: true, onUpdate: applyMask,
+      });
       gsap.to(knobRef.current, { x: -12, duration: dur ?? 0.25, ease: "power2.out" });
       gsap.to(pillRef.current, { backgroundColor: "rgba(181,181,181,0.5)", duration: dur ?? 0.25 });
       if (!reduced && !scrambleId.current) {
@@ -134,14 +150,15 @@ export default function SecurityCard() {
 
       {/* scrambling pass-codes, clipped to the design's soft blob (OFF).
           Outer div = show/hide (animated); inner keeps the design's 80%. */}
-      <div ref={matrixRef} aria-hidden className="pointer-events-none absolute inset-0 opacity-0">
+      <div ref={matrixRef} aria-hidden className="pointer-events-none absolute inset-0">
         <div
+          ref={maskRef}
           className="absolute inset-0 opacity-80"
           style={{
             maskImage:
-              "radial-gradient(ellipse 250px 138px at 296px 279px, black 58%, transparent 96%)",
+              "radial-gradient(ellipse 0px 0px at 296px 279px, black 58%, transparent 96%)",
             WebkitMaskImage:
-              "radial-gradient(ellipse 250px 138px at 296px 279px, black 58%, transparent 96%)",
+              "radial-gradient(ellipse 0px 0px at 296px 279px, black 58%, transparent 96%)",
           }}
         >
           {CELLS.map(([x, y], i) => (
