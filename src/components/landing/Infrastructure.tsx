@@ -60,13 +60,16 @@ const STACK = { x: 372, y: [343.5, 326.1, 302.7], size: 65.8 };
 /* Frame 4 poses the settled stack ~8px lower with 80% faces. */
 const ENV_STACK_Y = [351.7, 334.3, 311];
 
-/* The 3 -> 4 handoff is a PIN: at xl the block goes sticky exactly where
-   stage 3 completes, and the next RUNWAY px of scroll are consumed in
-   place — the first DEAD share as a pure hold (the "catch" the user
-   feels), the rest scrubbing the frame-4 entrance. Scrolling back plays
-   it all in reverse and un-pins. */
+/* The 3 -> 4 handoff is a PIN plus a TRIGGER: at xl the block goes
+   sticky exactly where stage 3 completes and the next RUNWAY px of
+   scroll are consumed in place. Unlike stages 1-3 this is NOT scrubbed —
+   crossing ENTER (the felt "catch") fires the frame-4 entrance as a
+   timed animation; scrolling back across BACK fires the automated
+   reverse to stage 3. The gap between the two is hysteresis so the
+   boundary doesn't flutter. */
 const RUNWAY = 640;
-const DEAD = 0.35;
+const ENTER = 0.35;
+const BACK = 0.2;
 
 /* Right-hand callouts: a hairline from x475 to x715 with a 13px mono label
    hanging under its right end. BUILD (stage 1) sits on the same middle
@@ -212,10 +215,12 @@ export default function Infrastructure() {
       tl.to(rects, { attr: { width: STACK.size, height: STACK.size }, duration: 0.26, ease: "power2.inOut" }, 0.72);
       tl.to(cube, { opacity: 1, duration: 0.26 }, 0.72);
 
-      /* The 3 -> 4 entrance, scrubbed through the pinned runway: the wash
-         dissolves, the legend surfaces, the cube's other faces materialize
-         while the stack eases into its frame-4 pose, and the ambient glow
-         blooms from its center outward. Callouts trail in last. */
+      /* The 3 -> 4 entrance — a timed sequence (~1.4s), fired once by the
+         runway trigger rather than scrubbed: the wash dissolves, the
+         legend surfaces, the cube's other faces materialize while the
+         stack eases into its frame-4 pose, and the ambient glow blooms
+         from its center outward. Callouts trail in last. Reversing plays
+         the same sequence backwards. */
       const env = {
         wash: svg.querySelector("[data-wash]"),
         cube: svg.querySelector("[data-env-cube]"),
@@ -223,24 +228,24 @@ export default function Infrastructure() {
         callouts: svg.querySelector("[data-env-callouts]"),
         ambient: svg.querySelector("[data-env-back]"),
       };
-      const tl2 = gsap.timeline({ paused: true, defaults: { ease: "none" } });
-      tl2.to(env.wash, { opacity: 0, duration: 0.3, ease: "power1.out" }, 0);
-      tl2.to(env.legend, { opacity: 1, duration: 0.35, ease: "power1.out" }, 0.1);
-      tl2.to(env.cube, { opacity: 1, duration: 0.45, ease: "power2.out" }, 0.15);
+      const tl2 = gsap.timeline({ paused: true });
+      tl2.to(env.wash, { opacity: 0, duration: 0.42, ease: "power1.out" }, 0);
+      tl2.to(env.legend, { opacity: 1, duration: 0.5, ease: "power1.out" }, 0.14);
+      tl2.to(env.cube, { opacity: 1, duration: 0.63, ease: "power2.out" }, 0.21);
       faces.forEach((f, i) => {
         tl2.to(
           f,
-          { y: ENV_STACK_Y[i], opacity: 0.8, duration: 0.4, ease: "power2.inOut" },
-          0.15
+          { y: ENV_STACK_Y[i], opacity: 0.8, duration: 0.56, ease: "power2.inOut" },
+          0.21
         );
       });
       tl2.fromTo(
         env.ambient,
         { opacity: 0, scale: 0.3, svgOrigin: "370.5 344.5" },
-        { opacity: 1, scale: 1, duration: 0.75, ease: "power2.out" },
-        0.25
+        { opacity: 1, scale: 1, duration: 1.05, ease: "power2.out" },
+        0.35
       );
-      tl2.to(env.callouts, { opacity: 1, duration: 0.2, ease: "power1.out" }, 0.8);
+      tl2.to(env.callouts, { opacity: 1, duration: 0.28, ease: "power1.out" }, 1.12);
 
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         tl.progress(1);
@@ -268,6 +273,7 @@ export default function Infrastructure() {
          Direct progress writes — no smoothing. */
       const sticky = stickyRef.current!;
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+      let entered = false; // the runway trigger's state (with hysteresis)
       const apply = () => {
         const r = panel.getBoundingClientRect();
         const k = r.height / 679; // render scale of the 751x679 stage
@@ -279,11 +285,12 @@ export default function Infrastructure() {
         const r1 = Math.max(vh / 2 - 340 * k, minTop);
         tl.progress(clamp01((r0 - r.top) / Math.max(r0 - r1, 1)));
 
-        /* Phase B — the pinned runway. At xl the sticky child's offset
-           inside the section runs 0 -> RUNWAY while pinned; the first DEAD
-           share holds (the felt "catch"), the rest scrubs the entrance.
-           Below xl there is no pin yet (responsive pass pending): the
-           entrance simply scrubs over 300px of overtravel past stage 3. */
+        /* Phase B — the pinned runway as a TRIGGER, not a scrub. At xl the
+           sticky child's offset inside the section runs 0 -> RUNWAY while
+           pinned; crossing ENTER fires the timed frame-4 entrance,
+           dropping back below BACK fires the automated reverse. Below xl
+           there is no pin yet (responsive pass pending): the same trigger
+           reads 300px of overtravel past stage 3. */
         let q: number;
         if (window.matchMedia("(min-width: 1280px)").matches) {
           const secTop = section.getBoundingClientRect().top;
@@ -299,7 +306,14 @@ export default function Infrastructure() {
         } else {
           q = (r1 - r.top) / 300;
         }
-        tl2.progress(clamp01((clamp01(q) - DEAD) / (1 - DEAD)));
+        q = clamp01(q);
+        if (!entered && q >= ENTER) {
+          entered = true;
+          tl2.play();
+        } else if (entered && q <= BACK) {
+          entered = false;
+          tl2.reverse();
+        }
       };
 
       let listening = false;
