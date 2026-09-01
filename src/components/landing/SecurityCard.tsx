@@ -156,7 +156,7 @@ export default function SecurityCard() {
   return (
     <div
       ref={rootRef}
-      className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] md:h-[464px] md:w-[600px] md:max-w-none xl:absolute xl:left-0 xl:top-[610px] xl:rounded-none xl:rounded-bl-xl"
+      className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] xl:h-[464px] xl:w-[600px] xl:max-w-none xl:absolute xl:left-0 xl:top-[610px] xl:rounded-none xl:rounded-bl-xl"
       style={{
         background:
           "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
@@ -177,8 +177,8 @@ export default function SecurityCard() {
       {/* the pair of blur-250 glows — the card's blue field. Card-level (not
           in the poster) so the mobile top-crop can't clip them: at base they
           cover the whole card; from md up they sit at the design geometry. */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl md:overflow-visible xl:rounded-none xl:rounded-bl-xl">
-        <div className="absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 md:left-[-99px] md:top-[77px] md:h-[523px] md:w-[789px] md:translate-x-0 md:translate-y-0">
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl xl:overflow-visible xl:rounded-none xl:rounded-bl-xl">
+        <div className="absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 xl:left-[-99px] xl:top-[77px] xl:h-[523px] xl:w-[789px] xl:translate-x-0 xl:translate-y-0">
           {(["/features/f4-glow-a.svg", "/features/f4-glow-b.svg"] as const).map((src) => (
             <div key={src} className="absolute inset-0">
               <div className="absolute" style={{ inset: "-47.8% -31.69%" }}>
@@ -189,14 +189,14 @@ export default function SecurityCard() {
         </div>
       </div>
 
-      <div className="px-7 pb-6 pt-8 md:absolute md:left-[33px] md:top-[35px] md:w-[496px] md:p-0">
-        <p className="pr-12 text-body-md text-text-primary md:pr-0 md:text-heading-sm">Built-in security, by default</p>
-        <p className="mt-3 text-body-sm text-text-body md:text-body-md md:w-[394px]">
+      <div className="px-7 pb-6 pt-8 xl:absolute xl:left-[33px] xl:top-[35px] xl:w-[496px] xl:p-0">
+        <p className="pr-12 text-body-md text-text-primary xl:pr-0 xl:text-heading-sm">Built-in security, by default</p>
+        <p className="mt-3 text-body-sm text-text-body xl:text-body-md xl:w-[394px]">
           With robust security safeguards already in place, your data and user information stay protected as you build.
         </p>
       </div>
 
-      <PosterViewport designHeight={464} crop={130} className="md:absolute md:inset-0">
+      <PosterViewport designHeight={464} crop={130} className="xl:absolute xl:inset-0">
       {/* scrambling pass-codes, clipped to the design's soft blob (OFF).
           Outer div = show/hide (animated); inner keeps the design's 80%. */}
       <div ref={matrixRef} aria-hidden className="pointer-events-none absolute inset-0">
@@ -265,7 +265,7 @@ export default function SecurityCard() {
         aria-checked={on}
         aria-label="Toggle security"
         onClick={() => setOn((v) => !v)}
-        className="absolute right-7 top-[33px] block md:left-[529px] md:right-auto md:top-[35px]"
+        className="absolute right-7 top-[33px] block xl:left-[529px] xl:right-auto xl:top-[35px]"
       >
         <div
           ref={pillRef}

@@ -8,13 +8,13 @@ import { cn } from "@/lib/utils";
    vectors and animations are all pinned to it — so instead of refloating
    anything we scale the whole stage.
 
-   - md and up: this wrapper is a pass-through (md:absolute md:inset-0 via
-     className); the stage sits unscaled at the card's own size, so the
-     desktop geometry is byte-identical to before.
-   - below md: the wrapper joins the flow at full width, measures itself,
-     and scales the stage by width/600 (origin top-left), shifting it up by
-     `crop` to trim the design's empty headroom. Wrapper height follows,
-     so the card wraps the scaled art exactly. */
+   Purely measurement-driven — no breakpoints in here:
+   - container >= 600px wide (the xl bento, where className places it
+     absolute inset-0 over the fixed card): pass-through, desktop geometry
+     byte-identical.
+   - container < 600px (base single column and the md two-up grid): the
+     stage scales by width/600 (origin top-left), shifted up by `crop` to
+     trim the design's headroom; wrapper height follows the scaled art. */
 
 export default function PosterViewport({
   designHeight,
@@ -37,25 +37,23 @@ export default function PosterViewport({
     const stage = stageRef.current;
     if (!wrap || !stage) return;
 
-    const mq = window.matchMedia("(min-width: 768px)");
     const apply = () => {
-      if (mq.matches) {
+      const k = wrap.clientWidth / 600;
+      /* at xl the wrapper is inset-0 INSIDE the card's 1px borders, so it
+         measures 598 — treat near-1 as pass-through or the desktop bento
+         would get a phantom 0.997 scale and its crop applied */
+      if (k >= 0.99) {
         wrap.style.removeProperty("height");
         stage.style.removeProperty("transform");
         return;
       }
-      const k = wrap.clientWidth / 600;
       wrap.style.height = `${(designHeight - crop) * k}px`;
       stage.style.transform = `translateY(${-crop * k}px) scale(${k})`;
     };
     apply();
     const ro = new ResizeObserver(apply);
     ro.observe(wrap);
-    mq.addEventListener("change", apply);
-    return () => {
-      ro.disconnect();
-      mq.removeEventListener("change", apply);
-    };
+    return () => ro.disconnect();
   }, [designHeight, crop]);
 
   return (

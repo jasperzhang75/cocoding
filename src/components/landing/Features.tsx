@@ -60,20 +60,20 @@ function CardHeader({
   title,
   desc,
   descWidthClass,
-  leftClass = "md:left-[36px]",
+  leftClass = "xl:left-[36px]",
 }: {
   title: string;
   desc: string;
-  /** e.g. "md:w-[332px]" — the design's fixed copy width from md up */
+  /** e.g. "xl:w-[332px]" — the design's fixed copy width at xl */
   descWidthClass: string;
   leftClass?: string;
 }) {
   return (
     <div
-      className={`flex flex-col gap-3 px-7 pb-6 pt-8 md:absolute md:top-[35px] md:w-[496px] md:p-0 ${leftClass}`}
+      className={`flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:top-[35px] xl:w-[496px] xl:p-0 ${leftClass}`}
     >
-      <p className="text-body-md text-text-primary md:text-heading-sm">{title}</p>
-      <p className={`text-body-sm text-text-body md:text-body-md ${descWidthClass}`}>{desc}</p>
+      <p className="text-body-md text-text-primary xl:text-heading-sm">{title}</p>
+      <p className={`text-body-sm text-text-body xl:text-body-md ${descWidthClass}`}>{desc}</p>
     </div>
   );
 }
@@ -103,15 +103,15 @@ function Bleed({
 
 function AgentsCard() {
   return (
-    <div data-agents-card className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black md:h-[610px] md:w-[600px] md:max-w-none xl:absolute xl:left-0 xl:top-0 xl:rounded-none xl:rounded-tl-xl xl:border-b-0">
+    <div data-agents-card className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black xl:h-[610px] xl:w-[600px] xl:max-w-none xl:absolute xl:left-0 xl:top-0 xl:rounded-none xl:rounded-tl-xl xl:border-b-0">
       <CardHeader
-        leftClass="md:left-[35px]"
+        leftClass="xl:left-[35px]"
         title="Go faster with parallel agents"
         desc="Multiple agents run in parallel to handle tasks simultaneously and speed up every build."
-        descWidthClass="md:w-[332px]"
+        descWidthClass="xl:w-[332px]"
       />
 
-      <PosterViewport designHeight={610} crop={120} className="md:absolute md:inset-0">
+      <PosterViewport designHeight={610} crop={120} className="xl:absolute xl:inset-0">
       <div
         className="absolute inset-0"
         style={mask("/features/f1-mask-outer.svg", "970px 814px", "-223px -69px")}
@@ -207,7 +207,7 @@ export default function Features() {
         {/* three tiers: base/md stack the cards (independent 12px corners,
             24px gap, narrative order); xl restores the flush bento with
             absolute coordinates on each card */}
-        <div className="mt-12 flex flex-col items-center gap-6 md:mt-[73px] xl:relative xl:mx-auto xl:block xl:h-[1074px] xl:w-[1200px]">
+        <div className="mt-12 flex flex-col items-center gap-6 md:mt-[73px] md:grid md:grid-cols-2 md:items-stretch xl:relative xl:mx-auto xl:block xl:h-[1074px] xl:w-[1200px]">
           <AgentsCard />
           <TokensCard />
           <TerminalCard />

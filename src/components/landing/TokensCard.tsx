@@ -147,11 +147,11 @@ export default function TokensCard() {
   return (
     <div
       ref={cardRef}
-      className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black md:h-[462px] md:w-[600px] md:max-w-none xl:absolute xl:left-[600px] xl:top-0 xl:rounded-none xl:rounded-tr-xl xl:border-b-0 xl:border-l-0"
+      className="relative w-full max-w-[600px] overflow-hidden rounded-xl border border-white/[0.08] bg-black xl:h-[462px] xl:w-[600px] xl:max-w-none xl:absolute xl:left-[600px] xl:top-0 xl:rounded-none xl:rounded-tr-xl xl:border-b-0 xl:border-l-0"
     >
-      <div className="flex flex-col gap-3 px-7 pb-6 pt-8 md:absolute md:left-[36px] md:top-[35px] md:w-[496px] md:p-0">
-        <p className="text-body-md text-text-primary md:text-heading-sm">Less tokens, more builds</p>
-        <p className="text-body-sm text-text-body md:text-body-md md:w-[370px]">
+      <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
+        <p className="text-body-md text-text-primary xl:text-heading-sm">Less tokens, more builds</p>
+        <p className="text-body-sm text-text-body xl:text-body-md xl:w-[370px]">
           Optimized call to LLMs and smart search in big code base to allow more efficient token usage.
         </p>
       </div>
@@ -160,7 +160,7 @@ export default function TokensCard() {
           chart < tooltip < stats < dashboard label < the two #2E3046 glows,
           which sit ON TOP of everything and tint the whole dashboard. */}
 
-      <PosterViewport designHeight={462} crop={150} className="md:absolute md:inset-0">
+      <PosterViewport designHeight={462} crop={150} className="xl:absolute xl:inset-0">
       {/* chart — data-driven inline SVG rebuilt from the Figma vectors
           (framer.com-style); see DashboardChart for the layer/mask map */}
       <DashboardChart />
