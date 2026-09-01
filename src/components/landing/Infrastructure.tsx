@@ -66,6 +66,27 @@ const CALLOUTS = [
   { key: "bot", y: 394, label: "DATABASE" },
 ];
 
+/* Frame 4 (ENVIRONMENT, Figma 17205:87852): the cube materializes around
+   the settled stack — its hidden top/left/right faces become visible, the
+   stack drops ~8px and dims to 80%, the wash swaps for two radial glows,
+   and legend + three new callouts appear. All values off the nodes:
+
+   - lid: 85.2 rounded square (r6) through the iso matrix, filled with the
+     blue -> white gradient down its local axis, stroke #6C91F9 6%;
+   - sides: 85.3x85.1 parallelograms (r8), two stacked translucent fills
+     (blue 10% + white 5%/3%) with a #909090 22% stroke — the dashed stack
+     stays readable through them;
+   - glows: two radials (#18365F -> #316FC5 at 52%) — the ambient one
+     layer-blurred 300 (stdDev 150), the cube halo sharp with the design's
+     tiled grain PNG lightening it at 23%;
+   - lucide/server mark riding the lid through its own iso matrix. */
+const CUBE = {
+  lid: "matrix(0.865 0.502 -0.867 0.498 372.607 246.158)",
+  left: "matrix(0.865 0.502 -0.002 1 282.22 320.458)",
+  right: "matrix(0.867 -0.498 -0.002 1 393.38 363.24)",
+  icon: "matrix(0.877 0.48 -0.881 0.474 373.729 255)",
+};
+
 /* Figma's Vector 24 — the stage-3 wash at the top of the panel: a blob at
    9% #2D69B7 with a white 26% hairline, layer-blurred 60.6 (feGaussianBlur
    stdDeviation = radius / 2), flipped into place by its node transform. */
@@ -126,6 +147,18 @@ export default function Infrastructure() {
       });
       tl.to(rects, { attr: { width: STACK.size, height: STACK.size }, duration: 0.26, ease: "power2.inOut" }, 0.72);
       tl.to(cube, { opacity: 1, duration: 0.26 }, 0.72);
+
+      /* TEMP — frame 4 (ENVIRONMENT) static review: park the story at its
+         settled end and pose the stack per 17205:87852 — 8px lower, faces
+         at 80%, the stage-1-3 wash off. The 3 -> 4 transition will fold
+         all of this into the timeline and restore the scroll binding. */
+      tl.progress(1);
+      gsap.set(faces[0], { y: 351.7, opacity: 0.8 });
+      gsap.set(faces[1], { y: 334.3, opacity: 0.8 });
+      gsap.set(faces[2], { y: 311, opacity: 0.8 });
+      gsap.set(svg.querySelector("[data-wash]"), { opacity: 0 });
+      const parkedForReview = true as boolean;
+      if (parkedForReview) return;
 
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         tl.progress(1);
@@ -279,10 +312,73 @@ export default function Infrastructure() {
               >
                 <feGaussianBlur stdDeviation="30.3" />
               </filter>
+              {/* frame-4 paints */}
+              <radialGradient id="infra-env-radial">
+                <stop stopColor="#18365F" />
+                <stop offset="1" stopColor="#316FC5" />
+              </radialGradient>
+              <filter
+                id="infra-env-blur"
+                x="-150%"
+                y="-150%"
+                width="400%"
+                height="400%"
+              >
+                <feGaussianBlur stdDeviation="150" />
+              </filter>
+              <linearGradient id="infra-lid" x1="0" y1="0" x2="0" y2="1">
+                <stop stopColor="#6C91F9" stopOpacity="0.75" />
+                <stop offset="1" stopColor="#FFFFFF" stopOpacity="0.85" />
+              </linearGradient>
+              <linearGradient id="infra-ni-label" x1="0" y1="0" x2="1" y2="0">
+                <stop stopColor="#577ADC" />
+                <stop offset="1" stopColor="#D5D9E5" />
+              </linearGradient>
+              <pattern
+                id="infra-noise"
+                patternUnits="userSpaceOnUse"
+                width="512"
+                height="512"
+              >
+                <image href="/infra/noise-512.png" width="512" height="512" />
+              </pattern>
             </defs>
 
-            {/* the blue wash rides along through all three stages */}
+            {/* frame-4 glows behind everything: the blurred ambient
+                (Ellipse 21888) and the cube halo with its grain
+                (Ellipse 21891) */}
+            <g data-env-back style={{ mixBlendMode: "plus-lighter" }}>
+              <ellipse
+                cx="370.5"
+                cy="344.5"
+                rx="149.5"
+                ry="107.5"
+                fill="url(#infra-env-radial)"
+                opacity="0.52"
+                filter="url(#infra-env-blur)"
+              />
+              <ellipse
+                cx="368.5"
+                cy="370.5"
+                rx="162.5"
+                ry="177.5"
+                fill="url(#infra-env-radial)"
+                opacity="0.52"
+              />
+              <ellipse
+                cx="368.5"
+                cy="370.5"
+                rx="162.5"
+                ry="177.5"
+                fill="url(#infra-noise)"
+                opacity="0.23"
+                style={{ mixBlendMode: "lighten" }}
+              />
+            </g>
+
+            {/* the blue wash rides along through stages 1-3 */}
             <g
+              data-wash
               transform="translate(-15 219) scale(1 -1)"
               filter="url(#infra-glow-blur)"
             >
@@ -313,6 +409,147 @@ export default function Infrastructure() {
                   />
                 </g>
               ))}
+            </g>
+
+            {/* frame 4: the cube around the stack, its mark, the legend,
+                and the ENVIRONMENT callouts */}
+            <g data-env-front>
+              {/* lid */}
+              <g transform={CUBE.lid}>
+                <rect
+                  width="85.2"
+                  height="85.2"
+                  rx="6"
+                  fill="url(#infra-lid)"
+                  stroke="#6C91F9"
+                  strokeOpacity="0.06"
+                  strokeWidth="0.9"
+                />
+              </g>
+              {/* side faces: the design stacks two translucent fills, so
+                  two rects each — blue below, white (with the stroke) on top */}
+              <g transform={CUBE.left}>
+                <rect width="85.3" height="85.1" rx="8" fill="#617FDC" fillOpacity="0.1" />
+                <rect
+                  width="85.3"
+                  height="85.1"
+                  rx="8"
+                  fill="#FFFFFF"
+                  fillOpacity="0.05"
+                  stroke="#909090"
+                  strokeOpacity="0.22"
+                  strokeWidth="0.9"
+                />
+              </g>
+              <g transform={CUBE.right}>
+                <rect width="85.3" height="85.1" rx="8" fill="#617CCE" fillOpacity="0.1" />
+                <rect
+                  width="85.3"
+                  height="85.1"
+                  rx="8"
+                  fill="#FFFFFF"
+                  fillOpacity="0.03"
+                  stroke="#909090"
+                  strokeOpacity="0.22"
+                  strokeWidth="0.9"
+                />
+              </g>
+              {/* lucide/server riding the lid */}
+              <g
+                transform={CUBE.icon}
+                fill="none"
+                stroke="#FFFFFF"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M16.6667 1.66667H3.33333C2.41286 1.66667 1.66667 2.41286 1.66667 3.33333V6.66667C1.66667 7.58714 2.41286 8.33333 3.33333 8.33333H16.6667C17.5871 8.33333 18.3333 7.58714 18.3333 6.66667V3.33333C18.3333 2.41286 17.5871 1.66667 16.6667 1.66667Z" />
+                <path
+                  d="M16.6667 11.6667H3.33333C2.41286 11.6667 1.66667 12.4129 1.66667 13.3333V16.6667C1.66667 17.5871 2.41286 18.3333 3.33333 18.3333H16.6667C17.5871 18.3333 18.3333 17.5871 18.3333 16.6667V13.3333C18.3333 12.4129 17.5871 11.6667 16.6667 11.6667Z"
+                  strokeOpacity="0.3"
+                />
+                <path d="M5 5H5.00833" strokeWidth="0.75" />
+                <path d="M5 15H5.00833" strokeOpacity="0.3" strokeWidth="0.75" />
+              </g>
+
+              {/* legend */}
+              <rect x="36" y="36" width="28" height="28" rx="8" fill="#617CCE" fillOpacity="0.1" />
+              <text
+                x="76"
+                y="53.5"
+                fill="#4E4E4E"
+                fontSize="13"
+                style={{ fontFamily: "var(--font-geist-mono)" }}
+              >
+                ENVIRONMENT
+              </text>
+              <rect
+                x="36"
+                y="88"
+                width="28"
+                height="28"
+                rx="4"
+                fill="none"
+                stroke="#A8A8A8"
+                strokeOpacity="0.5"
+                strokeWidth="0.9"
+                strokeDasharray="2 2"
+              />
+              <text
+                x="76"
+                y="105.5"
+                fill="#4E4E4E"
+                fontSize="13"
+                style={{ fontFamily: "var(--font-geist-mono)" }}
+              >
+                BUILD
+              </text>
+
+              {/* NETWORK ISOLATION — highlighted, with its description */}
+              <line x1="483" y1="281" x2="715" y2="281" stroke="#FFFFFF" strokeOpacity="0.1" strokeWidth="0.9" />
+              <text
+                x="715"
+                y="305.5"
+                textAnchor="end"
+                fill="url(#infra-ni-label)"
+                fontSize="13"
+                style={{ fontFamily: "var(--font-geist-mono)" }}
+              >
+                NETWORK ISOLATION
+              </text>
+              <text
+                textAnchor="end"
+                fill="#A1A1A1"
+                fillOpacity="0.6"
+                fontSize="13"
+                style={{ fontFamily: "var(--font-geist-sans)" }}
+              >
+                <tspan x="715" y="330.1">Firewall exists between each</tspan>
+                <tspan x="715" y="349.6">module to keep it isolated for</tspan>
+                <tspan x="715" y="369.1">security</tspan>
+              </text>
+
+              {/* AUTOMATED BACKUP (left) and HIGH AVAILABILITY */}
+              <line x1="37" y1="359" x2="257" y2="359" stroke="#FFFFFF" strokeOpacity="0.1" strokeWidth="0.9" />
+              <text
+                x="37"
+                y="383.5"
+                fill="#4E4E4E"
+                fontSize="13"
+                style={{ fontFamily: "var(--font-geist-mono)" }}
+              >
+                AUTOMATED BACKUP
+              </text>
+              <line x1="483" y1="426" x2="715" y2="426" stroke="#FFFFFF" strokeOpacity="0.1" strokeWidth="0.9" />
+              <text
+                x="715"
+                y="450.5"
+                textAnchor="end"
+                fill="#4E4E4E"
+                fontSize="13"
+                style={{ fontFamily: "var(--font-geist-mono)" }}
+              >
+                HIGH AVAILABILITY
+              </text>
             </g>
 
             {/* callouts — the middle line doubles as BUILD's in stage 1;
