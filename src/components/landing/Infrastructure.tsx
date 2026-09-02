@@ -576,19 +576,20 @@ export default function Infrastructure() {
         return t;
       };
 
-      /* The transitions INTO frame 6 (INTEGRATIONS), one per origin —
-         both share the same self-contained entrance: the leaving frame
-         simply fades out wholesale, then the leftmost card appears alone
-         and the other five accordion out to the right on the rubber-band
-         ease. Reversing one restores exactly the frame it left. */
+      /* Frame 6 (INTEGRATIONS) transitions are one-way fades, never
+         reversed: entering, the leaving frame fades out wholesale and the
+         self-contained entrance plays — the leftmost card appears alone at
+         the common card height, the other five accordion out on the
+         rubber-band ease, then the first card lifts to its raised pose.
+         Leaving, frame 6 fades out and the origin frame fades back in. */
       const appendEntrance6 = (t: gsap.core.Timeline) => {
         const sq = (sel: string) => svg.querySelector(sel);
-        t.set(svg.querySelectorAll("[data-card6]"), { x: 204, y: 256.25 }, 0.35);
+        const storage = sq('[data-card6="storage"]');
+        t.set(svg.querySelectorAll("[data-card6]"), { x: 204, y: 281.25 }, 0.35);
         t.set(sq("[data-frame6]"), { opacity: 1 }, 0.35);
-        // the leftmost card appears first, alone
-        t.fromTo(sq('[data-card6="storage"]'), { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.4);
+        // the leftmost card appears first, alone, level with the rest
+        t.fromTo(storage, { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.4);
         t.fromTo(sq("[data-f6-tab]"), { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.6);
-        t.fromTo(sq("[data-f6-callout]"), { opacity: 0 }, { opacity: 1, duration: 0.35 }, 1.2);
         // accordion: cards spring right, overshooting their spacing like a
         // rubber band before settling (DOM order is reversed, so element i
         // is CARDS6[5 - i]; storage, drawn last, stays put)
@@ -601,6 +602,10 @@ export default function Infrastructure() {
             0.68 + (5 - i) * 0.055
           );
         });
+        // once the row has settled, the first card rises a little and its
+        // callout hangs beneath it
+        t.to(storage, { y: 256.25, duration: 0.5, ease: "power2.inOut" }, 1.3);
+        t.fromTo(sq("[data-f6-callout]"), { opacity: 0 }, { opacity: 1, duration: 0.35 }, 1.55);
       };
       const appendItemSwap = (
         t: gsap.core.Timeline,
@@ -623,50 +628,51 @@ export default function Infrastructure() {
           0.5
         );
       };
-      let tl56: gsap.core.Timeline | null = null;
-      const ensureTl56 = () => {
-        if (tl56) return tl56;
+      /* What each origin frame shows — faded out on the way into 6 and
+         faded back in on the way out. */
+      const originParts = (origin: 4 | 5) => {
         const sq = (sel: string) => svg.querySelector(sel);
+        const callouts = sq(origin === 5 ? "[data-env5-callouts]" : "[data-env-callouts]");
+        return {
+          groups: [callouts, sq("[data-env-legend]"), sq("[data-env-cube]")],
+          faces: svg.querySelectorAll(origin === 5 ? "[data-face], [data-face-x]" : "[data-face]"),
+          clickable: [callouts, sq("[data-env-cube]")],
+        };
+      };
+      const enterTl: Partial<Record<4 | 5, gsap.core.Timeline>> = {};
+      const ensureEnter = (origin: 4 | 5) => {
+        const have = enterTl[origin];
+        if (have) return have;
+        const p = originParts(origin);
         const t = gsap.timeline({ paused: true });
-        // frame 5 fades out wholesale
-        t.to(
-          [sq("[data-env5-callouts]"), sq("[data-env-legend]"), sq("[data-env-cube]")],
-          { opacity: 0, duration: 0.3 },
-          0
-        );
-        t.to(svg.querySelectorAll("[data-face], [data-face-x]"), { opacity: 0, duration: 0.3 }, 0.05);
-        t.set([sq("[data-env5-callouts]"), sq("[data-env-cube]")], { pointerEvents: "none" }, 0.01);
+        t.to(p.groups, { opacity: 0, duration: 0.3 }, 0);
+        t.to(p.faces, { opacity: 0, duration: 0.3 }, 0.05);
+        t.set(p.clickable, { pointerEvents: "none" }, 0.01);
         appendEntrance6(t);
-        appendItemSwap(t, "scalability", "integrations");
-        // returning to frame 5 re-lights the arrow; a queued continuation
-        // (6 -> 4 when frame 6 was entered from 5) runs after
-        t.eventCallback("onReverseComplete", () => {
-          flickerMark(true);
-          const f = afterTl56Reverse;
-          afterTl56Reverse = null;
-          f?.();
-        });
-        tl56 = t;
+        appendItemSwap(t, origin === 5 ? "scalability" : "env", "integrations");
+        enterTl[origin] = t;
         return t;
       };
-      let tl46: gsap.core.Timeline | null = null;
-      const ensureTl46 = () => {
-        if (tl46) return tl46;
-        const sq = (sel: string) => svg.querySelector(sel);
+      const leaveTl: Partial<Record<4 | 5, gsap.core.Timeline>> = {};
+      const ensureLeave = (origin: 4 | 5) => {
+        const have = leaveTl[origin];
+        if (have) return have;
+        const p = originParts(origin);
         const t = gsap.timeline({ paused: true });
-        // frame 4 fades out wholesale
-        t.to(
-          [sq("[data-env-callouts]"), sq("[data-env-legend]"), sq("[data-env-cube]")],
-          { opacity: 0, duration: 0.3 },
-          0
-        );
-        t.to(svg.querySelectorAll("[data-face]"), { opacity: 0, duration: 0.3 }, 0.05);
-        t.set([sq("[data-env-callouts]"), sq("[data-env-cube]")], { pointerEvents: "none" }, 0.01);
-        appendEntrance6(t);
-        appendItemSwap(t, "env", "integrations");
-        // returning to frame 4 re-lights the server
-        t.eventCallback("onReverseComplete", () => flickerMark());
-        tl46 = t;
+        t.to(svg.querySelector("[data-frame6]"), { opacity: 0, duration: 0.3 }, 0);
+        t.to(p.groups, { opacity: 1, duration: 0.35 }, 0.3);
+        t.to(p.faces, { opacity: 0.8, duration: 0.35 }, 0.3);
+        t.set(p.clickable, { pointerEvents: "auto" }, 0.65);
+        appendItemSwap(t, "integrations", origin === 5 ? "scalability" : "env");
+        // the origin's lid mark flickers awake; a queued next step (going
+        // further than the origin) runs after
+        t.eventCallback("onComplete", () => {
+          flickerMark(origin === 5);
+          const f = afterLeaveSix;
+          afterLeaveSix = null;
+          f?.();
+        });
+        leaveTl[origin] = t;
         return t;
       };
 
@@ -680,8 +686,14 @@ export default function Infrastructure() {
 
       /* One-shot chain hooks. */
       let afterTl3Complete: (() => void) | null = null;
-      let afterTl56Reverse: (() => void) | null = null;
-      let enteredSixVia: 4 | 5 = 5; // which exit timeline carried us into 6
+      let afterLeaveSix: (() => void) | null = null;
+      let enteredSixVia: 4 | 5 = 5; // the frame 6 was entered from
+
+      // one-way timelines replay from the top with fresh start values
+      const run = (t: gsap.core.Timeline) => {
+        if (reduced) t.progress(1);
+        else t.invalidate().restart();
+      };
 
       const stepTo5 = () => {
         frameRef.current = 5;
@@ -716,20 +728,20 @@ export default function Infrastructure() {
         flickerRef.current?.kill();
         normalizeToLid();
         gsap.delayedCall(0.35, () => resetCallouts(from));
-        const t = from === 5 ? ensureTl56() : ensureTl46();
-        if (reduced) t.progress(1);
-        else t.play();
+        run(ensureEnter(from));
       };
       const leaveSix = () => {
-        // reverse the timeline that brought us in, landing on its origin
+        // fade 6 out and the origin frame back in
         frameRef.current = enteredSixVia;
         flickerRef.current?.kill();
-        const t = enteredSixVia === 5 ? ensureTl56() : ensureTl46();
-        if (reduced) {
-          t.progress(0);
-          afterTl56Reverse = null;
-        } else t.reverse();
+        const t = ensureLeave(enteredSixVia);
+        run(t);
       };
+
+      const anyActive = () =>
+        [tl3, enterTl[4], enterTl[5], leaveTl[4], leaveTl[5]].some(
+          (t) => t && t.isActive()
+        );
 
       const goTo = (target: number) => {
         const cur = frameRef.current;
@@ -748,22 +760,25 @@ export default function Infrastructure() {
           }
         } else {
           if (cur === 6) {
-            /* leaving 6 returns to wherever we came from; if the ask was
-               to go further down (6 -> 4 having entered from 5), chain a
-               second step after the reverse lands */
-            if (target === 4 && enteredSixVia === 5) {
-              afterTl56Reverse = () => stepBack4();
-              leaveSix();
-              if (reduced) stepBack4();
-            } else {
-              leaveSix();
+            /* leaving 6 lands on the frame it was entered from; asks that
+               go beyond it chain one more step after the fade lands */
+            if (target !== enteredSixVia) {
+              afterLeaveSix = enteredSixVia === 5 ? () => stepBack4() : () => stepTo5();
             }
+            leaveSix();
           } else if (cur === 5) {
             stepBack4();
           }
         }
       };
-      goToFrameRef.current = goTo;
+      /* Title clicks also park the scroll position in the target's runway
+         zone so the scroll-driven rules agree with the click. */
+      let snapScroll: (target: number) => void = () => {};
+      goToFrameRef.current = (target) => {
+        if (anyActive()) return;
+        goTo(target);
+        snapScroll(target);
+      };
 
       if (reduced) {
         tl.progress(1);
@@ -791,11 +806,42 @@ export default function Infrastructure() {
          Direct progress writes — no smoothing. */
       const sticky = stickyRef.current!;
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-      let entered = false; // the runway trigger's state (with hysteresis)
-      let prevQ2 = 0; // segments 2 and 3 act on threshold CROSSINGS only
-      let prevQ3 = 0;
+      let entered = false; // the frame-4 trigger's state (with hysteresis)
+
+      /* ONE TRANSITION PER SCROLL GESTURE. A gesture is a burst of scroll
+         events; 250ms of silence ends it. The first frame change a
+         gesture causes locks it — however hard the fling, 4 becomes 5 and
+         no more; scrolling back from 6 steps to 5, not through to 3. The
+         next gesture takes the next step. */
+      let gestureUsed = false;
+      let gestureTimer = 0;
+      const fire = (fn: () => void) => {
+        if (gestureUsed) return;
+        gestureUsed = true;
+        fn();
+      };
+
+      /* The pinned runway's geometry, shared by the scroll rules and the
+         click snap. The page currently ends right after this section, so
+         at some viewport heights the full runway isn't reachable — it
+         scales to what today's page allows and retires itself as sections
+         follow. */
+      const runway = () => {
+        const vh = window.innerHeight;
+        const maxScroll =
+          document.documentElement.scrollHeight - vh - window.scrollY;
+        const secTop = section.getBoundingClientRect().top;
+        const stickyTop = sticky.getBoundingClientRect().top;
+        const total = RUNWAY + RUNWAY2 + RUNWAY3;
+        const reachable = Math.min(
+          total,
+          stickyTop - (secTop - Math.max(0, maxScroll))
+        );
+        return { travel: stickyTop - secTop, scale: reachable / total };
+      };
+
       // a deep landing can complete frame 4 with no further scroll event;
-      // re-check the second segment once the entrance finishes
+      // re-check the runway once the entrance finishes
       tl2.eventCallback("onComplete", () => apply());
       const apply = () => {
         const r = panel.getBoundingClientRect();
@@ -808,29 +854,23 @@ export default function Infrastructure() {
         const r1 = Math.max(vh / 2 - 340 * k, minTop);
         tl.progress(clamp01((r0 - r.top) / Math.max(r0 - r1, 1)));
 
-        /* Phase B — the pinned runway as a TRIGGER, not a scrub. At xl the
-           sticky child's offset inside the section runs 0 -> RUNWAY while
-           pinned; crossing ENTER fires the timed frame-4 entrance,
-           dropping back below BACK fires the automated reverse. Below xl
-           there is no pin yet (responsive pass pending): the same trigger
-           reads 300px of overtravel past stage 3. */
+        window.clearTimeout(gestureTimer);
+        gestureTimer = window.setTimeout(() => {
+          gestureUsed = false;
+        }, 250);
+
+        /* Phase B — the pinned runway as TRIGGERS, not a scrub. At xl the
+           sticky child's offset inside the section runs through three
+           segments (frames 4, 5, 6); each rule reads the scroll LEVEL
+           against the current frame, so a state set by a title click is
+           never fought, and a gesture may fire at most one of them. Below
+           xl there is no pin yet (responsive pass pending): the same
+           rules read 300px bands of overtravel past stage 3. */
         let q: number;
         let q2: number;
         let q3: number;
         if (window.matchMedia("(min-width: 1280px)").matches) {
-          const secTop = section.getBoundingClientRect().top;
-          const stickyTop = sticky.getBoundingClientRect().top;
-          /* the page currently ends right after this section, so at some
-             viewport heights the full runway isn't reachable — all
-             segments scale to what today's page allows; retires itself as
-             sections follow */
-          const total = RUNWAY + RUNWAY2 + RUNWAY3;
-          const reachable = Math.min(
-            total,
-            stickyTop - (secTop - Math.max(0, maxScroll))
-          );
-          const scale = reachable / total;
-          const travel = stickyTop - secTop;
+          const { travel, scale } = runway();
           q = travel / Math.max(1, RUNWAY * scale);
           q2 = (travel - RUNWAY * scale) / Math.max(1, RUNWAY2 * scale);
           q3 =
@@ -844,21 +884,44 @@ export default function Infrastructure() {
         q = clamp01(q);
         q2 = clamp01(q2);
         q3 = clamp01(q3);
+        const frame = frameRef.current;
         if (!entered && q >= ENTER) {
-          entered = true;
-          tl2.play();
-        } else if (entered && q <= BACK) {
-          entered = false;
-          tl2.reverse();
+          fire(() => {
+            entered = true;
+            tl2.play();
+          });
+        } else if (entered && frame === 4 && q <= BACK && !anyActive()) {
+          fire(() => {
+            entered = false;
+            tl2.reverse();
+          });
+        } else if (anyActive()) {
+          // let the running transition land before judging the next
+        } else if (frame === 4 && tl2.progress() === 1 && q2 >= ENTER) {
+          fire(() => goTo(5));
+        } else if (frame === 5 && q2 <= BACK) {
+          fire(() => goTo(4));
+        } else if (frame === 5 && q3 >= ENTER) {
+          fire(() => goTo(6));
+        } else if (frame === 6 && q3 <= BACK) {
+          fire(() => goTo(enteredSixVia));
         }
-        /* segments 2/3 fire only on crossings, so a title-click transition
-           isn't fought by the scroll position it happened at */
-        if (prevQ2 < ENTER && q2 >= ENTER) goTo(5);
-        else if (prevQ2 > BACK && q2 <= BACK && frameRef.current === 5) goTo(4);
-        prevQ2 = q2;
-        if (prevQ3 < ENTER && q3 >= ENTER) goTo(6);
-        else if (prevQ3 > BACK && q3 <= BACK && frameRef.current === 6) goTo(5);
-        prevQ3 = q3;
+      };
+
+      /* Park the scroll inside the target frame's runway segment (60% in,
+         past ENTER and clear of BACK) after a title click. The synthetic
+         scroll events this raises are swallowed by the gesture lock. */
+      snapScroll = (target: number) => {
+        if (!window.matchMedia("(min-width: 1280px)").matches) return;
+        const { travel, scale } = runway();
+        const want =
+          (target === 4
+            ? RUNWAY * 0.6
+            : target === 5
+              ? RUNWAY + RUNWAY2 * 0.6
+              : RUNWAY + RUNWAY2 + RUNWAY3 * 0.6) * scale;
+        gestureUsed = true;
+        window.scrollBy({ top: want - travel, behavior: "instant" });
       };
 
       let listening = false;
