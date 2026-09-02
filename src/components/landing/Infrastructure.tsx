@@ -120,22 +120,14 @@ const ENV_CALLOUTS = [
   },
 ];
 
-/* The 3 -> 4 handoff is a PIN plus a TRIGGER: at xl the block goes
-   sticky exactly where stage 3 completes and the next RUNWAY px of
-   scroll are consumed in place. Unlike stages 1-3 this is NOT scrubbed —
-   crossing ENTER (the felt "catch") fires the frame-4 entrance as a
-   timed animation; scrolling back across BACK fires the automated
-   reverse to stage 3. The gap between the two is hysteresis so the
-   boundary doesn't flutter. */
-const RUNWAY = 640;
+/* From stage 3 on, the frames (4 -> 5 -> 6) are timed transitions, one
+   per scroll gesture. At xl the page is CAPTURED at the pin position and
+   input is consumed as steps (see the effect). Below xl there is no
+   capture yet: the frames step off 300px bands of overtravel past stage
+   3, entering past ENTER and leaving below BACK — the gap is hysteresis
+   so the boundary doesn't flutter. */
 const ENTER = 0.35;
 const BACK = 0.2;
-/* A second runway segment carries the 4 -> 5 handoff with the same
-   trigger logic; title clicks in the left column drive the same
-   transitions, so the scroll side only acts on threshold CROSSINGS.
-   Segment three carries 5 -> 6 the same way. */
-const RUNWAY2 = 560;
-const RUNWAY3 = 560;
 
 /* Right-hand callouts: a hairline from x475 to x715 with a 13px mono label
    hanging under its right end. BUILD (stage 1) sits on the same middle
@@ -304,7 +296,6 @@ function makeNoiseTexture(): string {
 
 export default function Infrastructure() {
   const sectionRef = useRef<HTMLElement>(null);
-  const stickyRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const activeFaceRef = useRef("lid");
@@ -771,13 +762,14 @@ export default function Infrastructure() {
           }
         }
       };
-      /* Title clicks also park the scroll position in the target's runway
-         zone so the scroll-driven rules agree with the click. */
-      let snapScroll: (target: number) => void = () => {};
+      /* Title clicks switch frames too; if the page isn't captured yet
+         (clicked while approaching), capture first so the frame plays
+         centered. */
+      let captureNow: () => void = () => {};
       goToFrameRef.current = (target) => {
         if (anyActive()) return;
+        captureNow();
         goTo(target);
-        snapScroll(target);
       };
 
       if (reduced) {
@@ -804,86 +796,166 @@ export default function Infrastructure() {
                 the full story reachable now and retires itself as later
                 sections add scroll room below.
          Direct progress writes — no smoothing. */
-      const sticky = stickyRef.current!;
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-      let entered = false; // the frame-4 trigger's state (with hysteresis)
+      let entered = false; // frame 4 has been entered (tl2 played)
 
-      /* ONE TRANSITION PER SCROLL GESTURE. A gesture is a burst of scroll
-         events; 250ms of silence ends it. The first frame change a
-         gesture causes locks it — however hard the fling, 4 becomes 5 and
-         no more; scrolling back from 6 steps to 5, not through to 3. The
-         next gesture takes the next step. */
+      /* ONE STEP PER GESTURE. A gesture is a burst of input events; 250ms
+         of silence ends it. The first step a gesture causes locks it —
+         however hard the fling, one step. The next gesture takes the next. */
       let gestureUsed = false;
       let gestureTimer = 0;
+      const touchGesture = () => {
+        window.clearTimeout(gestureTimer);
+        gestureTimer = window.setTimeout(() => {
+          gestureUsed = false;
+        }, 250);
+      };
       const fire = (fn: () => void) => {
         if (gestureUsed) return;
         gestureUsed = true;
         fn();
       };
 
-      /* The pinned runway's geometry, shared by the scroll rules and the
-         click snap. The page currently ends right after this section, so
-         at some viewport heights the full runway isn't reachable — it
-         scales to what today's page allows and retires itself as sections
-         follow. */
-      const runway = () => {
-        const vh = window.innerHeight;
-        const maxScroll =
-          document.documentElement.scrollHeight - vh - window.scrollY;
-        const secTop = section.getBoundingClientRect().top;
-        const stickyTop = sticky.getBoundingClientRect().top;
-        const total = RUNWAY + RUNWAY2 + RUNWAY3;
-        const reachable = Math.min(
-          total,
-          stickyTop - (secTop - Math.max(0, maxScroll))
-        );
-        return { travel: stickyTop - secTop, scale: reachable / total };
-      };
+      /* SCROLL CAPTURE. Once the section reaches its pin position (stage 3
+         complete, cluster centered) the page stops scrolling: wheel,
+         touch and keys are intercepted and consumed as STEPS through the
+         frames — 3 -> 4 -> 5 -> 6 and back — one per gesture. Only at the
+         ends does a gesture release the page again: forward past the last
+         frame, or backward past stage 3. Crossing the pin position again
+         later (from either side) recaptures — the sequence is walked
+         every time. Desktop pointers at xl only; reduced motion never
+         captures. */
+      const capturable = () =>
+        window.matchMedia("(min-width: 1280px) and (hover: hover)").matches;
+      let captured = false;
+      let prevTop: number | null = null; // panel.top last seen, for crossing
+      let awayFromPin = true; // must leave the pin before recapturing
+      const STEP_THRESH = 120; // wheel delta that makes a step
+      let acc = 0;
 
-      // a deep landing can complete frame 4 with no further scroll event;
-      // re-check the runway once the entrance finishes
-      tl2.eventCallback("onComplete", () => apply());
-      const apply = () => {
+      /* the panel top's target: stage 3 completes when panel.top == r1 */
+      const pinTarget = () => {
         const r = panel.getBoundingClientRect();
-        const k = r.height / 679; // render scale of the 751x679 stage
+        const k = r.height / 679;
         const vh = window.innerHeight;
         const maxScroll =
           document.documentElement.scrollHeight - vh - window.scrollY;
         const minTop = r.top - Math.max(0, maxScroll); // panel.top at page bottom
-        const r0 = vh - 460 * k;
-        const r1 = Math.max(vh / 2 - 340 * k, minTop);
-        tl.progress(clamp01((r0 - r.top) / Math.max(r0 - r1, 1)));
+        return { r, k, vh, r0: vh - 460 * k, r1: Math.max(vh / 2 - 340 * k, minTop) };
+      };
 
-        window.clearTimeout(gestureTimer);
-        gestureTimer = window.setTimeout(() => {
-          gestureUsed = false;
-        }, 250);
+      const atStageThree = () => !entered && !tl2.isActive();
 
-        /* Phase B — the pinned runway as TRIGGERS, not a scrub. At xl the
-           sticky child's offset inside the section runs through three
-           segments (frames 4, 5, 6); each rule reads the scroll LEVEL
-           against the current frame, so a state set by a title click is
-           never fought, and a gesture may fire at most one of them. Below
-           xl there is no pin yet (responsive pass pending): the same
-           rules read 300px bands of overtravel past stage 3. */
-        let q: number;
-        let q2: number;
-        let q3: number;
-        if (window.matchMedia("(min-width: 1280px)").matches) {
-          const { travel, scale } = runway();
-          q = travel / Math.max(1, RUNWAY * scale);
-          q2 = (travel - RUNWAY * scale) / Math.max(1, RUNWAY2 * scale);
-          q3 =
-            (travel - (RUNWAY + RUNWAY2) * scale) /
-            Math.max(1, RUNWAY3 * scale);
+      /* one step in a direction; +1 forward (down), -1 backward (up).
+         Returns true if the page should be RELEASED instead. */
+      const step = (dir: 1 | -1): boolean => {
+        if (anyActive() || tl2.isActive()) return false;
+        const frame = frameRef.current;
+        if (dir > 0) {
+          if (atStageThree()) {
+            entered = true;
+            tl2.play();
+          } else if (frame === 4) goTo(5);
+          else if (frame === 5) goTo(6);
+          else return true; // past the last frame: release downward
         } else {
-          q = (r1 - r.top) / 300;
-          q2 = (r1 - r.top - 300) / 300;
-          q3 = (r1 - r.top - 600) / 300;
+          if (atStageThree()) return true; // before frame 4: release upward
+          if (frame === 6) goTo(enteredSixVia);
+          else if (frame === 5) goTo(4);
+          else if (frame === 4) {
+            entered = false;
+            tl2.reverse();
+          }
         }
-        q = clamp01(q);
-        q2 = clamp01(q2);
-        q3 = clamp01(q3);
+        return false;
+      };
+
+      const onWheel = (e: WheelEvent) => {
+        if (!captured) return;
+        e.preventDefault();
+        touchGesture();
+        const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+        acc += delta;
+        if (gestureUsed || Math.abs(acc) < STEP_THRESH) return;
+        const dir: 1 | -1 = acc > 0 ? 1 : -1;
+        acc = 0;
+        fire(() => {
+          if (step(dir)) release();
+        });
+      };
+      const onKey = (e: KeyboardEvent) => {
+        if (!captured) return;
+        const t = e.target as HTMLElement | null;
+        if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+        let dir: 1 | -1 | 0 = 0;
+        if (e.key === "ArrowDown" || e.key === "PageDown" || (e.key === " " && !e.shiftKey)) dir = 1;
+        else if (e.key === "ArrowUp" || e.key === "PageUp" || (e.key === " " && e.shiftKey)) dir = -1;
+        if (!dir) return;
+        e.preventDefault();
+        touchGesture();
+        const d = dir;
+        fire(() => {
+          if (step(d)) release();
+        });
+      };
+      const onTouchMove = (e: TouchEvent) => {
+        if (captured) e.preventDefault();
+      };
+
+      const capture = () => {
+        if (captured) return;
+        captured = true;
+        acc = 0;
+        gestureUsed = true; // the gesture that brought us here is spent
+        touchGesture();
+        // align exactly on the pin, undoing any overshoot of the last event
+        const { r, r1 } = pinTarget();
+        window.scrollBy({ top: r.top - r1, behavior: "instant" });
+        window.addEventListener("wheel", onWheel, { passive: false });
+        window.addEventListener("touchmove", onTouchMove, { passive: false });
+        window.addEventListener("keydown", onKey);
+      };
+      const release = () => {
+        if (!captured) return;
+        captured = false;
+        awayFromPin = false;
+        prevTop = null;
+        window.removeEventListener("wheel", onWheel);
+        window.removeEventListener("touchmove", onTouchMove);
+        window.removeEventListener("keydown", onKey);
+      };
+      captureNow = () => {
+        if (capturable() && !reduced) capture();
+      };
+
+      const apply = () => {
+        const { r, r1, r0 } = pinTarget();
+        tl.progress(clamp01((r0 - r.top) / Math.max(r0 - r1, 1)));
+        if (captured) return; // the scrollbar can still move us; ignore
+
+        if (capturable()) {
+          /* native scrolling: watch the panel cross the pin position in
+             either direction, then capture there */
+          if (Math.abs(r.top - r1) > 40) awayFromPin = true;
+          if (prevTop !== null && awayFromPin) {
+            const crossedDown = prevTop > r1 && r.top <= r1;
+            const crossedUp = prevTop < r1 && r.top >= r1;
+            if (crossedDown || crossedUp) {
+              capture();
+              return;
+            }
+          }
+          prevTop = r.top;
+          return;
+        }
+
+        /* below xl there is no capture yet (responsive pass pending):
+           the frames step off 300px bands of overtravel past stage 3,
+           one per gesture */
+        touchGesture();
+        const q = clamp01((r1 - r.top) / 300);
+        const q2 = clamp01((r1 - r.top - 300) / 300);
+        const q3 = clamp01((r1 - r.top - 600) / 300);
         const frame = frameRef.current;
         if (!entered && q >= ENTER) {
           fire(() => {
@@ -906,22 +978,6 @@ export default function Infrastructure() {
         } else if (frame === 6 && q3 <= BACK) {
           fire(() => goTo(enteredSixVia));
         }
-      };
-
-      /* Park the scroll inside the target frame's runway segment (60% in,
-         past ENTER and clear of BACK) after a title click. The synthetic
-         scroll events this raises are swallowed by the gesture lock. */
-      snapScroll = (target: number) => {
-        if (!window.matchMedia("(min-width: 1280px)").matches) return;
-        const { travel, scale } = runway();
-        const want =
-          (target === 4
-            ? RUNWAY * 0.6
-            : target === 5
-              ? RUNWAY + RUNWAY2 * 0.6
-              : RUNWAY + RUNWAY2 + RUNWAY3 * 0.6) * scale;
-        gestureUsed = true;
-        window.scrollBy({ top: want - travel, behavior: "instant" });
       };
 
       let listening = false;
@@ -954,6 +1010,8 @@ export default function Infrastructure() {
       return () => {
         io.disconnect();
         off();
+        release();
+        window.clearTimeout(gestureTimer);
       };
     }, svg);
 
@@ -962,12 +1020,7 @@ export default function Infrastructure() {
 
   return (
     <section ref={sectionRef} className="px-5 md:px-10 xl:px-0">
-      {/* sticks exactly where stage 3 completes: panel.top = 50vh - 340,
-          i.e. this block's top at 50vh - 340 - 127 (pt-120 + panel y7) */}
-      <div
-        ref={stickyRef}
-        className="pt-24 xl:sticky xl:top-[calc(50vh-467px)] xl:pt-[120px]"
-      >
+      <div className="pt-24 xl:pt-[120px]">
       <div className="relative mx-auto max-w-[600px] md:max-w-none xl:h-[686px] xl:w-[1200px] xl:max-w-none">
         {/* left column */}
         <div className="xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
@@ -1668,15 +1721,6 @@ export default function Infrastructure() {
         </div>
       </div>
       </div>
-
-      {/* pin runway — the scroll consumed while the block stays put:
-          segment 1 = the stage-3 hold + frame-4 entrance, segment 2 =
-          the 4 -> 5 handoff */}
-      <div
-        aria-hidden
-        className="hidden xl:block"
-        style={{ height: RUNWAY + RUNWAY2 + RUNWAY3 }}
-      />
     </section>
   );
 }
