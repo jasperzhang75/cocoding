@@ -352,6 +352,67 @@ export default function Infrastructure() {
   const flickerRef = useRef<gsap.core.Timeline | null>(null);
   const goToFrameRef = useRef<(target: number) => void>(() => {});
 
+  /* Frame 8's scorecard animation: each tile's outline is drawn by a
+     #6485E7 light running the perimeter — fast, then easing out — while
+     its score counts 0 -> 100; as the light completes, the resting
+     gradient stroke takes over. Tiles stagger in reading order. Reset
+     unseen before every entrance so it replays each time. */
+  const scoreTlRef = useRef<gsap.core.Timeline | null>(null);
+  const resetScorecard = () => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    scoreTlRef.current?.kill();
+    scoreTlRef.current = null;
+    gsap.set(svg.querySelectorAll("[data-tile-stroke]"), { opacity: 0 });
+    gsap.set(svg.querySelectorAll("[data-tile-draw]"), { opacity: 1, attr: { "stroke-dashoffset": 100 } });
+    svg.querySelectorAll("[data-tile8-score]").forEach((el) => {
+      el.textContent = "0";
+    });
+  };
+  const playScorecard = () => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    scoreTlRef.current?.kill();
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      gsap.set(svg.querySelectorAll("[data-tile-stroke]"), { opacity: 0.7 });
+      gsap.set(svg.querySelectorAll("[data-tile-draw]"), { opacity: 0 });
+      svg.querySelectorAll("[data-tile8-score]").forEach((el) => {
+        el.textContent = "100";
+      });
+      return;
+    }
+    const t = gsap.timeline();
+    TILES8.forEach((tile, i) => {
+      const g = svg.querySelector(`[data-tile8="${tile.key}"]`);
+      if (!g) return;
+      const at = i * 0.15;
+      const draw = g.querySelector("[data-tile-draw]");
+      const rest = g.querySelector("[data-tile-stroke]");
+      const score = g.querySelector("[data-tile8-score]");
+      // the light runs the outline: quick off the mark, then easing out
+      t.to(draw, { attr: { "stroke-dashoffset": 0 }, duration: 1.4, ease: "power3.out" }, at);
+      // it hands over to the resting gradient as it closes the loop
+      t.to(rest, { opacity: 0.7, duration: 0.45 }, at + 1.05);
+      t.to(draw, { opacity: 0, duration: 0.45 }, at + 1.1);
+      // the score counts up on the same fast-then-slow curve
+      const n = { v: 0 };
+      t.to(
+        n,
+        {
+          v: 100,
+          duration: 1.2,
+          ease: "power2.out",
+          onUpdate: () => {
+            if (score) score.textContent = String(Math.round(n.v));
+          },
+        },
+        at
+      );
+    });
+    scoreTlRef.current = t;
+  };
+
   /* Frame 6 rows: which card holds the light in each, and which tab
      shows. Hover/tap moves the light; the tab switch is in the effect. */
   const litRef = useRef<Record<RowKey, string>>({ buildin: "database", connectors: "notion" });
@@ -844,6 +905,8 @@ export default function Infrastructure() {
         if (p.faces.length) t.to(p.faces, { opacity: 0, duration: 0.3 }, 0.05);
         t.set(p.clickable, { pointerEvents: "none" }, 0.01);
         t.fromTo(svg.querySelector("[data-frame8]"), { opacity: 0 }, { opacity: 1, duration: 0.45 }, 0.35);
+        // the scorecard plays once the frame is mostly in
+        t.call(() => playScorecard(), [], 0.6);
         appendItemSwap(t, ITEM_OF[origin], "analytics");
         enter8Tl[origin] = t;
         return t;
@@ -1035,11 +1098,13 @@ export default function Infrastructure() {
           normalizeToLid();
           gsap.delayedCall(0.35, () => resetCallouts(from));
         }
+        resetScorecard(); // frame 8 is hidden here; it replays on entry
         run(ensureEnter8(from));
       };
       const leaveEight = () => {
         frameRef.current = enteredEightVia;
         flickerRef.current?.kill();
+        scoreTlRef.current?.kill();
         run(ensureLeave8(enteredEightVia));
       };
 
@@ -2045,7 +2110,10 @@ export default function Infrastructure() {
               </g>
               {TILES8.map((t) => (
                 <g key={t.key} data-tile8={t.key}>
+                  {/* the resting gradient stroke, revealed once the light
+                      has run the outline */}
                   <rect
+                    data-tile-stroke
                     x={t.x}
                     y={t.y}
                     width="77.5"
@@ -2055,7 +2123,25 @@ export default function Infrastructure() {
                     stroke="url(#infra-tile-stroke)"
                     strokeOpacity="0.86"
                     strokeWidth="1"
-                    opacity="0.7"
+                    style={{ opacity: 0.7 }}
+                  />
+                  {/* the #6485E7 light that draws the outline: pathLength
+                      normalizes the perimeter to 100 so the dash offset
+                      runs 100 -> 0 regardless of the rounded corners */}
+                  <rect
+                    data-tile-draw
+                    x={t.x}
+                    y={t.y}
+                    width="77.5"
+                    height="77.5"
+                    rx="6"
+                    fill="none"
+                    stroke="#6485E7"
+                    strokeWidth="1"
+                    pathLength="100"
+                    strokeDasharray="100"
+                    strokeDashoffset="100"
+                    style={{ opacity: 0 }}
                   />
                   <text
                     data-tile8-score
