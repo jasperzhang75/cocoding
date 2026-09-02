@@ -357,18 +357,42 @@ export default function Infrastructure() {
       if (el) gsap.to(el, { duration: D, ease: "power2.inOut", overwrite: "auto", ...vars });
     };
     const base = (k: string) => cards.find((c) => c.key === k)!.y;
+    const callout = (k: string) => svg.querySelector(`[data-callout="${row}:${k}"]`);
+    /* ONE LIT CARD, ONE LEGEND. A fast sweep fires enters faster than the
+       fades run, and a legend's delayed fade-in would otherwise outlive
+       the fade-out issued for it. So: kill every pending tween on the
+       row, snap all but the previous holder to rest, then animate only
+       the handover between the previous card and the new one. */
+    cards.forEach((c) => {
+      const el = card(c.key);
+      const co = callout(c.key);
+      if (el) gsap.killTweensOf([el, ...Array.from(el.querySelectorAll("[data-lit], [data-icon-lit], [data-icon-dim]"))]);
+      if (co) gsap.killTweensOf(co);
+      if (c.key === key || c.key === prev) return;
+      if (el) {
+        gsap.set(el, { y: c.y });
+        const set = (sel: string, o: number) => {
+          const p = el.querySelector(sel);
+          if (p) gsap.set(p, { opacity: o });
+        };
+        set("[data-lit]", 0);
+        set("[data-icon-lit]", 0);
+        set("[data-icon-dim]", 1);
+      }
+      if (co) gsap.set(co, { opacity: 0 });
+    });
     // the previous holder settles and dims
     tw(card(prev), { y: base(prev) });
     tw(part(prev, "[data-lit]"), { opacity: 0 });
     tw(part(prev, "[data-icon-lit]"), { opacity: 0 });
     tw(part(prev, "[data-icon-dim]"), { opacity: 1 });
-    tw(svg.querySelector(`[data-callout="${row}:${prev}"]`), { opacity: 0, duration: D * 0.7 });
+    tw(callout(prev), { opacity: 0, duration: D * 0.7, overwrite: true });
     // the new one lights and rises
     tw(card(key), { y: base(key) - raise });
     tw(part(key, "[data-lit]"), { opacity: 1 });
     tw(part(key, "[data-icon-lit]"), { opacity: 1 });
     tw(part(key, "[data-icon-dim]"), { opacity: 0 });
-    tw(svg.querySelector(`[data-callout="${row}:${key}"]`), { opacity: 1, delay: D * 0.4 });
+    tw(callout(key), { opacity: 1, delay: D * 0.4, overwrite: true });
   };
 
   /* Put one row back to its rest instantly: cards on their spots, the
