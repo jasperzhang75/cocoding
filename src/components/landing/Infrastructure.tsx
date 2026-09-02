@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import gsap from "gsap";
 import { HyperText } from "@/components/magicui/hyper-text";
 import { ICONS6 } from "./infra-icons";
+import { BRAND7 } from "./infra-brand-icons";
 
 /* Infrastructure — the isometric story (Figma 17205:89133 -> 87420 ->
    87636), scrubbed by scroll. The three approved frames are keyframes on
@@ -232,20 +233,44 @@ const FACE_MAP: Record<number, Record<string, string>> = {
 };
 
 /* Frame 6 (INTEGRATIONS, Figma 16533:14745): the cube scene gives way to
-   six tilted connector cards receding to the right, first card lit and
-   raised with a STORAGE callout hanging below it, under a centered
-   BUILD-IN / CONNECTORS tab header. Cards are 77.5 squares through
-   matrix(0.87 0.5 0 1) — lit: r6 + the accent gradient + 6% stroke;
-   dim: r8, translucent pair, #909090 9% stroke. Icons are the design's
-   filled 24-grid exports, each with its own slight iso squash. */
-const CARDS6 = [
-  { key: "storage", icon: "database", label: "STORAGE", x: 204, y: 256.25, iconT: "matrix(0.898 0.439 0 1 23 40.75)" },
+   a row of tilted connector cards receding to the right under a centered
+   BUILD-IN / CONNECTORS tab header. Cards are 77.5 squares through a
+   parallelogram matrix — lit: r6 + the accent gradient + 6% stroke, the
+   card raised with its legend hanging below; dim: r8, translucent pair,
+   #909090 9% stroke. Hovering (or tapping) a card moves the light to it.
+
+   Two rows share the interaction: BUILD-IN (left-facing cards, the
+   design's filled 24-grid icons that turn white when lit) and
+   CONNECTORS (Figma 17205:88594 — right-facing cards with brand icons).
+   `y` is each card's resting height; the lit one sits `raise` higher. */
+type Card = { key: string; label: string; x: number; y: number; iconT: string; icon?: string; off?: [number, number] };
+const CARDS6: Card[] = [
+  { key: "database", icon: "database", label: "DATABASE", x: 204, y: 281.25, iconT: "matrix(0.898 0.439 0 1 23 40.75)" },
   { key: "payments", icon: "creditCard", label: "PAYMENTS", x: 259.1, y: 281.25, iconT: "matrix(0.857 0.514 0 1 22.883 39.75)" },
   { key: "monitoring", icon: "eye", label: "MONITORING", x: 314.2, y: 281.3, iconT: "matrix(0.882 0.471 0 1 22.766 40.75)" },
   { key: "auth", icon: "lock", label: "AUTHENTICATION", x: 369.4, y: 281.3, iconT: "matrix(0.857 0.514 0 1 23.648 39.75)" },
-  { key: "database", icon: "dresser", label: "DATABASE", x: 424.5, y: 281.3, iconT: "matrix(0.866 0.5 0 1 23.531 40)" },
+  { key: "storage", icon: "dresser", label: "FILE STORAGE", x: 424.5, y: 281.3, iconT: "matrix(0.866 0.5 0 1 23.531 40)" },
   { key: "deployment", icon: "rocket", label: "DEPLOYMENT", x: 479.6, y: 281, iconT: "matrix(0.832 0.555 0 1 23.414 39)" },
 ];
+const CARDS7: Card[] = [
+  { key: "notion", label: "NOTION", x: 122, y: 281.3, iconT: "matrix(0.882 -0.471 0 1 23 54.063)" },
+  { key: "whatsapp", label: "WHATSAPP", x: 177.1, y: 281.3, iconT: "matrix(0.942 -0.335 0 1 22.884 51.75)" },
+  { key: "telegram", label: "TELEGRAM", x: 232.2, y: 281.3, iconT: "matrix(0.89 -0.455 0 1 22.768 51.75)" },
+  { key: "stripe", label: "STRIPE", x: 287.4, y: 281.3, iconT: "matrix(0.89 -0.455 0 1 22.649 51.75)" },
+  { key: "slack", label: "SLACK", x: 342.5, y: 281, iconT: "matrix(0.832 -0.555 0 1 23.531 53)" },
+  { key: "openai", label: "OPENAI", x: 397.6, y: 281, iconT: "matrix(0.89 -0.455 0 1 23.414 52)" },
+  { key: "hubspot", label: "HUBSPOT", x: 452, y: 281, iconT: "matrix(0.841 -0.542 0 1 24 52)", off: [0, 8.51] },
+  { key: "airtable", label: "AIRTABLE", x: 507, y: 281, iconT: "matrix(0.898 -0.439 0 1 24 52)", off: [0, 1.92] },
+  { key: "supabase", label: "SUPABASE", x: 562, y: 281, iconT: "matrix(0.857 -0.514 0 1 24 53)" },
+];
+type RowKey = "buildin" | "connectors";
+const ROWS: Record<RowKey, { cards: Card[]; face: string; raise: number; lineDx: number }> = {
+  buildin: { cards: CARDS6, face: "matrix(0.87 0.5 0 1 0 0)", raise: 25, lineDx: 34 },
+  connectors: { cards: CARDS7, face: "matrix(-0.866 0.5 0 1 67.117 0)", raise: 18, lineDx: 35 },
+};
+/* halfway between the two faces the card is edge-on — zero width — which
+   is where the tab switch swaps one row for the other unseen */
+const FACE_EDGE = "matrix(0.002 0.5 0 1 33.56 0)";
 
 /* Figma's Vector 24 — the stage-3 wash at the top of the panel: a blob at
    9% #2D69B7 with a white 26% hairline, layer-blurred 60.6 (feGaussianBlur
@@ -307,6 +332,73 @@ export default function Infrastructure() {
   const frameRef = useRef(4); // which scene frame the cube is showing
   const flickerRef = useRef<gsap.core.Timeline | null>(null);
   const goToFrameRef = useRef<(target: number) => void>(() => {});
+
+  /* Frame 6 rows: which card holds the light in each, and which tab
+     shows. Hover/tap moves the light; the tab switch is in the effect. */
+  const litRef = useRef<Record<RowKey, string>>({ buildin: "database", connectors: "notion" });
+  const tabRef = useRef<RowKey>("buildin");
+  const switchTabRef = useRef<(to: RowKey) => void>(() => {});
+
+  const lightCard = (row: RowKey, key: string) => {
+    const svg = svgRef.current;
+    if (!svg || litRef.current[row] === key) return;
+    const prev = litRef.current[row];
+    litRef.current[row] = key;
+    const { cards, raise } = ROWS[row];
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const D = reduced ? 0 : 0.35;
+    const card = (k: string) => svg.querySelector(`[data-card="${row}:${k}"]`);
+    const part = (k: string, sel: string) => card(k)?.querySelector(sel) ?? null;
+    const tw = (el: Element | null, vars: gsap.TweenVars) => {
+      if (el) gsap.to(el, { duration: D, ease: "power2.inOut", overwrite: "auto", ...vars });
+    };
+    const base = (k: string) => cards.find((c) => c.key === k)!.y;
+    // the previous holder settles and dims
+    tw(card(prev), { y: base(prev) });
+    tw(part(prev, "[data-lit]"), { opacity: 0 });
+    tw(part(prev, "[data-icon-lit]"), { opacity: 0 });
+    tw(part(prev, "[data-icon-dim]"), { opacity: 1 });
+    tw(svg.querySelector(`[data-callout="${row}:${prev}"]`), { opacity: 0, duration: D * 0.7 });
+    // the new one lights and rises
+    tw(card(key), { y: base(key) - raise });
+    tw(part(key, "[data-lit]"), { opacity: 1 });
+    tw(part(key, "[data-icon-lit]"), { opacity: 1 });
+    tw(part(key, "[data-icon-dim]"), { opacity: 0 });
+    tw(svg.querySelector(`[data-callout="${row}:${key}"]`), { opacity: 1, delay: D * 0.4 });
+  };
+
+  /* Put both rows back to their authored rest (BUILD-IN showing, first
+     cards lit) — run while frame 6 is hidden, before each entrance. */
+  const resetRows = () => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    (Object.keys(ROWS) as RowKey[]).forEach((row) => {
+      const { cards, face, raise } = ROWS[row];
+      litRef.current[row] = cards[0].key;
+      cards.forEach((c, i) => {
+        const el = svg.querySelector(`[data-card="${row}:${c.key}"]`);
+        if (!el) return;
+        const lit = i === 0;
+        gsap.set(el, { x: c.x, y: c.y - (lit ? raise : 0), opacity: 1 });
+        gsap.set(el.querySelector("[data-face]"), { attr: { transform: face } });
+        const set = (sel: string, o: number) => {
+          const p = el.querySelector(sel);
+          if (p) gsap.set(p, { opacity: o });
+        };
+        set("[data-lit]", lit ? 1 : 0);
+        set("[data-icon-lit]", lit ? 1 : 0);
+        set("[data-icon-dim]", lit ? 0 : 1);
+        set("[data-icon]", 1);
+        gsap.set(svg.querySelector(`[data-callout="${row}:${c.key}"]`), { opacity: lit ? 1 : 0 });
+      });
+      gsap.set(svg.querySelector(`[data-row="${row}"]`), { opacity: row === "buildin" ? 1 : 0 });
+    });
+    tabRef.current = "buildin";
+    gsap.set(svg.querySelector('[data-tab-text="buildin"]'), { opacity: 1 });
+    gsap.set(svg.querySelector('[data-tab-text="connectors"]'), { opacity: 0.2 });
+    gsap.set(svg.querySelector('[data-tab-ul="buildin"]'), { opacity: 1 });
+    gsap.set(svg.querySelector('[data-tab-ul="connectors"]'), { opacity: 0 });
+  };
 
   /* Mark flicker: whenever a lid mark lights up, its bright and dim rows
      trade places — fast at first, each gap 1.5x the last — before
@@ -580,28 +672,29 @@ export default function Infrastructure() {
          Leaving, frame 6 fades out and the origin frame fades back in. */
       const appendEntrance6 = (t: gsap.core.Timeline) => {
         const sq = (sel: string) => svg.querySelector(sel);
-        const storage = sq('[data-card6="storage"]');
-        t.set(svg.querySelectorAll("[data-card6]"), { x: 204, y: 281.25 }, 0.35);
+        const { cards, raise } = ROWS.buildin;
+        const first = cards[0];
+        const firstEl = sq(`[data-card="buildin:${first.key}"]`);
+        t.set(svg.querySelectorAll('[data-card^="buildin:"]'), { x: first.x, y: first.y }, 0.35);
+        t.set(sq(`[data-callout="buildin:${first.key}"]`), { opacity: 0 }, 0.35);
         t.set(sq("[data-frame6]"), { opacity: 1 }, 0.35);
         // the leftmost card appears first, alone, level with the rest
-        t.fromTo(storage, { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.4);
+        t.fromTo(firstEl, { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.4);
         t.fromTo(sq("[data-f6-tab]"), { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.6);
         // accordion: cards spring right, overshooting their spacing like a
-        // rubber band before settling (DOM order is reversed, so element i
-        // is CARDS6[5 - i]; storage, drawn last, stays put)
-        svg.querySelectorAll("[data-card6]").forEach((el, i) => {
-          const card = CARDS6[5 - i];
-          if (card.key === "storage") return;
+        // rubber band before settling, nearest first
+        cards.forEach((card, i) => {
+          if (i === 0) return;
           t.to(
-            el,
+            sq(`[data-card="buildin:${card.key}"]`),
             { x: card.x, y: card.y, duration: 1.1, ease: "elastic.out(1, 0.62)" },
-            0.68 + (5 - i) * 0.055
+            0.68 + (i - 1) * 0.055
           );
         });
         // once the row has settled, the first card rises a little and its
-        // callout hangs beneath it
-        t.to(storage, { y: 256.25, duration: 0.5, ease: "power2.inOut" }, 1.3);
-        t.fromTo(sq("[data-f6-callout]"), { opacity: 0 }, { opacity: 1, duration: 0.35 }, 1.55);
+        // legend hangs beneath it
+        t.to(firstEl, { y: first.y - raise, duration: 0.5, ease: "power2.inOut" }, 1.3);
+        t.to(sq(`[data-callout="buildin:${first.key}"]`), { opacity: 1, duration: 0.35 }, 1.55);
       };
       const appendItemSwap = (
         t: gsap.core.Timeline,
@@ -724,7 +817,91 @@ export default function Infrastructure() {
         flickerRef.current?.kill();
         normalizeToLid();
         gsap.delayedCall(0.35, () => resetCallouts(from));
+        resetRows(); // frame 6 is hidden here; rows go back to rest unseen
         run(ensureEnter(from));
+      };
+
+      /* BUILD-IN <-> CONNECTORS: the showing row folds back into its lit
+         card like an accordion closing, that card flips on its vertical
+         axis (left face -> right face, or back) while sliding toward the
+         other row's first-card spot, the rows trade places at the
+         edge-on midpoint where the card has no width, and the other row
+         springs open on the rubber-band ease. Built fresh each time so it
+         starts from whatever the rows currently show. */
+      let tabBusy = false;
+      switchTabRef.current = (to: RowKey) => {
+        const from = tabRef.current;
+        if (to === from || tabBusy || frameRef.current !== 6) return;
+        tabRef.current = to;
+        const sq = (sel: string) => svg.querySelector(sel);
+        const F = ROWS[from];
+        const T = ROWS[to];
+        const fromLit = F.cards.find((c) => c.key === litRef.current[from])!;
+        const toLit = T.cards.find((c) => c.key === litRef.current[to])!;
+        const fromLitEl = sq(`[data-card="${from}:${fromLit.key}"]`)!;
+        const toLitEl = sq(`[data-card="${to}:${toLit.key}"]`)!;
+        const spotFrom = { x: fromLit.x, y: fromLit.y - F.raise };
+        const spotTo = { x: toLit.x, y: toLit.y - T.raise };
+        const mid = { x: (spotFrom.x + spotTo.x) / 2, y: (spotFrom.y + spotTo.y) / 2 };
+        tabBusy = true;
+        const t = gsap.timeline({
+          onComplete: () => {
+            tabBusy = false;
+          },
+        });
+        if (reduced) t.timeScale(100);
+        // tab header + the leaving row's legend
+        t.to(sq(`[data-tab-text="${from}"]`), { opacity: 0.2, duration: 0.4 }, 0);
+        t.to(sq(`[data-tab-ul="${from}"]`), { opacity: 0, duration: 0.3 }, 0);
+        t.to(sq(`[data-tab-text="${to}"]`), { opacity: 1, duration: 0.4 }, 0.1);
+        t.to(sq(`[data-tab-ul="${to}"]`), { opacity: 1, duration: 0.3 }, 0.15);
+        t.to(sq(`[data-callout="${from}:${fromLit.key}"]`), { opacity: 0, duration: 0.25 }, 0);
+        // accordion closes: the other cards fold back into the lit one,
+        // farthest first, vanishing as they arrive
+        const others = F.cards.filter((c) => c.key !== fromLit.key);
+        others
+          .slice()
+          .sort((a, b) => Math.abs(b.x - fromLit.x) - Math.abs(a.x - fromLit.x))
+          .forEach((c, i) => {
+            const el = sq(`[data-card="${from}:${c.key}"]`);
+            t.to(el, { x: spotFrom.x, y: spotFrom.y, duration: 0.45, ease: "power2.in" }, i * 0.04);
+            t.to(el, { opacity: 0, duration: 0.12 }, i * 0.04 + 0.36);
+          });
+        // the lit card flips to edge-on while sliding halfway across
+        const flipAt = 0.5;
+        t.to(fromLitEl.querySelector("[data-icon]"), { opacity: 0, duration: 0.15 }, flipAt);
+        t.to(fromLitEl.querySelector("[data-face]"), { attr: { transform: FACE_EDGE }, duration: 0.22, ease: "power1.in" }, flipAt);
+        t.to(fromLitEl, { x: mid.x, y: mid.y, duration: 0.22, ease: "power1.in" }, flipAt);
+        // rows trade places at zero width
+        const swapAt = flipAt + 0.22;
+        t.set(sq(`[data-row="${from}"]`), { opacity: 0 }, swapAt);
+        t.set(svg.querySelectorAll(`[data-card^="${to}:"]`), { x: mid.x, y: mid.y, opacity: 0 }, swapAt);
+        t.set(toLitEl, { opacity: 1 }, swapAt);
+        t.set(toLitEl.querySelector("[data-face]"), { attr: { transform: FACE_EDGE } }, swapAt);
+        t.set(toLitEl.querySelector("[data-icon]"), { opacity: 0 }, swapAt);
+        t.set(sq(`[data-callout="${to}:${toLit.key}"]`), { opacity: 0 }, swapAt);
+        t.set(sq(`[data-row="${to}"]`), { opacity: 1 }, swapAt);
+        // ...and the new lit card flips open the other way, landing on its spot
+        t.to(toLitEl.querySelector("[data-face]"), { attr: { transform: T.face }, duration: 0.22, ease: "power1.out" }, swapAt);
+        t.to(toLitEl, { x: spotTo.x, y: spotTo.y, duration: 0.22, ease: "power1.out" }, swapAt);
+        t.to(toLitEl.querySelector("[data-icon]"), { opacity: 1, duration: 0.2 }, swapAt + 0.12);
+        // accordion opens: the other cards spring out to their spots
+        const openAt = swapAt + 0.22;
+        T.cards
+          .filter((c) => c.key !== toLit.key)
+          .forEach((c, i) => {
+            const el = sq(`[data-card="${to}:${c.key}"]`);
+            t.to(el, { opacity: 1, duration: 0.15 }, openAt + i * 0.055);
+            t.to(el, { x: c.x, y: c.y, duration: 1.1, ease: "elastic.out(1, 0.62)" }, openAt + i * 0.055);
+          });
+        t.to(sq(`[data-callout="${to}:${toLit.key}"]`), { opacity: 1, duration: 0.35 }, openAt + 0.9);
+        // leave the folded row tidy for its next turn
+        t.set(fromLitEl.querySelector("[data-face]"), { attr: { transform: F.face } }, openAt);
+        t.set(fromLitEl, { x: spotFrom.x, y: spotFrom.y }, openAt);
+        t.set(fromLitEl.querySelector("[data-icon]"), { opacity: 1 }, openAt);
+        others.forEach((c) => {
+          t.set(sq(`[data-card="${from}:${c.key}"]`), { x: c.x, y: c.y, opacity: 1 }, openAt);
+        });
       };
       const leaveSix = () => {
         // fade 6 out and the origin frame back in
@@ -1515,97 +1692,138 @@ export default function Infrastructure() {
               })}
             </g>
 
-            {/* frame 6: the connector cards under the BUILD-IN/CONNECTORS
-                tab, first card lit with its STORAGE callout. Static — the
-                5 -> 6 transition and card interactivity come next. */}
+            {/* frame 6: the connector card rows under the BUILD-IN /
+                CONNECTORS tab header. The header per Figma: a 0.9 white
+                30% baseline under the whole row, the active label at full
+                #EBEBEB with a 0.7 underline, the other at 20%. */}
             <g data-frame6 style={{ opacity: 0 }}>
               <g data-f6-tab>
-              <text
-                x="299"
-                y="216.5"
-                fill="#EBEBEB"
-                fontSize="13"
-                style={{ fontFamily: "var(--font-geist-mono)" }}
-              >
-                BUILD-IN
-              </text>
-              <rect x="299" y="222.5" width="63" height="1" fill="#EBEBEB" />
-              <text
-                x="374"
-                y="216.5"
-                fill="#EBEBEB"
-                fillOpacity="0.2"
-                fontSize="13"
-                style={{ fontFamily: "var(--font-geist-mono)" }}
-              >
-                CONNECTORS
-              </text>
+                <rect x="299" y="224.55" width="153" height="0.9" fill="#FFFFFF" fillOpacity="0.3" />
+                {(["buildin", "connectors"] as RowKey[]).map((row) => {
+                  const x = row === "buildin" ? 299 : 374;
+                  const w = row === "buildin" ? 63 : 78;
+                  const on = row === "buildin";
+                  return (
+                    <g key={row} onClick={() => switchTabRef.current(row)} style={{ cursor: "pointer" }}>
+                      <text
+                        data-tab-text={row}
+                        x={x}
+                        y="216.5"
+                        fill="#EBEBEB"
+                        fontSize="13"
+                        style={{ fontFamily: "var(--font-geist-mono)", opacity: on ? 1 : 0.2 }}
+                      >
+                        {row === "buildin" ? "BUILD-IN" : "CONNECTORS"}
+                      </text>
+                      <rect
+                        data-tab-ul={row}
+                        x={x}
+                        y="222.65"
+                        width={w}
+                        height="0.7"
+                        fill="#EBEBEB"
+                        style={{ opacity: on ? 1 : 0 }}
+                      />
+                      <rect x={x - 4} y="200" width={w + 8} height="25" fill="transparent" />
+                    </g>
+                  );
+                })}
               </g>
 
-              {[...CARDS6].reverse().map((c) => {
-                const lit = c.key === "storage";
+              {(["buildin", "connectors"] as RowKey[]).map((row) => {
+                const { cards, face, raise, lineDx } = ROWS[row];
                 return (
-                  <g key={c.key} data-card6={c.key} transform={`translate(${c.x} ${c.y})`}>
-                    <g transform="matrix(0.87 0.5 0 1 0 0)">
-                      {lit ? (
-                        <rect
-                          width="77.5"
-                          height="77.5"
-                          rx="6"
-                          fill="url(#infra-card-lit)"
-                          stroke="#6C91F9"
-                          strokeOpacity="0.06"
+                  <g key={row} data-row={row} style={{ opacity: row === "buildin" ? 1 : 0 }}>
+                    {/* drawn right to left so the nearest card is in front */}
+                    {[...cards].reverse().map((c, ri) => {
+                      const lit = ri === cards.length - 1;
+                      return (
+                        <g
+                          key={c.key}
+                          data-card={`${row}:${c.key}`}
+                          transform={`translate(${c.x} ${c.y - (lit ? raise : 0)})`}
+                          onMouseEnter={() => lightCard(row, c.key)}
+                          onClick={() => lightCard(row, c.key)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <g data-face transform={face}>
+                            <rect width="77.5" height="77.5" rx="8" fill="#617FDC" fillOpacity="0.1" />
+                            <rect
+                              width="77.5"
+                              height="77.5"
+                              rx="8"
+                              fill="#FFFFFF"
+                              fillOpacity="0.05"
+                              stroke="#909090"
+                              strokeOpacity="0.09"
+                              strokeWidth="0.9"
+                            />
+                            <rect
+                              data-lit
+                              width="77.5"
+                              height="77.5"
+                              rx="6"
+                              fill="url(#infra-card-lit)"
+                              stroke="#6C91F9"
+                              strokeOpacity="0.06"
+                              strokeWidth="0.9"
+                              style={{ opacity: lit ? 1 : 0 }}
+                            />
+                          </g>
+                          <g data-icon transform={c.iconT}>
+                            {c.icon ? (
+                              <>
+                                <path
+                                  data-icon-dim
+                                  d={ICONS6[c.icon]}
+                                  fill="url(#infra-icon-dim)"
+                                  fillOpacity="0.2"
+                                  style={{ opacity: lit ? 0 : 1 }}
+                                />
+                                <path
+                                  data-icon-lit
+                                  d={ICONS6[c.icon]}
+                                  fill="#FFFFFF"
+                                  style={{ opacity: lit ? 1 : 0 }}
+                                />
+                              </>
+                            ) : (
+                              <g
+                                transform={c.off ? `translate(${c.off[0]} ${c.off[1]})` : undefined}
+                                dangerouslySetInnerHTML={{ __html: BRAND7[c.key].markup }}
+                              />
+                            )}
+                          </g>
+                        </g>
+                      );
+                    })}
+                    {/* each card's legend, hanging under it when lit */}
+                    {cards.map((c, i) => (
+                      <g key={c.key} data-callout={`${row}:${c.key}`} style={{ opacity: i === 0 ? 1 : 0 }}>
+                        <line
+                          x1={c.x + lineDx}
+                          y1="391"
+                          x2={c.x + lineDx}
+                          y2="480"
+                          stroke="#FFFFFF"
+                          strokeOpacity="0.1"
                           strokeWidth="0.9"
                         />
-                      ) : (
-                        <>
-                          <rect width="77.5" height="77.5" rx="8" fill="#617FDC" fillOpacity="0.1" />
-                          <rect
-                            width="77.5"
-                            height="77.5"
-                            rx="8"
-                            fill="#FFFFFF"
-                            fillOpacity="0.05"
-                            stroke="#909090"
-                            strokeOpacity="0.09"
-                            strokeWidth="0.9"
-                          />
-                        </>
-                      )}
-                    </g>
-                    <g transform={c.iconT}>
-                      <path
-                        d={ICONS6[c.icon]}
-                        fill={lit ? "#FFFFFF" : "url(#infra-icon-dim)"}
-                        fillOpacity={lit ? 1 : 0.2}
-                      />
-                    </g>
+                        <text
+                          x={c.x + lineDx + 0.5}
+                          y="499.5"
+                          textAnchor="middle"
+                          fill="#EDEDED"
+                          fontSize="13"
+                          style={{ fontFamily: "var(--font-geist-mono)" }}
+                        >
+                          {c.label}
+                        </text>
+                      </g>
+                    ))}
                   </g>
                 );
               })}
-
-              {/* STORAGE callout hanging under the lit card */}
-              <g data-f6-callout>
-              <line
-                x1="238"
-                y1="391"
-                x2="238"
-                y2="480"
-                stroke="#FFFFFF"
-                strokeOpacity="0.1"
-                strokeWidth="0.9"
-              />
-              <text
-                x="238.5"
-                y="499.5"
-                textAnchor="middle"
-                fill="#EDEDED"
-                fontSize="13"
-                style={{ fontFamily: "var(--font-geist-mono)" }}
-              >
-                STORAGE
-              </text>
-              </g>
             </g>
 
             {/* frame 5's callouts — same click-to-light structure as frame
