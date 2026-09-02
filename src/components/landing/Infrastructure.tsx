@@ -61,7 +61,11 @@ const ITEMS: { key: string; title: string; desc?: string; open?: boolean }[] = [
     title: "Integrations",
     desc: "Meet the core needs of product launch with built-in infrastructure and external connectors, including authentication, database, file storage, payments, deployment, monitoring, and third-party integrations.",
   },
-  { key: "analytics", title: "Analytics and SEO" },
+  {
+    key: "analytics",
+    title: "Analytics and SEO",
+    desc: "Optimize every page with SEO, performance, and analytics best practices to achieve broader reach, better visibility, and clearer post-launch insights.",
+  },
 ];
 
 /* Face keyframes, back-to-front like the Figma children order (the front
@@ -271,6 +275,21 @@ const ROWS: Record<RowKey, { cards: Card[]; face: string; raise: number; lineDx:
 /* halfway between the two faces the card is edge-on — zero width — which
    is where the tab switch swaps one row for the other unseen */
 const FACE_EDGE = "matrix(0.002 0.5 0 1 33.56 0)";
+
+/* Frame 8 (ANALYTICS AND SEO, Figma 17205:88890): a Google Lighthouse
+   scorecard — header (the G mark + "Google Lighthouse" at white 33%, the
+   pair at 80%) over a 2x2 of 77.5 tiles, r6, no fill, a #6485E7 -> white
+   stroke running from each tile's bottom-right toward its top-left (the
+   node's gradient transform decoded into bbox points), 86% paint on a 70%
+   rect; "100" in 14px Geist centered, a 13px mono label beneath. */
+const TILES8 = [
+  { key: "performance", label: "PERFORMANCE", x: 278, y: 261 },
+  { key: "accessibility", label: "ACCESSIBILITY", x: 396, y: 261 },
+  { key: "bestPractice", label: "BEST PRACTICE", x: 278, y: 393 },
+  { key: "seo", label: "SEO", x: 396, y: 393 },
+];
+const G_MARK =
+  "M11.1704 2.521C7.79434 2.521 4.84359 4.38275 3.45301 7.185C2.84223 8.36414 2.52344 9.67268 2.52344 11.0006C2.52344 12.3286 2.84223 13.6371 3.45301 14.8162C4.84359 17.6176 7.79434 19.4793 11.1704 19.4793C13.4988 19.4793 15.4971 18.7212 16.8941 17.4407C19.1711 15.4487 19.8137 12.3082 19.3306 9.47666C19.3215 9.4234 19.2939 9.37505 19.2526 9.34017C19.2114 9.30528 19.1591 9.28609 19.1051 9.286H11.1704C11.1096 9.286 11.0514 9.31014 11.0084 9.35312C10.9654 9.39609 10.9413 9.45438 10.9413 9.51516V12.5677C10.9413 12.6942 11.0439 12.7968 11.1704 12.7968H15.5411C15.3889 13.4752 14.9113 14.3982 13.9965 15.0179L13.9892 15.0225C13.3613 15.4827 12.3988 15.8035 11.1704 15.8035C8.47909 15.8035 6.33501 13.5531 6.33501 10.9177C6.33501 8.36658 8.60101 6.11433 11.1704 6.11433C12.7013 6.11433 13.6638 6.74041 14.3137 7.29683C14.3571 7.334 14.4129 7.35357 14.4701 7.35171C14.5272 7.34984 14.5816 7.32667 14.6226 7.28675L16.9858 4.97675C17.0085 4.95459 17.0263 4.92797 17.0382 4.89855C17.0501 4.86914 17.0557 4.83758 17.0548 4.80587C17.0538 4.77416 17.0463 4.74299 17.0327 4.71434C17.0191 4.68568 16.9997 4.66017 16.9757 4.63941C15.5008 3.36708 13.507 2.521 11.1704 2.521Z";
 
 /* Figma's Vector 24 — the stage-3 wash at the top of the panel: a blob at
    9% #2D69B7 with a white 26% hairline, layer-blurred 60.6 (feGaussianBlur
@@ -803,6 +822,53 @@ export default function Infrastructure() {
         return t;
       };
 
+      /* Frame 8 (ANALYTICS) transitions — plain fades for now, one-way like
+         frame 6's: the leaving frame fades out and the scorecard fades in;
+         leaving, the scorecard fades out and the origin fades back. */
+      const ITEM_OF: Record<number, string> = { 4: "env", 5: "scalability", 6: "integrations" };
+      const originParts8 = (origin: 4 | 5 | 6) => {
+        if (origin === 6) {
+          const f6 = svg.querySelector("[data-frame6]");
+          return { groups: [f6], faces: [] as Element[], clickable: [f6] };
+        }
+        const p = originParts(origin);
+        return { groups: p.groups, faces: Array.from(p.faces), clickable: p.clickable };
+      };
+      const enter8Tl: Partial<Record<4 | 5 | 6, gsap.core.Timeline>> = {};
+      const ensureEnter8 = (origin: 4 | 5 | 6) => {
+        const have = enter8Tl[origin];
+        if (have) return have;
+        const p = originParts8(origin);
+        const t = gsap.timeline({ paused: true });
+        t.to(p.groups, { opacity: 0, duration: 0.3 }, 0);
+        if (p.faces.length) t.to(p.faces, { opacity: 0, duration: 0.3 }, 0.05);
+        t.set(p.clickable, { pointerEvents: "none" }, 0.01);
+        t.fromTo(svg.querySelector("[data-frame8]"), { opacity: 0 }, { opacity: 1, duration: 0.45 }, 0.35);
+        appendItemSwap(t, ITEM_OF[origin], "analytics");
+        enter8Tl[origin] = t;
+        return t;
+      };
+      const leave8Tl: Partial<Record<4 | 5 | 6, gsap.core.Timeline>> = {};
+      const ensureLeave8 = (origin: 4 | 5 | 6) => {
+        const have = leave8Tl[origin];
+        if (have) return have;
+        const p = originParts8(origin);
+        const t = gsap.timeline({ paused: true });
+        t.to(svg.querySelector("[data-frame8]"), { opacity: 0, duration: 0.3 }, 0);
+        t.to(p.groups, { opacity: 1, duration: 0.35 }, 0.3);
+        if (p.faces.length) t.to(p.faces, { opacity: 0.8, duration: 0.35 }, 0.3);
+        t.set(p.clickable, { pointerEvents: "auto" }, 0.65);
+        appendItemSwap(t, "analytics", ITEM_OF[origin]);
+        t.eventCallback("onComplete", () => {
+          if (origin !== 6) flickerMark(origin === 5);
+          const f = afterLeaveEight;
+          afterLeaveEight = null;
+          f?.();
+        });
+        leave8Tl[origin] = t;
+        return t;
+      };
+
       const normalizeToLid = () => {
         if (activeFaceRef.current !== "lid") {
           gsap.to(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1, duration: 0.3, overwrite: "auto" });
@@ -814,7 +880,9 @@ export default function Infrastructure() {
       /* One-shot chain hooks. */
       let afterTl3Complete: (() => void) | null = null;
       let afterLeaveSix: (() => void) | null = null;
+      let afterLeaveEight: (() => void) | null = null;
       let enteredSixVia: 4 | 5 = 5; // the frame 6 was entered from
+      let enteredEightVia: 4 | 5 | 6 = 6; // the frame 8 was entered from
 
       // one-way timelines replay from the top with fresh start values
       const run = (t: gsap.core.Timeline) => {
@@ -959,15 +1027,56 @@ export default function Infrastructure() {
         run(t);
       };
 
+      const stepTo8 = (from: 4 | 5 | 6) => {
+        frameRef.current = 8;
+        enteredEightVia = from;
+        flickerRef.current?.kill();
+        if (from !== 6) {
+          normalizeToLid();
+          gsap.delayedCall(0.35, () => resetCallouts(from));
+        }
+        run(ensureEnter8(from));
+      };
+      const leaveEight = () => {
+        frameRef.current = enteredEightVia;
+        flickerRef.current?.kill();
+        run(ensureLeave8(enteredEightVia));
+      };
+
       const anyActive = () =>
-        [tl3, enterTl[4], enterTl[5], leaveTl[4], leaveTl[5]].some(
-          (t) => t && t.isActive()
-        );
+        [
+          tl3,
+          enterTl[4],
+          enterTl[5],
+          leaveTl[4],
+          leaveTl[5],
+          enter8Tl[4],
+          enter8Tl[5],
+          enter8Tl[6],
+          leave8Tl[4],
+          leave8Tl[5],
+          leave8Tl[6],
+        ].some((t) => t && t.isActive());
 
       const goTo = (target: number) => {
         const cur = frameRef.current;
         if (target === cur) return;
         if (cur === 4 && tl2.progress() < 1) return; // frame 4 not landed
+        if (target === 8) {
+          if (cur === 5 && ensureTl3().isActive()) {
+            afterTl3Complete = () => stepTo8(5); // mid 4->5: queue it
+            return;
+          }
+          stepTo8(cur as 4 | 5 | 6);
+          return;
+        }
+        if (cur === 8) {
+          /* leaving 8 lands on the frame it was entered from; asks that go
+             elsewhere continue from there once the fade lands */
+          if (target !== enteredEightVia) afterLeaveEight = () => goTo(target);
+          leaveEight();
+          return;
+        }
         if (target > cur) {
           if (cur === 4) {
             if (target === 6) stepTo6(4);
@@ -1302,16 +1411,12 @@ export default function Infrastructure() {
                     (item.open
                       ? "text-heading-sm text-text-primary"
                       : "mt-[26px] text-heading-sm text-text-primary opacity-20") +
-                    (item.key !== "analytics" ? " cursor-pointer" : "")
+                    " cursor-pointer"
                   }
-                  onClick={
-                    item.key === "env"
-                      ? () => goToFrameRef.current(4)
-                      : item.key === "scalability"
-                        ? () => goToFrameRef.current(5)
-                        : item.key === "integrations"
-                          ? () => goToFrameRef.current(6)
-                          : undefined
+                  onClick={() =>
+                    goToFrameRef.current(
+                      { env: 4, scalability: 5, integrations: 6, analytics: 8 }[item.key] ?? 4
+                    )
                   }
                 >
                   {item.title}
@@ -1388,6 +1493,25 @@ export default function Infrastructure() {
               <linearGradient id="infra-as-label" x1="0" y1="0" x2="1" y2="0">
                 <stop stopColor="#6C91F9" />
                 <stop offset="1" stopColor="#FFFFFF" />
+              </linearGradient>
+              {/* frame-8 tile stroke: the Figma gradient transform
+                  [[-0.95,-0.72,1.48],[0.72,-0.95,0.14]] solved for the
+                  points where t=0 (blue) and t=1 (white) on the axis
+                  through the tile's center */}
+              <linearGradient id="infra-tile-stroke" x1="0.931" y1="0.827" x2="0.263" y2="0.32">
+                <stop stopColor="#6485E7" />
+                <stop offset="1" stopColor="#FFFFFF" />
+              </linearGradient>
+              <linearGradient
+                id="infra-g-mark"
+                x1="11.4421"
+                y1="-16.7498"
+                x2="28.1544"
+                y2="28.5273"
+                gradientUnits="userSpaceOnUse"
+              >
+                <stop stopColor="#FFFFFF" />
+                <stop offset="1" stopColor="#666666" />
               </linearGradient>
               <linearGradient id="infra-card-lit" x1="0" y1="0" x2="0" y2="1">
                 <stop stopColor="#6C91F9" stopOpacity="0.75" />
@@ -1896,6 +2020,66 @@ export default function Infrastructure() {
                   </g>
                 );
               })}
+            </g>
+
+            {/* frame 8: the Google Lighthouse scorecard. Static; its own
+                animation comes next. */}
+            <g data-frame8 style={{ opacity: 0 }}>
+              <g data-f8-header opacity="0.8">
+                {/* mynaui:google-so, exported: a white 33% base with the
+                    white -> #666 gradient at 83% over it */}
+                <g data-g-mark transform="translate(294.5 203)">
+                  <path d={G_MARK} fill="#FFFFFF" fillOpacity="0.33" />
+                  <path d={G_MARK} fill="url(#infra-g-mark)" fillOpacity="0.83" />
+                </g>
+                <text
+                  x="322.5"
+                  y="218.8"
+                  fill="#FFFFFF"
+                  fillOpacity="0.33"
+                  fontSize="16"
+                  style={{ fontFamily: "var(--font-geist-sans)" }}
+                >
+                  Google Lighthouse
+                </text>
+              </g>
+              {TILES8.map((t) => (
+                <g key={t.key} data-tile8={t.key}>
+                  <rect
+                    x={t.x}
+                    y={t.y}
+                    width="77.5"
+                    height="77.5"
+                    rx="6"
+                    fill="none"
+                    stroke="url(#infra-tile-stroke)"
+                    strokeOpacity="0.86"
+                    strokeWidth="1"
+                    opacity="0.7"
+                  />
+                  <text
+                    data-tile8-score
+                    x={t.x + 38.75}
+                    y={t.y + 43.5}
+                    textAnchor="middle"
+                    fill="#EDEDED"
+                    fontSize="14"
+                    style={{ fontFamily: "var(--font-geist-sans)" }}
+                  >
+                    100
+                  </text>
+                  <text
+                    x={t.x + 38.75}
+                    y={t.y + 102.5}
+                    textAnchor="middle"
+                    fill="#EDEDED"
+                    fontSize="13"
+                    style={{ fontFamily: "var(--font-geist-mono)" }}
+                  >
+                    {t.label}
+                  </text>
+                </g>
+              ))}
             </g>
 
             {/* frame 5's callouts — same click-to-light structure as frame
