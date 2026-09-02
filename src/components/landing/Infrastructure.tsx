@@ -128,6 +128,11 @@ const ENV_CALLOUTS = [
    so the boundary doesn't flutter. */
 const ENTER = 0.35;
 const BACK = 0.2;
+/* Scroll-driven frame stepping is PARKED while frames 4-8 and their
+   in-frame interactions are built out; the inter-frame navigation gets
+   a holistic redesign after that. Frames switch by title click only.
+   The stages 1-3 scrub is unaffected. */
+const SCROLL_NAV = false;
 
 /* Right-hand callouts: a hairline from x475 to x715 with a 13px mono label
    hanging under its right end. BUILD (stage 1) sits on the same middle
@@ -925,12 +930,13 @@ export default function Infrastructure() {
         window.removeEventListener("keydown", onKey);
       };
       captureNow = () => {
-        if (capturable() && !reduced) capture();
+        if (SCROLL_NAV && capturable() && !reduced) capture();
       };
 
       const apply = () => {
         const { r, r1, r0 } = pinTarget();
         tl.progress(clamp01((r0 - r.top) / Math.max(r0 - r1, 1)));
+        if (!SCROLL_NAV) return; // frame stepping parked (see SCROLL_NAV)
         if (captured) return; // the scrollbar can still move us; ignore
 
         if (capturable()) {
