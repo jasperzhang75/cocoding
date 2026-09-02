@@ -338,10 +338,14 @@ export default function Infrastructure() {
   const litRef = useRef<Record<RowKey, string>>({ buildin: "database", connectors: "notion" });
   const tabRef = useRef<RowKey>("buildin");
   const switchTabRef = useRef<(to: RowKey) => void>(() => {});
+  /* while the rows are animating (entrance, tab switch) cards sweep under
+     the pointer and would fire mouseenter — hover is ignored until done */
+  const rowsBusyRef = useRef(false);
 
   const lightCard = (row: RowKey, key: string) => {
     const svg = svgRef.current;
-    if (!svg || litRef.current[row] === key) return;
+    if (!svg || rowsBusyRef.current || frameRef.current !== 6) return;
+    if (litRef.current[row] === key) return;
     const prev = litRef.current[row];
     litRef.current[row] = key;
     const { cards, raise } = ROWS[row];
@@ -380,7 +384,7 @@ export default function Infrastructure() {
         if (!el) return;
         const lit = i === 0;
         gsap.set(el, { x: c.x, y: c.y - (lit ? raise : 0), opacity: 1 });
-        gsap.set(el.querySelector("[data-face]"), { attr: { transform: face } });
+        gsap.set(el.querySelector("[data-cface]"), { attr: { transform: face } });
         const set = (sel: string, o: number) => {
           const p = el.querySelector(sel);
           if (p) gsap.set(p, { opacity: o });
@@ -818,7 +822,12 @@ export default function Infrastructure() {
         normalizeToLid();
         gsap.delayedCall(0.35, () => resetCallouts(from));
         resetRows(); // frame 6 is hidden here; rows go back to rest unseen
-        run(ensureEnter(from));
+        rowsBusyRef.current = true;
+        const t = ensureEnter(from);
+        t.eventCallback("onComplete", () => {
+          rowsBusyRef.current = false;
+        });
+        run(t);
       };
 
       /* BUILD-IN <-> CONNECTORS: the showing row folds back into its lit
@@ -828,10 +837,9 @@ export default function Infrastructure() {
          edge-on midpoint where the card has no width, and the other row
          springs open on the rubber-band ease. Built fresh each time so it
          starts from whatever the rows currently show. */
-      let tabBusy = false;
       switchTabRef.current = (to: RowKey) => {
         const from = tabRef.current;
-        if (to === from || tabBusy || frameRef.current !== 6) return;
+        if (to === from || rowsBusyRef.current || frameRef.current !== 6) return;
         tabRef.current = to;
         const sq = (sel: string) => svg.querySelector(sel);
         const F = ROWS[from];
@@ -843,10 +851,10 @@ export default function Infrastructure() {
         const spotFrom = { x: fromLit.x, y: fromLit.y - F.raise };
         const spotTo = { x: toLit.x, y: toLit.y - T.raise };
         const mid = { x: (spotFrom.x + spotTo.x) / 2, y: (spotFrom.y + spotTo.y) / 2 };
-        tabBusy = true;
+        rowsBusyRef.current = true;
         const t = gsap.timeline({
           onComplete: () => {
-            tabBusy = false;
+            rowsBusyRef.current = false;
           },
         });
         if (reduced) t.timeScale(100);
@@ -870,19 +878,19 @@ export default function Infrastructure() {
         // the lit card flips to edge-on while sliding halfway across
         const flipAt = 0.5;
         t.to(fromLitEl.querySelector("[data-icon]"), { opacity: 0, duration: 0.15 }, flipAt);
-        t.to(fromLitEl.querySelector("[data-face]"), { attr: { transform: FACE_EDGE }, duration: 0.22, ease: "power1.in" }, flipAt);
+        t.to(fromLitEl.querySelector("[data-cface]"), { attr: { transform: FACE_EDGE }, duration: 0.22, ease: "power1.in" }, flipAt);
         t.to(fromLitEl, { x: mid.x, y: mid.y, duration: 0.22, ease: "power1.in" }, flipAt);
         // rows trade places at zero width
         const swapAt = flipAt + 0.22;
         t.set(sq(`[data-row="${from}"]`), { opacity: 0 }, swapAt);
         t.set(svg.querySelectorAll(`[data-card^="${to}:"]`), { x: mid.x, y: mid.y, opacity: 0 }, swapAt);
         t.set(toLitEl, { opacity: 1 }, swapAt);
-        t.set(toLitEl.querySelector("[data-face]"), { attr: { transform: FACE_EDGE } }, swapAt);
+        t.set(toLitEl.querySelector("[data-cface]"), { attr: { transform: FACE_EDGE } }, swapAt);
         t.set(toLitEl.querySelector("[data-icon]"), { opacity: 0 }, swapAt);
         t.set(sq(`[data-callout="${to}:${toLit.key}"]`), { opacity: 0 }, swapAt);
         t.set(sq(`[data-row="${to}"]`), { opacity: 1 }, swapAt);
         // ...and the new lit card flips open the other way, landing on its spot
-        t.to(toLitEl.querySelector("[data-face]"), { attr: { transform: T.face }, duration: 0.22, ease: "power1.out" }, swapAt);
+        t.to(toLitEl.querySelector("[data-cface]"), { attr: { transform: T.face }, duration: 0.22, ease: "power1.out" }, swapAt);
         t.to(toLitEl, { x: spotTo.x, y: spotTo.y, duration: 0.22, ease: "power1.out" }, swapAt);
         t.to(toLitEl.querySelector("[data-icon]"), { opacity: 1, duration: 0.2 }, swapAt + 0.12);
         // accordion opens: the other cards spring out to their spots
@@ -896,7 +904,7 @@ export default function Infrastructure() {
           });
         t.to(sq(`[data-callout="${to}:${toLit.key}"]`), { opacity: 1, duration: 0.35 }, openAt + 0.9);
         // leave the folded row tidy for its next turn
-        t.set(fromLitEl.querySelector("[data-face]"), { attr: { transform: F.face } }, openAt);
+        t.set(fromLitEl.querySelector("[data-cface]"), { attr: { transform: F.face } }, openAt);
         t.set(fromLitEl, { x: spotFrom.x, y: spotFrom.y }, openAt);
         t.set(fromLitEl.querySelector("[data-icon]"), { opacity: 1 }, openAt);
         others.forEach((c) => {
@@ -1736,7 +1744,7 @@ export default function Infrastructure() {
                       <rect
                         data-tab-ul={row}
                         x={x}
-                        y="222.65"
+                        y="224.65"
                         width={w}
                         height="0.7"
                         fill="#EBEBEB"
@@ -1764,7 +1772,7 @@ export default function Infrastructure() {
                           onClick={() => lightCard(row, c.key)}
                           style={{ cursor: "pointer" }}
                         >
-                          <g data-face transform={face}>
+                          <g data-cface transform={face}>
                             <rect width="77.5" height="77.5" rx="8" fill="#617FDC" fillOpacity="0.1" />
                             <rect
                               width="77.5"
