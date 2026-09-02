@@ -371,31 +371,41 @@ export default function Infrastructure() {
     tw(svg.querySelector(`[data-callout="${row}:${key}"]`), { opacity: 1, delay: D * 0.4 });
   };
 
-  /* Put both rows back to their authored rest (BUILD-IN showing, first
-     cards lit) — run while frame 6 is hidden, before each entrance. */
+  /* Put one row back to its rest instantly: cards on their spots, the
+     first one lit and raised, only its legend showing. */
+  const restRow = (row: RowKey) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const { cards, face, raise } = ROWS[row];
+    litRef.current[row] = cards[0].key;
+    cards.forEach((c, i) => {
+      const el = svg.querySelector(`[data-card="${row}:${c.key}"]`);
+      if (!el) return;
+      const lit = i === 0;
+      gsap.set(el, { x: c.x, y: c.y - (lit ? raise : 0), opacity: 1 });
+      gsap.set(el.querySelector("[data-cface]"), { attr: { transform: face } });
+      const set = (sel: string, o: number) => {
+        const p = el.querySelector(sel);
+        if (p) gsap.set(p, { opacity: o });
+      };
+      set("[data-lit]", lit ? 1 : 0);
+      set("[data-icon-lit]", lit ? 1 : 0);
+      set("[data-icon-dim]", lit ? 0 : 1);
+      set("[data-icon]", 1);
+      gsap.set(svg.querySelector(`[data-callout="${row}:${c.key}"]`), { opacity: lit ? 1 : 0 });
+    });
+  };
+
+  /* Both rows back to their authored rest (BUILD-IN showing) — run while
+     frame 6 is hidden, before each entrance. A hidden row must not take
+     pointer events, or it steals hovers from the row beneath it. */
   const resetRows = () => {
     const svg = svgRef.current;
     if (!svg) return;
     (Object.keys(ROWS) as RowKey[]).forEach((row) => {
-      const { cards, face, raise } = ROWS[row];
-      litRef.current[row] = cards[0].key;
-      cards.forEach((c, i) => {
-        const el = svg.querySelector(`[data-card="${row}:${c.key}"]`);
-        if (!el) return;
-        const lit = i === 0;
-        gsap.set(el, { x: c.x, y: c.y - (lit ? raise : 0), opacity: 1 });
-        gsap.set(el.querySelector("[data-cface]"), { attr: { transform: face } });
-        const set = (sel: string, o: number) => {
-          const p = el.querySelector(sel);
-          if (p) gsap.set(p, { opacity: o });
-        };
-        set("[data-lit]", lit ? 1 : 0);
-        set("[data-icon-lit]", lit ? 1 : 0);
-        set("[data-icon-dim]", lit ? 0 : 1);
-        set("[data-icon]", 1);
-        gsap.set(svg.querySelector(`[data-callout="${row}:${c.key}"]`), { opacity: lit ? 1 : 0 });
-      });
-      gsap.set(svg.querySelector(`[data-row="${row}"]`), { opacity: row === "buildin" ? 1 : 0 });
+      restRow(row);
+      const on = row === "buildin";
+      gsap.set(svg.querySelector(`[data-row="${row}"]`), { opacity: on ? 1 : 0, pointerEvents: on ? "auto" : "none" });
     });
     tabRef.current = "buildin";
     gsap.set(svg.querySelector('[data-tab-text="buildin"]'), { opacity: 1 });
@@ -844,8 +854,13 @@ export default function Infrastructure() {
         const sq = (sel: string) => svg.querySelector(sel);
         const F = ROWS[from];
         const T = ROWS[to];
-        const fromLit = F.cards.find((c) => c.key === litRef.current[from])!;
-        const toLit = T.cards.find((c) => c.key === litRef.current[to])!;
+        /* the accordion always folds into and springs out of the FIRST
+           card: the leaving row hands its light back to it (animated,
+           alongside the fold), the arriving row is reset unseen */
+        const fromLit = F.cards[0];
+        const toLit = T.cards[0];
+        lightCard(from, fromLit.key);
+        restRow(to);
         const fromLitEl = sq(`[data-card="${from}:${fromLit.key}"]`)!;
         const toLitEl = sq(`[data-card="${to}:${toLit.key}"]`)!;
         const spotFrom = { x: fromLit.x, y: fromLit.y - F.raise };
@@ -880,9 +895,10 @@ export default function Infrastructure() {
         t.to(fromLitEl.querySelector("[data-icon]"), { opacity: 0, duration: 0.15 }, flipAt);
         t.to(fromLitEl.querySelector("[data-cface]"), { attr: { transform: FACE_EDGE }, duration: 0.22, ease: "power1.in" }, flipAt);
         t.to(fromLitEl, { x: mid.x, y: mid.y, duration: 0.22, ease: "power1.in" }, flipAt);
-        // rows trade places at zero width
+        // rows trade places at zero width (pointer events go with them)
         const swapAt = flipAt + 0.22;
-        t.set(sq(`[data-row="${from}"]`), { opacity: 0 }, swapAt);
+        t.set(sq(`[data-row="${from}"]`), { opacity: 0, pointerEvents: "none" }, swapAt);
+        t.set(sq(`[data-row="${to}"]`), { pointerEvents: "auto" }, swapAt);
         t.set(svg.querySelectorAll(`[data-card^="${to}:"]`), { x: mid.x, y: mid.y, opacity: 0 }, swapAt);
         t.set(toLitEl, { opacity: 1 }, swapAt);
         t.set(toLitEl.querySelector("[data-cface]"), { attr: { transform: FACE_EDGE } }, swapAt);
@@ -1724,7 +1740,6 @@ export default function Infrastructure() {
                 #EBEBEB with a 0.7 underline, the other at 20%. */}
             <g data-frame6 style={{ opacity: 0 }}>
               <g data-f6-tab>
-                <rect x="299" y="224.55" width="153" height="0.9" fill="#FFFFFF" fillOpacity="0.3" />
                 {(["buildin", "connectors"] as RowKey[]).map((row) => {
                   const x = row === "buildin" ? 299 : 374;
                   const w = row === "buildin" ? 63 : 78;
@@ -1759,7 +1774,14 @@ export default function Infrastructure() {
               {(["buildin", "connectors"] as RowKey[]).map((row) => {
                 const { cards, face, raise, lineDx } = ROWS[row];
                 return (
-                  <g key={row} data-row={row} style={{ opacity: row === "buildin" ? 1 : 0 }}>
+                  <g
+                    key={row}
+                    data-row={row}
+                    style={{
+                      opacity: row === "buildin" ? 1 : 0,
+                      pointerEvents: row === "buildin" ? "auto" : "none",
+                    }}
+                  >
                     {/* drawn right to left so the nearest card is in front */}
                     {[...cards].reverse().map((c, ri) => {
                       const lit = ri === cards.length - 1;
