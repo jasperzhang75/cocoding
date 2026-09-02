@@ -949,8 +949,26 @@ export default function Infrastructure() {
          centered. */
       let captureNow: () => void = () => {};
       goToFrameRef.current = (target) => {
-        if (anyActive()) return;
+        if (anyActive() || tl2.isActive()) return;
         captureNow();
+        /* with scroll stepping parked nothing else enters frame 4, so a
+           title click plays that entrance first and chains the target */
+        if (!entered) {
+          entered = true;
+          if (reduced) {
+            tl2.progress(1);
+            goTo(target);
+            return;
+          }
+          if (target !== 4) {
+            tl2.eventCallback("onComplete", () => {
+              tl2.eventCallback("onComplete", null);
+              goTo(target);
+            });
+          }
+          tl2.play();
+          return;
+        }
         goTo(target);
       };
 
