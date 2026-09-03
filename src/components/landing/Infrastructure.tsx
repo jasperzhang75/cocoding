@@ -363,11 +363,9 @@ export default function Infrastructure() {
     if (!svg) return;
     scoreTlRef.current?.kill();
     scoreTlRef.current = null;
-    gsap.set(svg.querySelectorAll("[data-tile-stroke], [data-tile-flash]"), { opacity: 0 });
-    gsap.set(svg.querySelectorAll("[data-tile-tail], [data-tile-head]"), {
-      opacity: 0,
-      attr: { "stroke-dashoffset": 0 },
-    });
+    gsap.set(svg.querySelectorAll("[data-tile-stroke], [data-tile-base]"), { opacity: 0 });
+    gsap.set(svg.querySelectorAll("[data-tile-tail]"), { opacity: 0, attr: { "stroke-dashoffset": 0 } });
+    gsap.set(svg.querySelectorAll("[data-tile-head]"), { opacity: 0, attr: { "stroke-dashoffset": -10 } });
     svg.querySelectorAll("[data-tile8-score]").forEach((el) => {
       el.textContent = "0";
     });
@@ -379,28 +377,30 @@ export default function Infrastructure() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
       gsap.set(svg.querySelectorAll("[data-tile-stroke]"), { opacity: 0.7 });
-      gsap.set(svg.querySelectorAll("[data-tile-tail], [data-tile-head], [data-tile-flash]"), { opacity: 0 });
+      gsap.set(svg.querySelectorAll("[data-tile-tail], [data-tile-head], [data-tile-base]"), { opacity: 0 });
       svg.querySelectorAll("[data-tile8-score]").forEach((el) => {
         el.textContent = "100";
       });
       return;
     }
-    /* all four tiles at once: the light segment circles the outline
-       once (counter-clockwise, white head leading) on a fast-then-slow
-       curve while the score climbs on the same curve; the loop closes
-       exactly as the score lands — the whole outline flashes white, then
-       fades into the resting gradient stroke */
+    /* all four tiles at once. The outline shows in white the whole run;
+       the blue segment circles it once, CLOCKWISE, on a fast-then-slow
+       curve while the score climbs on the same curve. The loop closes
+       exactly as the score lands: the light is gone, the white outline
+       brightens for a beat, then fades into the resting gradient. */
     const LOOP = 1.4;
     const EASE = "power3.out";
+    const bases = svg.querySelectorAll("[data-tile-base]");
     const tails = svg.querySelectorAll("[data-tile-tail]");
     const heads = svg.querySelectorAll("[data-tile-head]");
-    const flashes = svg.querySelectorAll("[data-tile-flash]");
     const rests = svg.querySelectorAll("[data-tile-stroke]");
     const scores = Array.from(svg.querySelectorAll("[data-tile8-score]"));
     const t = gsap.timeline();
+    t.set(bases, { opacity: 0.7 }, 0);
     t.set([tails, heads], { opacity: 1 }, 0);
-    // dash offset +100 over one loop = one full trip against path direction
-    t.to([tails, heads], { attr: { "stroke-dashoffset": 100 }, duration: LOOP, ease: EASE }, 0);
+    // falling offsets carry the pattern forward along the path: clockwise
+    t.to(tails, { attr: { "stroke-dashoffset": -100 }, duration: LOOP, ease: EASE }, 0);
+    t.to(heads, { attr: { "stroke-dashoffset": -110 }, duration: LOOP, ease: EASE }, 0);
     const n = { v: 0 };
     t.to(
       n,
@@ -417,11 +417,11 @@ export default function Infrastructure() {
       },
       0
     );
-    // 100: the light is gone, the outline flashes white...
+    // 100: the light is gone and the white outline flares for a beat...
     t.set([tails, heads], { opacity: 0 }, LOOP);
-    t.set(flashes, { opacity: 1 }, LOOP);
-    // ...and settles into the resting gradient
-    t.to(flashes, { opacity: 0, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
+    t.set(bases, { opacity: 1 }, LOOP);
+    // ...then settles into the resting gradient
+    t.to(bases, { opacity: 0, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
     t.to(rests, { opacity: 0.7, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
     scoreTlRef.current = t;
   };
@@ -2138,10 +2138,28 @@ export default function Infrastructure() {
                     strokeWidth="1"
                     style={{ opacity: 0.7 }}
                   />
-                  {/* the running light: a fixed-length segment — blue tail
-                      under a short white head — whose dash offset circles
-                      the outline (pathLength normalizes the perimeter to
-                      100 regardless of the rounded corners) */}
+                  {/* while the light runs, the outline sits there in white;
+                      it brightens for a beat as the score lands, then
+                      fades into the resting gradient */}
+                  <rect
+                    data-tile-base
+                    x={t.x}
+                    y={t.y}
+                    width="77.5"
+                    height="77.5"
+                    rx="6"
+                    fill="none"
+                    stroke="#FFFFFF"
+                    strokeOpacity="0.86"
+                    strokeWidth="1"
+                    style={{ opacity: 0 }}
+                  />
+                  {/* the running light: a fixed-length blue segment whose
+                      trailing part is translucent so it melts into the
+                      white outline behind it. Dash offsets fall (0 -> -100)
+                      so the pattern travels CLOCKWISE; pathLength
+                      normalizes the perimeter to 100 despite the corners.
+                      The solid head covers the front 12 of the 22 units. */}
                   <rect
                     data-tile-tail
                     x={t.x}
@@ -2151,6 +2169,7 @@ export default function Infrastructure() {
                     rx="6"
                     fill="none"
                     stroke="#6485E7"
+                    strokeOpacity="0.45"
                     strokeWidth="1"
                     pathLength="100"
                     strokeDasharray="22 78"
@@ -2165,24 +2184,11 @@ export default function Infrastructure() {
                     height="77.5"
                     rx="6"
                     fill="none"
-                    stroke="#FFFFFF"
+                    stroke="#6485E7"
                     strokeWidth="1"
                     pathLength="100"
-                    strokeDasharray="7 93"
-                    strokeDashoffset="0"
-                    style={{ opacity: 0 }}
-                  />
-                  {/* the all-white flash the moment the score lands */}
-                  <rect
-                    data-tile-flash
-                    x={t.x}
-                    y={t.y}
-                    width="77.5"
-                    height="77.5"
-                    rx="6"
-                    fill="none"
-                    stroke="#FFFFFF"
-                    strokeWidth="1"
+                    strokeDasharray="12 88"
+                    strokeDashoffset="-10"
                     style={{ opacity: 0 }}
                   />
                   <text
