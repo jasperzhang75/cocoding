@@ -418,13 +418,13 @@ export default function Infrastructure() {
       0
     );
     // 100: the light is gone, the white outline flares for a beat, and the
-    // tile fills in a burst — on fast, then dissipating from its peak (the
-    // agents' fill logic from the Features card, without the hold)...
+    // tile fills in a burst — full in 0.3s, held 0.4s, then dissipating
+    // slowly (the agents' fill logic from the Features card)...
     const fills = svg.querySelectorAll("[data-tile-fill]");
     t.set([tails, heads], { opacity: 0 }, LOOP);
     t.set(bases, { opacity: 1 }, LOOP);
-    t.fromTo(fills, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power4.out" }, LOOP);
-    t.to(fills, { opacity: 0, duration: 1.6, ease: "power2.out" }, LOOP + 0.05);
+    t.fromTo(fills, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power4.out" }, LOOP);
+    t.to(fills, { opacity: 0, duration: 1.6, ease: "power2.out" }, LOOP + 0.7);
     // ...while the outline settles into the resting gradient
     t.to(bases, { opacity: 0, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
     t.to(rests, { opacity: 0.7, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
@@ -1577,11 +1577,11 @@ export default function Infrastructure() {
                 <stop stopColor="#6C91F9" />
                 <stop offset="1" stopColor="#FFFFFF" />
               </linearGradient>
-              {/* frame-8 resting tile stroke: the Figma gradient transform
-                  [[-0.95,-0.72,1.48],[0.72,-0.95,0.14]] solved for the
-                  points where t=0 (blue) and t=1 (white) on the axis
-                  through the tile's center — all four tiles */}
-              <linearGradient id="infra-tile-stroke" x1="0.931" y1="0.827" x2="0.263" y2="0.32">
+              {/* frame-8 resting tile stroke, per the reviewed tile: the
+                  Figma transform [[0,-0.917,1],[0.917,0,0.038]] is
+                  t = 1 - 0.917y — white at the top edge, #6485E7 reached
+                  just past the bottom (y = 1.09) — all four tiles */}
+              <linearGradient id="infra-tile-stroke" x1="0.5" y1="1.09" x2="0.5" y2="0">
                 <stop stopColor="#6485E7" />
                 <stop offset="1" stopColor="#FFFFFF" />
               </linearGradient>
