@@ -363,8 +363,11 @@ export default function Infrastructure() {
     if (!svg) return;
     scoreTlRef.current?.kill();
     scoreTlRef.current = null;
-    gsap.set(svg.querySelectorAll("[data-tile-stroke]"), { opacity: 0 });
-    gsap.set(svg.querySelectorAll("[data-tile-draw]"), { opacity: 1, attr: { "stroke-dashoffset": 100 } });
+    gsap.set(svg.querySelectorAll("[data-tile-stroke], [data-tile-flash]"), { opacity: 0 });
+    gsap.set(svg.querySelectorAll("[data-tile-tail], [data-tile-head]"), {
+      opacity: 0,
+      attr: { "stroke-dashoffset": 0 },
+    });
     svg.querySelectorAll("[data-tile8-score]").forEach((el) => {
       el.textContent = "0";
     });
@@ -376,40 +379,50 @@ export default function Infrastructure() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
       gsap.set(svg.querySelectorAll("[data-tile-stroke]"), { opacity: 0.7 });
-      gsap.set(svg.querySelectorAll("[data-tile-draw]"), { opacity: 0 });
+      gsap.set(svg.querySelectorAll("[data-tile-tail], [data-tile-head], [data-tile-flash]"), { opacity: 0 });
       svg.querySelectorAll("[data-tile8-score]").forEach((el) => {
         el.textContent = "100";
       });
       return;
     }
+    /* all four tiles at once: the light segment circles the outline
+       once (counter-clockwise, white head leading) on a fast-then-slow
+       curve while the score climbs on the same curve; the loop closes
+       exactly as the score lands — the whole outline flashes white, then
+       fades into the resting gradient stroke */
+    const LOOP = 1.4;
+    const EASE = "power3.out";
+    const tails = svg.querySelectorAll("[data-tile-tail]");
+    const heads = svg.querySelectorAll("[data-tile-head]");
+    const flashes = svg.querySelectorAll("[data-tile-flash]");
+    const rests = svg.querySelectorAll("[data-tile-stroke]");
+    const scores = Array.from(svg.querySelectorAll("[data-tile8-score]"));
     const t = gsap.timeline();
-    TILES8.forEach((tile, i) => {
-      const g = svg.querySelector(`[data-tile8="${tile.key}"]`);
-      if (!g) return;
-      const at = i * 0.15;
-      const draw = g.querySelector("[data-tile-draw]");
-      const rest = g.querySelector("[data-tile-stroke]");
-      const score = g.querySelector("[data-tile8-score]");
-      // the light runs the outline: quick off the mark, then easing out
-      t.to(draw, { attr: { "stroke-dashoffset": 0 }, duration: 1.4, ease: "power3.out" }, at);
-      // it hands over to the resting gradient as it closes the loop
-      t.to(rest, { opacity: 0.7, duration: 0.45 }, at + 1.05);
-      t.to(draw, { opacity: 0, duration: 0.45 }, at + 1.1);
-      // the score counts up on the same fast-then-slow curve
-      const n = { v: 0 };
-      t.to(
-        n,
-        {
-          v: 100,
-          duration: 1.2,
-          ease: "power2.out",
-          onUpdate: () => {
-            if (score) score.textContent = String(Math.round(n.v));
-          },
+    t.set([tails, heads], { opacity: 1 }, 0);
+    // dash offset +100 over one loop = one full trip against path direction
+    t.to([tails, heads], { attr: { "stroke-dashoffset": 100 }, duration: LOOP, ease: EASE }, 0);
+    const n = { v: 0 };
+    t.to(
+      n,
+      {
+        v: 100,
+        duration: LOOP,
+        ease: EASE,
+        onUpdate: () => {
+          const v = String(Math.round(n.v));
+          scores.forEach((el) => {
+            el.textContent = v;
+          });
         },
-        at
-      );
-    });
+      },
+      0
+    );
+    // 100: the light is gone, the outline flashes white...
+    t.set([tails, heads], { opacity: 0 }, LOOP);
+    t.set(flashes, { opacity: 1 }, LOOP);
+    // ...and settles into the resting gradient
+    t.to(flashes, { opacity: 0, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
+    t.to(rests, { opacity: 0.7, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
     scoreTlRef.current = t;
   };
 
@@ -1559,11 +1572,11 @@ export default function Infrastructure() {
                 <stop stopColor="#6C91F9" />
                 <stop offset="1" stopColor="#FFFFFF" />
               </linearGradient>
-              {/* frame-8 tile stroke: the Figma gradient transform
-                  [[-0.95,-0.72,1.48],[0.72,-0.95,0.14]] solved for the
-                  points where t=0 (blue) and t=1 (white) on the axis
-                  through the tile's center */}
-              <linearGradient id="infra-tile-stroke" x1="0.931" y1="0.827" x2="0.263" y2="0.32">
+              {/* frame-8 resting tile stroke, per the reviewed style: the
+                  Figma transform [[0,-0.917,1],[0.917,0,0.038]] is
+                  t = 1 - 0.917y — white at the top edge, #6485E7 reached
+                  just past the bottom (y = 1.09) */}
+              <linearGradient id="infra-tile-stroke" x1="0.5" y1="1.09" x2="0.5" y2="0">
                 <stop stopColor="#6485E7" />
                 <stop offset="1" stopColor="#FFFFFF" />
               </linearGradient>
@@ -2125,11 +2138,12 @@ export default function Infrastructure() {
                     strokeWidth="1"
                     style={{ opacity: 0.7 }}
                   />
-                  {/* the #6485E7 light that draws the outline: pathLength
-                      normalizes the perimeter to 100 so the dash offset
-                      runs 100 -> 0 regardless of the rounded corners */}
+                  {/* the running light: a fixed-length segment — blue tail
+                      under a short white head — whose dash offset circles
+                      the outline (pathLength normalizes the perimeter to
+                      100 regardless of the rounded corners) */}
                   <rect
-                    data-tile-draw
+                    data-tile-tail
                     x={t.x}
                     y={t.y}
                     width="77.5"
@@ -2139,8 +2153,36 @@ export default function Infrastructure() {
                     stroke="#6485E7"
                     strokeWidth="1"
                     pathLength="100"
-                    strokeDasharray="100"
-                    strokeDashoffset="100"
+                    strokeDasharray="22 78"
+                    strokeDashoffset="0"
+                    style={{ opacity: 0 }}
+                  />
+                  <rect
+                    data-tile-head
+                    x={t.x}
+                    y={t.y}
+                    width="77.5"
+                    height="77.5"
+                    rx="6"
+                    fill="none"
+                    stroke="#FFFFFF"
+                    strokeWidth="1"
+                    pathLength="100"
+                    strokeDasharray="7 93"
+                    strokeDashoffset="0"
+                    style={{ opacity: 0 }}
+                  />
+                  {/* the all-white flash the moment the score lands */}
+                  <rect
+                    data-tile-flash
+                    x={t.x}
+                    y={t.y}
+                    width="77.5"
+                    height="77.5"
+                    rx="6"
+                    fill="none"
+                    stroke="#FFFFFF"
+                    strokeWidth="1"
                     style={{ opacity: 0 }}
                   />
                   <text
