@@ -817,6 +817,7 @@ export default function Infrastructure() {
         t.set(svg.querySelectorAll('[data-card^="buildin:"]'), { x: first.x, y: first.y }, 0.35);
         t.set(sq(`[data-callout="buildin:${first.key}"]`), { opacity: 0 }, 0.35);
         t.set(sq("[data-frame6]"), { opacity: 1 }, 0.35);
+        t.set(sq("[data-frame6]"), { pointerEvents: "auto" }, 1.3);
         // the leftmost card appears first, alone, level with the rest
         t.fromTo(firstEl, { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.4);
         t.fromTo(sq("[data-f6-tab]"), { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.6);
@@ -1975,7 +1976,7 @@ export default function Infrastructure() {
                 CONNECTORS tab header. The header per Figma: a 0.9 white
                 30% baseline under the whole row, the active label at full
                 #EBEBEB with a 0.7 underline, the other at 20%. */}
-            <g data-frame6 style={{ opacity: 0 }}>
+            <g data-frame6 style={{ opacity: 0, pointerEvents: "none" }}>
               <g data-f6-tab>
                 {(["buildin", "connectors"] as RowKey[]).map((row) => {
                   const x = row === "buildin" ? 299 : 374;
