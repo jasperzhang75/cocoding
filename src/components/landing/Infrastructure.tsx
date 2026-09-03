@@ -424,7 +424,7 @@ export default function Infrastructure() {
     t.set([tails, heads], { opacity: 0 }, LOOP);
     t.set(bases, { opacity: 1 }, LOOP);
     t.fromTo(fills, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power4.out" }, LOOP);
-    t.to(fills, { opacity: 0, duration: 1.6, ease: "power2.out" }, LOOP + 0.2);
+    t.to(fills, { opacity: 0, duration: 1.6, ease: "power2.out" }, LOOP + 0.05);
     // ...while the outline settles into the resting gradient
     t.to(bases, { opacity: 0, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
     t.to(rests, { opacity: 0.7, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
