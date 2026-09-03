@@ -418,13 +418,13 @@ export default function Infrastructure() {
       0
     );
     // 100: the light is gone, the white outline flares for a beat, and the
-    // tile fills in a burst — full in 0.3s, then dissipating slowly from
+    // tile fills in a burst — full in 0.15s, then dissipating slowly from
     // its peak (the agents' fill logic from the Features card)...
     const fills = svg.querySelectorAll("[data-tile-fill]");
     t.set([tails, heads], { opacity: 0 }, LOOP);
     t.set(bases, { opacity: 1 }, LOOP);
-    t.fromTo(fills, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power4.out" }, LOOP);
-    t.to(fills, { opacity: 0, duration: 1.6, ease: "power2.out" }, LOOP + 0.3);
+    t.fromTo(fills, { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power4.out" }, LOOP);
+    t.to(fills, { opacity: 0, duration: 1.6, ease: "power2.out" }, LOOP + 0.15);
     // ...while the outline settles into the resting gradient
     t.to(bases, { opacity: 0, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
     t.to(rests, { opacity: 0.7, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
