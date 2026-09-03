@@ -738,26 +738,35 @@ export default function Infrastructure() {
         const sq = (sel: string) => svg.querySelector(sel);
         const sqa = (sel: string) => svg.querySelectorAll(sel);
         const OPEN = { duration: 0.9, ease: "power2.inOut" } as const;
+        /* Every tween states its frame-4 value outright (fromTo) so the
+           morph poses the same whether played, reversed, or scrubbed to an
+           end — a .to() would keep whatever it first rendered over, e.g. a
+           frame a crossfade had already hidden. fromTo renders its start
+           values the moment it is built (and keeps them as its floor when
+           the playhead sits before it), which is why the timeline is built
+           right as the frame-4 entrance lands: the values it writes are
+           exactly what is on screen. */
         const t = gsap.timeline({ paused: true });
+        const F4 = { lid: 85.2, side: { width: 85.3, height: 85.1 }, stroke: "url(#infra-face-stroke)" };
         // frame-4 furniture out
-        t.to(sq("[data-env-callouts]"), { opacity: 0, duration: 0.3 }, 0);
-        t.set(sq("[data-env-callouts]"), { pointerEvents: "none" }, 0.01);
-        t.to(sq("[data-legend-env]"), { opacity: 0, duration: 0.3 }, 0.05);
-        t.to(sq("[data-cube-mark]"), { opacity: 0, duration: 0.25 }, 0);
+        t.fromTo(sq("[data-env-callouts]"), { opacity: 1 }, { opacity: 0, duration: 0.3 }, 0);
+        t.fromTo(sq("[data-env-callouts]"), { pointerEvents: "auto" }, { pointerEvents: "none", duration: 0.01 }, 0.01);
+        t.fromTo(sq("[data-legend-env]"), { opacity: 1 }, { opacity: 0, duration: 0.3 }, 0.05);
+        t.fromTo(sq("[data-cube-mark]"), { opacity: 1 }, { opacity: 0, duration: 0.25 }, 0);
         // the cube opens and grows
-        t.to(sq('[data-cube-face="lid"]'), { attr: { transform: CUBE5.lid }, ...OPEN }, 0.15);
-        t.to(sqa('[data-cube-face="lid"] rect'), { attr: { width: CUBE5.lidSize, height: CUBE5.lidSize }, ...OPEN }, 0.15);
-        t.to(sq('[data-cube-face="left"]'), { attr: { transform: CUBE5.left }, ...OPEN }, 0.15);
-        t.to(sq('[data-cube-face="right"]'), { attr: { transform: CUBE5.right }, ...OPEN }, 0.15);
-        t.to(sqa('[data-cube-face="left"] rect, [data-cube-face="right"] rect'), { attr: { width: CUBE5.sideSize, height: CUBE5.sideSize }, ...OPEN }, 0.15);
-        t.to(sq('[data-cube-face="right"] rect:first-child'), { fill: "#617FDC", duration: 0.5 }, 0.3);
-        t.to(sq('[data-cube-face="right"] rect:nth-child(2)'), { fillOpacity: 0.05, duration: 0.5 }, 0.3);
+        t.fromTo(sq('[data-cube-face="lid"]'), { attr: { transform: CUBE.lid } }, { attr: { transform: CUBE5.lid }, ...OPEN }, 0.15);
+        t.fromTo(sqa('[data-cube-face="lid"] rect'), { attr: { width: F4.lid, height: F4.lid } }, { attr: { width: CUBE5.lidSize, height: CUBE5.lidSize }, ...OPEN }, 0.15);
+        t.fromTo(sq('[data-cube-face="left"]'), { attr: { transform: CUBE.left } }, { attr: { transform: CUBE5.left }, ...OPEN }, 0.15);
+        t.fromTo(sq('[data-cube-face="right"]'), { attr: { transform: CUBE.right } }, { attr: { transform: CUBE5.right }, ...OPEN }, 0.15);
+        t.fromTo(sqa('[data-cube-face="left"] rect, [data-cube-face="right"] rect'), { attr: F4.side }, { attr: { width: CUBE5.sideSize, height: CUBE5.sideSize }, ...OPEN }, 0.15);
+        t.fromTo(sq('[data-cube-face="right"] rect:first-child'), { fill: "#617CCE" }, { fill: "#617FDC", duration: 0.5 }, 0.3);
+        t.fromTo(sq('[data-cube-face="right"] rect:nth-child(2)'), { fillOpacity: 0.03 }, { fillOpacity: 0.05, duration: 0.5 }, 0.3);
         // the stack shrinks a touch and re-seats...
         faces.forEach((f, i) => {
-          t.to(f, { x: STACK5.x, y: STACK5.y[i], duration: 0.7, ease: "power2.inOut" }, 0.25);
+          t.fromTo(f, { x: STACK.x, y: ENV_STACK_Y[i] }, { x: STACK5.x, y: STACK5.y[i], duration: 0.7, ease: "power2.inOut" }, 0.25);
         });
-        t.to(sqa("[data-face] rect"), { attr: { width: STACK5.size, height: STACK5.size }, duration: 0.7, ease: "power2.inOut" }, 0.25);
-        t.set(sqa("[data-face] rect"), { attr: { stroke: "#A8A8A8" } }, 0.5);
+        t.fromTo(sqa("[data-face] rect"), { attr: { width: STACK.size, height: STACK.size } }, { attr: { width: STACK5.size, height: STACK5.size }, duration: 0.7, ease: "power2.inOut" }, 0.25);
+        t.fromTo(sqa("[data-face] rect"), { attr: { stroke: F4.stroke } }, { attr: { stroke: "#A8A8A8" }, duration: 0.01 }, 0.5);
         // ...and three extra layers pop out upward, one after another
         svg.querySelectorAll("[data-face-x]").forEach((x, i) => {
           t.fromTo(
@@ -768,10 +777,10 @@ export default function Infrastructure() {
           );
         });
         // legend row 1, lid mark, callouts
-        t.to(sq("[data-legend-infra]"), { opacity: 1, duration: 0.35 }, 0.5);
-        t.to(sq("[data-mark5]"), { opacity: 1, duration: 0.3 }, 0.85);
-        t.to(sq("[data-env5-callouts]"), { opacity: 1, duration: 0.35 }, 0.95);
-        t.set(sq("[data-env5-callouts]"), { pointerEvents: "auto" }, 1.3);
+        t.fromTo(sq("[data-legend-infra]"), { opacity: 0 }, { opacity: 1, duration: 0.35 }, 0.5);
+        t.fromTo(sq("[data-mark5]"), { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.85);
+        t.fromTo(sq("[data-env5-callouts]"), { opacity: 0 }, { opacity: 1, duration: 0.35 }, 0.95);
+        t.fromTo(sq("[data-env5-callouts]"), { pointerEvents: "none" }, { pointerEvents: "auto", duration: 0.01 }, 1.3);
         // the arrow flickers awake as it lights (not when reversing out)
         t.call(
           () => {
@@ -785,6 +794,15 @@ export default function Infrastructure() {
         tl3 = t;
         return t;
       };
+      // build it as frame 4 lands (see ensureTl3); the fallbacks below
+      // only matter if that never ran
+      tl2.call(
+        () => {
+          if (!tl2.reversed()) ensureTl3();
+        },
+        [],
+        tl2.duration()
+      );
 
       /* Frame 6 (INTEGRATIONS) transitions are one-way fades, never
          reversed: entering, the leaving frame fades out wholesale and the
@@ -920,7 +938,7 @@ export default function Infrastructure() {
           const f = afterTl3Complete;
           afterTl3Complete = null;
           f?.();
-        } else t.play();
+        } else t.play(0); // from the start, wherever a pose left the playhead
       };
       const stepBack4 = () => {
         frameRef.current = 4;
@@ -930,7 +948,7 @@ export default function Infrastructure() {
         const t = ensureTl3();
         swapItems("scalability", "env");
         if (reduced) t.progress(0);
-        else t.reverse();
+        else t.reverse(0); // 0 = from the very end
       };
       /* into 6 from anywhere: the leaving frame fades, the card row plays
          its self-contained entrance (rows reset to rest unseen first) */
@@ -1072,10 +1090,21 @@ export default function Infrastructure() {
         fadeOutFrame(t, from);
         t.call(
           () => {
+            /* pause first: a morph that finished playing is still "playing"
+               to GSAP, and moving its playhead would make it play again
+               (to frame 5) underneath this crossfade */
+            morph.pause();
             morph.progress(target === 5 ? 1 : 0, true);
+            // the pose shows the target's callouts/legend/marks; hide them
+            // again so the scene fades in as one
+            gsap.set(p.groups, { opacity: 0 });
             gsap.set(p.faces, { opacity: 0 });
             gsap.set(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1 });
             gsap.set(svg.querySelectorAll('[data-face-lit="left"], [data-face-lit="right"]'), { opacity: 0 });
+            // the marks follow the light, which the pose gives to the lid
+            // (a never-played morph leaves them wherever the last click did)
+            gsap.set(svg.querySelector("[data-cube-mark]"), { opacity: target === 4 ? 1 : 0 });
+            gsap.set(svg.querySelector("[data-mark5]"), { opacity: target === 5 ? 1 : 0 });
             activeFaceRef.current = "lid";
             resetCallouts(target);
           },
