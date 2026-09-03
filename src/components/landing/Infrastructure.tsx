@@ -849,6 +849,9 @@ export default function Infrastructure() {
         t.to(fold, { height: 0, opacity: 0, marginTop: 0, duration: 0.45, ease: "power2.inOut" }, 0.1);
         t.set(fold, { display: "none" }, 0.56);
         t.to(section.querySelector(`[data-item-title="${openKey}"]`), { opacity: 1, duration: 0.4 }, 0.45);
+        // a fold elsewhere may have left this one display:none — restore it
+        // INSIDE the timeline so cached replays open it too
+        t.set(open, { display: "block" }, 0.5);
         t.fromTo(
           open,
           { height: 0, opacity: 0, marginTop: 0 },
@@ -1748,7 +1751,7 @@ export default function Infrastructure() {
                 <rect width="85.2" height="85.2" rx="6" fill="#617FDC" fillOpacity="0.1" />
                 <rect width="85.2" height="85.2" rx="6" fill="#FFFFFF" fillOpacity="0.05" />
                 <rect
-                  data-face-lit="ni"
+                  data-face-lit="lid"
                   width="85.2"
                   height="85.2"
                   rx="6"
@@ -1767,7 +1770,7 @@ export default function Infrastructure() {
                 <rect width="85.3" height="85.1" rx="8" fill="#617FDC" fillOpacity="0.1" />
                 <rect width="85.3" height="85.1" rx="8" fill="#FFFFFF" fillOpacity="0.05" />
                 <rect
-                  data-face-lit="ab"
+                  data-face-lit="left"
                   width="85.3"
                   height="85.1"
                   rx="8"
@@ -1787,7 +1790,7 @@ export default function Infrastructure() {
                 <rect width="85.3" height="85.1" rx="8" fill="#617CCE" fillOpacity="0.1" />
                 <rect width="85.3" height="85.1" rx="8" fill="#FFFFFF" fillOpacity="0.03" />
                 <rect
-                  data-face-lit="ha"
+                  data-face-lit="right"
                   width="85.3"
                   height="85.1"
                   rx="8"
