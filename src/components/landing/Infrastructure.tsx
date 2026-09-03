@@ -737,12 +737,6 @@ export default function Infrastructure() {
         if (tl3) return tl3;
         const sq = (sel: string) => svg.querySelector(sel);
         const sqa = (sel: string) => svg.querySelectorAll(sel);
-        const envDesc = section.querySelector<HTMLElement>('[data-item-desc="env"]')!;
-        const scalDesc = section.querySelector<HTMLElement>('[data-item-desc="scalability"]')!;
-        // measure the closed description at today's width
-        gsap.set(scalDesc, { display: "block", height: "auto", opacity: 0 });
-        const scalH = scalDesc.offsetHeight;
-        gsap.set(scalDesc, { height: 0, marginTop: 0 });
         const OPEN = { duration: 0.9, ease: "power2.inOut" } as const;
         const t = gsap.timeline({ paused: true });
         // frame-4 furniture out
@@ -778,17 +772,6 @@ export default function Infrastructure() {
         t.to(sq("[data-mark5]"), { opacity: 1, duration: 0.3 }, 0.85);
         t.to(sq("[data-env5-callouts]"), { opacity: 1, duration: 0.35 }, 0.95);
         t.set(sq("[data-env5-callouts]"), { pointerEvents: "auto" }, 1.3);
-        // left column: environment folds, Scalability expands
-        t.to(section.querySelector('[data-item-title="env"]'), { opacity: 0.2, duration: 0.4 }, 0.1);
-        t.to(envDesc, { height: 0, opacity: 0, marginTop: 0, duration: 0.45, ease: "power2.inOut" }, 0.1);
-        t.set(envDesc, { display: "none" }, 0.56);
-        t.to(section.querySelector('[data-item-title="scalability"]'), { opacity: 1, duration: 0.4 }, 0.45);
-        t.fromTo(
-          scalDesc,
-          { height: 0, opacity: 0, marginTop: 0 },
-          { height: scalH, opacity: 1, marginTop: 12, duration: 0.5, ease: "power2.inOut" },
-          0.5
-        );
         // the arrow flickers awake as it lights (not when reversing out)
         t.call(
           () => {
@@ -862,99 +845,32 @@ export default function Infrastructure() {
       };
       /* What each origin frame shows — faded out on the way into 6 and
          faded back in on the way out. */
-      const originParts = (origin: 4 | 5) => {
+      const ITEM_OF: Record<number, string> = { 4: "env", 5: "scalability", 6: "integrations", 8: "analytics" };
+      /* the scene parts the cube frames own, for fading them out or in */
+      const sceneParts = (frame: 4 | 5) => {
         const sq = (sel: string) => svg.querySelector(sel);
-        const callouts = sq(origin === 5 ? "[data-env5-callouts]" : "[data-env-callouts]");
+        const callouts = sq(frame === 5 ? "[data-env5-callouts]" : "[data-env-callouts]");
         return {
           groups: [callouts, sq("[data-env-legend]"), sq("[data-env-cube]")],
-          faces: svg.querySelectorAll(origin === 5 ? "[data-face], [data-face-x]" : "[data-face]"),
+          faces: svg.querySelectorAll(frame === 5 ? "[data-face], [data-face-x]" : "[data-face]"),
           clickable: [callouts, sq("[data-env-cube]")],
         };
       };
-      const enterTl: Partial<Record<4 | 5, gsap.core.Timeline>> = {};
-      const ensureEnter = (origin: 4 | 5) => {
-        const have = enterTl[origin];
-        if (have) return have;
-        const p = originParts(origin);
-        const t = gsap.timeline({ paused: true });
-        t.to(p.groups, { opacity: 0, duration: 0.3 }, 0);
-        t.to(p.faces, { opacity: 0, duration: 0.3 }, 0.05);
-        t.set(p.clickable, { pointerEvents: "none" }, 0.01);
-        appendEntrance6(t);
-        appendItemSwap(t, origin === 5 ? "scalability" : "env", "integrations");
-        enterTl[origin] = t;
-        return t;
-      };
-      const leaveTl: Partial<Record<4 | 5, gsap.core.Timeline>> = {};
-      const ensureLeave = (origin: 4 | 5) => {
-        const have = leaveTl[origin];
-        if (have) return have;
-        const p = originParts(origin);
-        const t = gsap.timeline({ paused: true });
-        t.to(svg.querySelector("[data-frame6]"), { opacity: 0, duration: 0.3 }, 0);
-        t.to(p.groups, { opacity: 1, duration: 0.35 }, 0.3);
-        t.to(p.faces, { opacity: 0.8, duration: 0.35 }, 0.3);
-        t.set(p.clickable, { pointerEvents: "auto" }, 0.65);
-        appendItemSwap(t, "integrations", origin === 5 ? "scalability" : "env");
-        // the origin's lid mark flickers awake; a queued next step (going
-        // further than the origin) runs after
-        t.eventCallback("onComplete", () => {
-          flickerMark(origin === 5);
-          const f = afterLeaveSix;
-          afterLeaveSix = null;
-          f?.();
-        });
-        leaveTl[origin] = t;
-        return t;
-      };
-
-      /* Frame 8 (ANALYTICS) transitions — plain fades for now, one-way like
-         frame 6's: the leaving frame fades out and the scorecard fades in;
-         leaving, the scorecard fades out and the origin fades back. */
-      const ITEM_OF: Record<number, string> = { 4: "env", 5: "scalability", 6: "integrations" };
-      const originParts8 = (origin: 4 | 5 | 6) => {
-        if (origin === 6) {
-          const f6 = svg.querySelector("[data-frame6]");
-          return { groups: [f6], faces: [] as Element[], clickable: [f6] };
+      const frameGroup = (frame: 6 | 8) =>
+        svg.querySelector(frame === 6 ? "[data-frame6]" : "[data-frame8]");
+      /* every crossfade starts the same way: the frame we are leaving
+         fades out wholesale and stops taking clicks */
+      const fadeOutFrame = (t: gsap.core.Timeline, from: 4 | 5 | 6 | 8) => {
+        if (from === 6 || from === 8) {
+          const g = frameGroup(from);
+          t.to(g, { opacity: 0, duration: 0.3 }, 0);
+          t.set(g, { pointerEvents: "none" }, 0.01);
+        } else {
+          const p = sceneParts(from);
+          t.to(p.groups, { opacity: 0, duration: 0.3 }, 0);
+          t.to(p.faces, { opacity: 0, duration: 0.3 }, 0.05);
+          t.set(p.clickable, { pointerEvents: "none" }, 0.01);
         }
-        const p = originParts(origin);
-        return { groups: p.groups, faces: Array.from(p.faces), clickable: p.clickable };
-      };
-      const enter8Tl: Partial<Record<4 | 5 | 6, gsap.core.Timeline>> = {};
-      const ensureEnter8 = (origin: 4 | 5 | 6) => {
-        const have = enter8Tl[origin];
-        if (have) return have;
-        const p = originParts8(origin);
-        const t = gsap.timeline({ paused: true });
-        t.to(p.groups, { opacity: 0, duration: 0.3 }, 0);
-        if (p.faces.length) t.to(p.faces, { opacity: 0, duration: 0.3 }, 0.05);
-        t.set(p.clickable, { pointerEvents: "none" }, 0.01);
-        t.fromTo(svg.querySelector("[data-frame8]"), { opacity: 0 }, { opacity: 1, duration: 0.45 }, 0.35);
-        // the scorecard plays once the frame is mostly in
-        t.call(() => playScorecard(), [], 0.6);
-        appendItemSwap(t, ITEM_OF[origin], "analytics");
-        enter8Tl[origin] = t;
-        return t;
-      };
-      const leave8Tl: Partial<Record<4 | 5 | 6, gsap.core.Timeline>> = {};
-      const ensureLeave8 = (origin: 4 | 5 | 6) => {
-        const have = leave8Tl[origin];
-        if (have) return have;
-        const p = originParts8(origin);
-        const t = gsap.timeline({ paused: true });
-        t.to(svg.querySelector("[data-frame8]"), { opacity: 0, duration: 0.3 }, 0);
-        t.to(p.groups, { opacity: 1, duration: 0.35 }, 0.3);
-        if (p.faces.length) t.to(p.faces, { opacity: 0.8, duration: 0.35 }, 0.3);
-        t.set(p.clickable, { pointerEvents: "auto" }, 0.65);
-        appendItemSwap(t, "analytics", ITEM_OF[origin]);
-        t.eventCallback("onComplete", () => {
-          if (origin !== 6) flickerMark(origin === 5);
-          const f = afterLeaveEight;
-          afterLeaveEight = null;
-          f?.();
-        });
-        leave8Tl[origin] = t;
-        return t;
       };
 
       const normalizeToLid = () => {
@@ -965,17 +881,26 @@ export default function Infrastructure() {
         }
       };
 
-      /* One-shot chain hooks. */
+      /* Transitions. 4 <-> 5 is the cube morph (tl3, played/reversed);
+         every other pair is a crossfade built fresh per call: the leaving
+         frame fades, the target enters — no intermediate frames, no
+         chaining. The left column swaps on its own fresh timeline each
+         time (fold the current item, open the target), so tl3 can pose
+         the cube unseen without touching the column. */
       let afterTl3Complete: (() => void) | null = null;
-      let afterLeaveSix: (() => void) | null = null;
-      let afterLeaveEight: (() => void) | null = null;
-      let enteredSixVia: 4 | 5 = 5; // the frame 6 was entered from
-      let enteredEightVia: 4 | 5 | 6 = 6; // the frame 8 was entered from
-
-      // one-way timelines replay from the top with fresh start values
+      let running: gsap.core.Timeline | null = null; // the crossfade in flight
+      let itemsRunning: gsap.core.Timeline | null = null;
       const run = (t: gsap.core.Timeline) => {
+        running = t;
         if (reduced) t.progress(1);
-        else t.invalidate().restart();
+        else t.play();
+      };
+      const swapItems = (fold: string, open: string) => {
+        const t = gsap.timeline({ paused: true });
+        appendItemSwap(t, fold, open);
+        itemsRunning = t;
+        if (reduced) t.progress(1);
+        else t.play();
       };
 
       const stepTo5 = () => {
@@ -989,6 +914,7 @@ export default function Infrastructure() {
           afterTl3Complete = null;
           f?.();
         });
+        swapItems("env", "scalability");
         if (reduced) {
           t.progress(1);
           const f = afterTl3Complete;
@@ -1002,21 +928,31 @@ export default function Infrastructure() {
         normalizeToLid();
         gsap.delayedCall(0.35, () => resetCallouts(5));
         const t = ensureTl3();
+        swapItems("scalability", "env");
         if (reduced) t.progress(0);
         else t.reverse();
       };
-      const stepTo6 = (from: 4 | 5) => {
+      /* into 6 from anywhere: the leaving frame fades, the card row plays
+         its self-contained entrance (rows reset to rest unseen first) */
+      const stepTo6 = (from: 4 | 5 | 8) => {
         frameRef.current = 6;
-        enteredSixVia = from;
         flickerRef.current?.kill();
-        normalizeToLid();
-        gsap.delayedCall(0.35, () => resetCallouts(from));
-        resetRows(); // frame 6 is hidden here; rows go back to rest unseen
+        scoreTlRef.current?.kill();
+        if (from !== 8) {
+          normalizeToLid();
+          gsap.delayedCall(0.35, () => resetCallouts(from));
+        }
+        resetRows();
         rowsBusyRef.current = true;
-        const t = ensureEnter(from);
-        t.eventCallback("onComplete", () => {
-          rowsBusyRef.current = false;
+        const t = gsap.timeline({
+          paused: true,
+          onComplete: () => {
+            rowsBusyRef.current = false;
+          },
         });
+        fadeOutFrame(t, from);
+        appendEntrance6(t);
+        appendItemSwap(t, ITEM_OF[from], "integrations");
         run(t);
       };
 
@@ -1107,89 +1043,69 @@ export default function Infrastructure() {
           t.set(sq(`[data-card="${from}:${c.key}"]`), { x: c.x, y: c.y, opacity: 1 }, openAt);
         });
       };
-      const leaveSix = () => {
-        // fade 6 out and the origin frame back in
-        frameRef.current = enteredSixVia;
-        flickerRef.current?.kill();
-        const t = ensureLeave(enteredSixVia);
-        run(t);
-      };
-
+      /* into 8 from anywhere: the leaving frame fades, the scorecard plays */
       const stepTo8 = (from: 4 | 5 | 6) => {
         frameRef.current = 8;
-        enteredEightVia = from;
         flickerRef.current?.kill();
         if (from !== 6) {
           normalizeToLid();
           gsap.delayedCall(0.35, () => resetCallouts(from));
         }
-        resetScorecard(); // frame 8 is hidden here; it replays on entry
-        run(ensureEnter8(from));
+        resetScorecard();
+        const t = gsap.timeline({ paused: true });
+        fadeOutFrame(t, from);
+        t.fromTo(frameGroup(8), { opacity: 0 }, { opacity: 1, duration: 0.45 }, 0.35);
+        t.call(() => playScorecard(), [], 0.6);
+        appendItemSwap(t, ITEM_OF[from], "analytics");
+        run(t);
       };
-      const leaveEight = () => {
-        frameRef.current = enteredEightVia;
+      /* from 6/8 into a cube frame: the leaving frame fades, the cube is
+         posed unseen (tl3 at 0 = frame 4, at 1 = frame 5, lid lit, default
+         callouts) and fades in already in place */
+      const stepToCube = (from: 6 | 8, target: 4 | 5) => {
+        frameRef.current = target;
         flickerRef.current?.kill();
         scoreTlRef.current?.kill();
-        run(ensureLeave8(enteredEightVia));
+        const morph = ensureTl3();
+        const p = sceneParts(target);
+        const t = gsap.timeline({ paused: true });
+        fadeOutFrame(t, from);
+        t.call(
+          () => {
+            morph.progress(target === 5 ? 1 : 0, true);
+            gsap.set(p.faces, { opacity: 0 });
+            gsap.set(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1 });
+            gsap.set(svg.querySelectorAll('[data-face-lit="left"], [data-face-lit="right"]'), { opacity: 0 });
+            activeFaceRef.current = "lid";
+            resetCallouts(target);
+          },
+          [],
+          0.3
+        );
+        t.to(p.groups, { opacity: 1, duration: 0.35 }, 0.35);
+        t.to(p.faces, { opacity: 0.8, duration: 0.35 }, 0.35);
+        t.set(p.clickable, { pointerEvents: "auto" }, 0.7);
+        appendItemSwap(t, ITEM_OF[from], ITEM_OF[target]);
+        t.eventCallback("onComplete", () => flickerMark(target === 5));
+        run(t);
       };
 
       const anyActive = () =>
-        [
-          tl3,
-          enterTl[4],
-          enterTl[5],
-          leaveTl[4],
-          leaveTl[5],
-          enter8Tl[4],
-          enter8Tl[5],
-          enter8Tl[6],
-          leave8Tl[4],
-          leave8Tl[5],
-          leave8Tl[6],
-        ].some((t) => t && t.isActive());
+        [tl3, running, itemsRunning].some((t) => t && t.isActive());
 
       const goTo = (target: number) => {
         const cur = frameRef.current;
         if (target === cur) return;
         if (cur === 4 && tl2.progress() < 1) return; // frame 4 not landed
-        if (target === 8) {
-          if (cur === 5 && ensureTl3().isActive()) {
-            afterTl3Complete = () => stepTo8(5); // mid 4->5: queue it
-            return;
-          }
-          stepTo8(cur as 4 | 5 | 6);
+        if (cur === 5 && ensureTl3().isActive()) {
+          afterTl3Complete = () => goTo(target); // mid 4->5: queue it
           return;
         }
-        if (cur === 8) {
-          /* leaving 8 lands on the frame it was entered from; asks that go
-             elsewhere continue from there once the fade lands */
-          if (target !== enteredEightVia) afterLeaveEight = () => goTo(target);
-          leaveEight();
-          return;
-        }
-        if (target > cur) {
-          if (cur === 4) {
-            if (target === 6) stepTo6(4);
-            else stepTo5();
-          } else if (cur === 5) {
-            if (ensureTl3().isActive()) {
-              if (target === 6) afterTl3Complete = () => stepTo6(5);
-              return; // mid 4->5: queue and let it land
-            }
-            stepTo6(5);
-          }
-        } else {
-          if (cur === 6) {
-            /* leaving 6 lands on the frame it was entered from; asks that
-               go beyond it chain one more step after the fade lands */
-            if (target !== enteredSixVia) {
-              afterLeaveSix = enteredSixVia === 5 ? () => stepBack4() : () => stepTo5();
-            }
-            leaveSix();
-          } else if (cur === 5) {
-            stepBack4();
-          }
-        }
+        if (cur === 4 && target === 5) return stepTo5();
+        if (cur === 5 && target === 4) return stepBack4();
+        if (target === 6) return stepTo6(cur as 4 | 5 | 8);
+        if (target === 8) return stepTo8(cur as 4 | 5 | 6);
+        stepToCube(cur as 6 | 8, target as 4 | 5);
       };
       /* Title clicks switch frames too; if the page isn't captured yet
          (clicked while approaching), capture first so the frame plays
@@ -1307,7 +1223,7 @@ export default function Infrastructure() {
           else return true; // past the last frame: release downward
         } else {
           if (atStageThree()) return true; // before frame 4: release upward
-          if (frame === 6) goTo(enteredSixVia);
+          if (frame === 6) goTo(5);
           else if (frame === 5) goTo(4);
           else if (frame === 4) {
             entered = false;
@@ -1424,7 +1340,7 @@ export default function Infrastructure() {
         } else if (frame === 5 && q3 >= ENTER) {
           fire(() => goTo(6));
         } else if (frame === 6 && q3 <= BACK) {
-          fire(() => goTo(enteredSixVia));
+          fire(() => goTo(5));
         }
       };
 
@@ -2114,7 +2030,7 @@ export default function Infrastructure() {
 
             {/* frame 8: the Google Lighthouse scorecard. Static; its own
                 animation comes next. */}
-            <g data-frame8 style={{ opacity: 0 }}>
+            <g data-frame8 style={{ opacity: 0, pointerEvents: "none" }}>
               <g data-f8-header opacity="0.8">
                 {/* mynaui:google-so, exported: a white 33% base with the
                     white -> #666 gradient at 83% over it */}
