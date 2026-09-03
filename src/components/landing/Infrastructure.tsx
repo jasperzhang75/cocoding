@@ -363,7 +363,7 @@ export default function Infrastructure() {
     if (!svg) return;
     scoreTlRef.current?.kill();
     scoreTlRef.current = null;
-    gsap.set(svg.querySelectorAll("[data-tile-stroke], [data-tile-base]"), { opacity: 0 });
+    gsap.set(svg.querySelectorAll("[data-tile-stroke], [data-tile-base], [data-tile-fill]"), { opacity: 0 });
     gsap.set(svg.querySelectorAll("[data-tile-tail]"), { opacity: 0, attr: { "stroke-dashoffset": 0 } });
     gsap.set(svg.querySelectorAll("[data-tile-head]"), { opacity: 0, attr: { "stroke-dashoffset": -10 } });
     svg.querySelectorAll("[data-tile8-score]").forEach((el) => {
@@ -377,7 +377,7 @@ export default function Infrastructure() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
       gsap.set(svg.querySelectorAll("[data-tile-stroke]"), { opacity: 0.7 });
-      gsap.set(svg.querySelectorAll("[data-tile-tail], [data-tile-head], [data-tile-base]"), { opacity: 0 });
+      gsap.set(svg.querySelectorAll("[data-tile-tail], [data-tile-head], [data-tile-base], [data-tile-fill]"), { opacity: 0 });
       svg.querySelectorAll("[data-tile8-score]").forEach((el) => {
         el.textContent = "100";
       });
@@ -417,10 +417,15 @@ export default function Infrastructure() {
       },
       0
     );
-    // 100: the light is gone and the white outline flares for a beat...
+    // 100: the light is gone, the white outline flares for a beat, and the
+    // tile fills in a burst — on fast, then dissipating slowly (the agents'
+    // fill logic from the Features card)...
+    const fills = svg.querySelectorAll("[data-tile-fill]");
     t.set([tails, heads], { opacity: 0 }, LOOP);
     t.set(bases, { opacity: 1 }, LOOP);
-    // ...then settles into the resting gradient
+    t.fromTo(fills, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power4.out" }, LOOP);
+    t.to(fills, { opacity: 0, duration: 1.6, ease: "power2.out" }, LOOP + 0.75);
+    // ...while the outline settles into the resting gradient
     t.to(bases, { opacity: 0, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
     t.to(rests, { opacity: 0.7, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
     scoreTlRef.current = t;
@@ -1572,11 +1577,11 @@ export default function Infrastructure() {
                 <stop stopColor="#6C91F9" />
                 <stop offset="1" stopColor="#FFFFFF" />
               </linearGradient>
-              {/* frame-8 resting tile stroke, per the reviewed style: the
-                  Figma transform [[0,-0.917,1],[0.917,0,0.038]] is
-                  t = 1 - 0.917y — white at the top edge, #6485E7 reached
-                  just past the bottom (y = 1.09) */}
-              <linearGradient id="infra-tile-stroke" x1="0.5" y1="1.09" x2="0.5" y2="0">
+              {/* frame-8 resting tile stroke: the Figma gradient transform
+                  [[-0.95,-0.72,1.48],[0.72,-0.95,0.14]] solved for the
+                  points where t=0 (blue) and t=1 (white) on the axis
+                  through the tile's center — all four tiles */}
+              <linearGradient id="infra-tile-stroke" x1="0.931" y1="0.827" x2="0.263" y2="0.32">
                 <stop stopColor="#6485E7" />
                 <stop offset="1" stopColor="#FFFFFF" />
               </linearGradient>
@@ -2138,6 +2143,13 @@ export default function Infrastructure() {
                     strokeWidth="1"
                     style={{ opacity: 0.7 }}
                   />
+                  {/* the fill burst as the score lands: the design's tile
+                      fill (#617FDC 10% under white 5%) flashes on and
+                      dissipates, like the agents' fill in the Features card */}
+                  <g data-tile-fill style={{ opacity: 0 }}>
+                    <rect x={t.x} y={t.y} width="77.5" height="77.5" rx="6" fill="#617FDC" fillOpacity="0.1" />
+                    <rect x={t.x} y={t.y} width="77.5" height="77.5" rx="6" fill="#FFFFFF" fillOpacity="0.05" />
+                  </g>
                   {/* while the light runs, the outline sits there in white;
                       it brightens for a beat as the score lands, then
                       fades into the resting gradient */}
