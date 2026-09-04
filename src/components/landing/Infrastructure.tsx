@@ -563,6 +563,24 @@ export default function Infrastructure() {
   const markKey = (frame: number, face: string) =>
     frame === 5 ? (face === "lid" ? "lid5" : `${face}5`) : face;
 
+  /* Every mark to its state for (frame, face): the face holding the light
+     shows its mark, the other five are dark. Run on every frame entry and
+     every light swap — the whole set each time, never just the pair that
+     changed — so no mark can be left showing by history (a click landing
+     mid-transition, a hot reload). Instant by default; a duration fades. */
+  const settleMarks = (frame: number, face: string, duration = 0) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const on = markKey(frame, face);
+    for (const k of Object.keys(MARK_OF)) {
+      const el = svg.querySelector(MARK_OF[k]);
+      if (!el) continue;
+      const opacity = k === on ? 1 : 0;
+      if (duration) gsap.to(el, { opacity, duration, ease: "power1.inOut" });
+      else gsap.set(el, { opacity });
+    }
+  };
+
   /* Mark flicker: whenever a mark lights up, its bright and dim halves
      trade places — fast at first, each gap 1.5x the last — before
      settling. Skipped under reduced motion. */
@@ -629,10 +647,8 @@ export default function Infrastructure() {
     // the light, and flickers awake as it takes it
     fade(`[data-face-lit="${prevFace}"]`, 0, 0.35);
     fade(`[data-face-lit="${face}"]`, 1, 0.35);
-    fade(MARK_OF[markKey(frame, prevFace)], 0, 0.3);
-    const key = markKey(frame, face);
-    fade(MARK_OF[key], 1, 0.3);
-    flickerMark(key);
+    settleMarks(frame, face, 0.3);
+    flickerMark(markKey(frame, face));
   };
 
   /* Reset a frame's callout internals to its default holder (lid) — run
@@ -661,6 +677,14 @@ export default function Infrastructure() {
     svg.querySelectorAll<SVGImageElement>("[data-noise]").forEach((im) => {
       im.setAttribute("href", noiseUrl);
     });
+
+    // the light starts on the lid with frame 4's mark — stated outright so
+    // a re-run of this effect (dev hot reload) cannot inherit a stale light
+    frameRef.current = 4;
+    activeFaceRef.current = "lid";
+    gsap.set(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1 });
+    gsap.set(svg.querySelectorAll('[data-face-lit="left"], [data-face-lit="right"]'), { opacity: 0 });
+    settleMarks(4, "lid");
 
     const ctx = gsap.context(() => {
       const faces = Array.from(
@@ -742,7 +766,10 @@ export default function Infrastructure() {
       // the mark's first light-up flickers too (not when reversing out)
       tl2.call(
         () => {
-          if (!tl2.reversed()) flickerMark();
+          if (!tl2.reversed()) {
+            settleMarks(4, "lid");
+            flickerMark();
+          }
         },
         [],
         0.7
@@ -808,13 +835,16 @@ export default function Infrastructure() {
         // the arrow flickers awake as it lights (not when reversing out)
         t.call(
           () => {
-            if (!t.reversed()) flickerMark("lid5");
+            if (!t.reversed() && activeFaceRef.current === "lid") flickerMark("lid5");
           },
           [],
           1.0
         );
         // returning to frame 4 re-lights the server mark
-        t.eventCallback("onReverseComplete", () => flickerMark());
+        t.eventCallback("onReverseComplete", () => {
+          settleMarks(4, activeFaceRef.current);
+          flickerMark(markKey(4, activeFaceRef.current));
+        });
         tl3 = t;
         return t;
       };
@@ -919,9 +949,11 @@ export default function Infrastructure() {
         if (activeFaceRef.current !== "lid") {
           gsap.to(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1, duration: 0.3, overwrite: "auto" });
           gsap.to(svg.querySelectorAll('[data-face-lit="left"], [data-face-lit="right"]'), { opacity: 0, duration: 0.3, overwrite: "auto" });
-          gsap.to(svg.querySelectorAll("[data-mark-side]"), { opacity: 0, duration: 0.3, overwrite: "auto" });
           activeFaceRef.current = "lid";
         }
+        // the side marks go dark whatever the light was doing (the lid
+        // marks are the morph's or the pose's to set)
+        gsap.to(svg.querySelectorAll("[data-mark-side]"), { opacity: 0, duration: 0.3, overwrite: "auto" });
       };
 
       /* Transitions. 4 <-> 5 is the cube morph (tl3, played/reversed);
@@ -953,6 +985,7 @@ export default function Infrastructure() {
         gsap.delayedCall(0.35, () => resetCallouts(4));
         const t = ensureTl3();
         t.eventCallback("onComplete", () => {
+          settleMarks(5, activeFaceRef.current);
           const f = afterTl3Complete;
           afterTl3Complete = null;
           f?.();
@@ -1127,12 +1160,9 @@ export default function Infrastructure() {
             gsap.set(p.faces, { opacity: 0 });
             gsap.set(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1 });
             gsap.set(svg.querySelectorAll('[data-face-lit="left"], [data-face-lit="right"]'), { opacity: 0 });
-            // the marks follow the light, which the pose gives to the lid
-            // (a never-played morph leaves them wherever the last click did)
-            gsap.set(svg.querySelector("[data-cube-mark]"), { opacity: target === 4 ? 1 : 0 });
-            gsap.set(svg.querySelector("[data-mark5]"), { opacity: target === 5 ? 1 : 0 });
-            gsap.set(svg.querySelectorAll("[data-mark-side]"), { opacity: 0 });
             activeFaceRef.current = "lid";
+            // the marks follow the light, which the pose gives to the lid
+            settleMarks(target, "lid");
             resetCallouts(target);
           },
           [],
