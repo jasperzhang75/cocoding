@@ -865,29 +865,31 @@ export default function Infrastructure() {
         t.to(firstEl, { y: first.y - raise, duration: 0.5, ease: "power2.inOut" }, 1.3);
         t.to(sq(`[data-callout="buildin:${first.key}"]`), { opacity: 1, duration: 0.35 }, 1.55);
       };
-      const appendItemSwap = (
-        t: gsap.core.Timeline,
-        foldKey: string,
-        openKey: string
-      ) => {
-        const fold = section.querySelector<HTMLElement>(`[data-item-desc="${foldKey}"]`)!;
-        const open = section.querySelector<HTMLElement>(`[data-item-desc="${openKey}"]`)!;
-        gsap.set(open, { display: "block", height: "auto", opacity: 0 });
+      /* The left column: every item that is showing folds (normally one,
+         but an interrupted swap can leave two part-way), the target opens
+         from wherever it stands. */
+      const appendItemSwap = (t: gsap.core.Timeline, _foldKey: string, openKey: string) => {
+        const descs = Array.from(section.querySelectorAll<HTMLElement>("[data-item-desc]"));
+        const open = descs.find((el) => el.dataset.itemDesc === openKey)!;
+        // measure the target at full size, then put back exactly what it had
+        const style = open.getAttribute("style") ?? "";
+        gsap.set(open, { display: "block", height: "auto" });
         const openH = open.offsetHeight;
-        gsap.set(open, { height: 0, marginTop: 0 });
-        t.to(section.querySelector(`[data-item-title="${foldKey}"]`), { opacity: 0.2, duration: 0.4 }, 0.1);
-        t.to(fold, { height: 0, opacity: 0, marginTop: 0, duration: 0.45, ease: "power2.inOut" }, 0.1);
-        t.set(fold, { display: "none" }, 0.56);
+        open.setAttribute("style", style);
+        const closed = getComputedStyle(open).display === "none";
+        if (closed) gsap.set(open, { height: 0, opacity: 0, marginTop: 0 });
+        for (const el of descs) {
+          const k = el.dataset.itemDesc!;
+          if (k === openKey) continue;
+          // every other title dims (one may be part-lit from an interrupted swap)
+          t.to(section.querySelector(`[data-item-title="${k}"]`), { opacity: 0.2, duration: 0.4 }, 0.1);
+          if (getComputedStyle(el).display === "none") continue;
+          t.to(el, { height: 0, opacity: 0, marginTop: 0, duration: 0.45, ease: "power2.inOut" }, 0.1);
+          t.set(el, { display: "none" }, 0.56);
+        }
         t.to(section.querySelector(`[data-item-title="${openKey}"]`), { opacity: 1, duration: 0.4 }, 0.45);
-        // a fold elsewhere may have left this one display:none — restore it
-        // INSIDE the timeline so cached replays open it too
         t.set(open, { display: "block" }, 0.5);
-        t.fromTo(
-          open,
-          { height: 0, opacity: 0, marginTop: 0 },
-          { height: openH, opacity: 1, marginTop: 12, duration: 0.5, ease: "power2.inOut" },
-          0.5
-        );
+        t.to(open, { height: openH, opacity: 1, marginTop: 12, duration: 0.5, ease: "power2.inOut" }, 0.5);
       };
       /* What each origin frame shows — faded out on the way into 6 and
          faded back in on the way out. */
@@ -936,7 +938,6 @@ export default function Infrastructure() {
          chaining. The left column swaps on its own fresh timeline each
          time (fold the current item, open the target), so tl3 can pose
          the cube unseen without touching the column. */
-      let afterTl3Complete: (() => void) | null = null;
       let running: gsap.core.Timeline | null = null; // the crossfade in flight
       let itemsRunning: gsap.core.Timeline | null = null;
       const run = (t: gsap.core.Timeline) => {
@@ -951,6 +952,27 @@ export default function Infrastructure() {
         if (reduced) t.progress(1);
         else t.play();
       };
+      /* A transition never makes the user wait: a new gesture or click
+         interrupts whatever is in flight — the crossfade and the column
+         swap stop where they are and the next transition starts from that
+         state (fades run from current values; the column folds whatever
+         is showing). The morph keeps its playhead: a following stepTo5 or
+         stepBack4 resumes it, a fade-out pauses it. */
+      const interrupt = () => {
+        running?.kill();
+        running = null;
+        itemsRunning?.kill();
+        itemsRunning = null;
+        flickerRef.current?.kill();
+      };
+      /* the cube frames' own groups whole and clickable again — an
+         interrupted crossfade may have left them part-way */
+      const settleCube = () => {
+        const sq = (sel: string) => svg.querySelector(sel);
+        gsap.to([sq("[data-env-legend]"), sq("[data-env-cube]")], { opacity: 1, duration: 0.3, overwrite: "auto" });
+        gsap.to(svg.querySelectorAll("[data-face]"), { opacity: 0.8, duration: 0.3, overwrite: "auto" });
+        gsap.set(sq("[data-env-cube]"), { pointerEvents: "auto" });
+      };
 
       const stepTo5 = () => {
         frameRef.current = 5;
@@ -958,19 +980,11 @@ export default function Infrastructure() {
         normalizeToLid();
         gsap.delayedCall(0.35, () => resetCallouts(4));
         const t = ensureTl3();
-        t.eventCallback("onComplete", () => {
-          settleMarks(5, activeFaceRef.current);
-          const f = afterTl3Complete;
-          afterTl3Complete = null;
-          f?.();
-        });
+        t.eventCallback("onComplete", () => settleMarks(5, activeFaceRef.current));
+        settleCube();
         swapItems("env", "scalability");
-        if (reduced) {
-          t.progress(1);
-          const f = afterTl3Complete;
-          afterTl3Complete = null;
-          f?.();
-        } else t.play(0); // from the start, wherever a pose left the playhead
+        if (reduced) t.progress(1);
+        else t.play(); // from wherever it stands (0, or part-way if a reverse was interrupted)
       };
       const stepBack4 = () => {
         frameRef.current = 4;
@@ -978,9 +992,10 @@ export default function Infrastructure() {
         normalizeToLid();
         gsap.delayedCall(0.35, () => resetCallouts(5));
         const t = ensureTl3();
+        settleCube();
         swapItems("scalability", "env");
         if (reduced) t.progress(0);
-        else t.reverse(0); // 0 = from the very end
+        else t.reverse(); // from wherever it stands (1, or part-way if the morph was interrupted)
       };
       /* into 6 from anywhere: the leaving frame fades, the card row plays
          its self-contained entrance (rows reset to rest unseen first) */
@@ -989,6 +1004,7 @@ export default function Infrastructure() {
         flickerRef.current?.kill();
         scoreTlRef.current?.kill();
         if (from !== 8) {
+          tl3?.pause(); // a morph in flight stops; the fade takes it from here
           normalizeToLid();
           gsap.delayedCall(0.35, () => resetCallouts(from));
         }
@@ -1099,6 +1115,7 @@ export default function Infrastructure() {
         frameRef.current = 8;
         flickerRef.current?.kill();
         if (from !== 6) {
+          tl3?.pause();
           normalizeToLid();
           gsap.delayedCall(0.35, () => resetCallouts(from));
         }
@@ -1119,29 +1136,25 @@ export default function Infrastructure() {
         scoreTlRef.current?.kill();
         const morph = ensureTl3();
         const p = sceneParts(target);
+        /* pose the cube right now — it sits hidden under the leaving frame,
+           so nothing shows, and an interrupted crossfade can never leave it
+           unposed. Pause first: a morph that finished playing is still
+           "playing" to GSAP, and moving its playhead would make it play
+           again (to frame 5) underneath this crossfade. */
+        morph.pause();
+        morph.progress(target === 5 ? 1 : 0, true);
+        // the pose shows the target's callouts/legend/marks; hide them
+        // again so the scene fades in as one
+        gsap.set(p.groups, { opacity: 0 });
+        gsap.set(p.faces, { opacity: 0 });
+        gsap.set(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1 });
+        gsap.set(svg.querySelectorAll('[data-face-lit="left"], [data-face-lit="right"]'), { opacity: 0 });
+        activeFaceRef.current = "lid";
+        // the marks follow the light, which the pose gives to the lid
+        settleMarks(target, "lid");
+        resetCallouts(target);
         const t = gsap.timeline({ paused: true });
         fadeOutFrame(t, from);
-        t.call(
-          () => {
-            /* pause first: a morph that finished playing is still "playing"
-               to GSAP, and moving its playhead would make it play again
-               (to frame 5) underneath this crossfade */
-            morph.pause();
-            morph.progress(target === 5 ? 1 : 0, true);
-            // the pose shows the target's callouts/legend/marks; hide them
-            // again so the scene fades in as one
-            gsap.set(p.groups, { opacity: 0 });
-            gsap.set(p.faces, { opacity: 0 });
-            gsap.set(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1 });
-            gsap.set(svg.querySelectorAll('[data-face-lit="left"], [data-face-lit="right"]'), { opacity: 0 });
-            activeFaceRef.current = "lid";
-            // the marks follow the light, which the pose gives to the lid
-            settleMarks(target, "lid");
-            resetCallouts(target);
-          },
-          [],
-          0.3
-        );
         t.to(p.groups, { opacity: 1, duration: 0.35 }, 0.35);
         t.to(p.faces, { opacity: 0.8, duration: 0.35 }, 0.35);
         t.set(p.clickable, { pointerEvents: "auto" }, 0.7);
@@ -1149,9 +1162,6 @@ export default function Infrastructure() {
         t.eventCallback("onComplete", () => flickerMark(target === 5 ? "lid5" : "lid"));
         run(t);
       };
-
-      const anyActive = () =>
-        [tl3, running, itemsRunning].some((t) => t && t.isActive());
 
       /* FREE: the forced first visit is over — 8 was reached or a title
          was clicked — and scrolling is never captured again this page
@@ -1163,10 +1173,6 @@ export default function Infrastructure() {
         const cur = frameRef.current;
         if (target === cur) return;
         if (cur === 4 && tl2.progress() < 1) return; // frame 4 not landed
-        if (cur === 5 && ensureTl3().isActive()) {
-          afterTl3Complete = () => goTo(target); // mid 4->5: queue it
-          return;
-        }
         if (cur === 4 && target === 5) return stepTo5();
         if (cur === 5 && target === 4) return stepBack4();
         if (target === 6) return stepTo6(cur as 4 | 5 | 8);
@@ -1297,18 +1303,15 @@ export default function Infrastructure() {
       };
 
       /* one gesture's step: +1 down, -1 up. A forced visit only ever
-         stands at 4, 5 or 6 here — reaching 8 makes it free. */
+         stands at 4, 5 or 6 here — reaching 8 makes it free. A transition
+         in flight yields to it (see interrupt). */
       const step = (dir: 1 | -1) => {
-        if (anyActive()) return; // the running transition lands first
         if (free) return release(dir * 100);
         const frame = frameRef.current;
-        if (dir > 0) {
-          if (frame === 4) goTo(5);
-          else if (frame === 5) goTo(6);
-          else goTo(8);
-        } else if (frame === 6) goTo(5);
-        else if (frame === 5) goTo(4);
-        else release(-100); // from 4 the page goes and the scrub rewinds with it
+        const target = dir > 0 ? (frame === 4 ? 5 : frame === 5 ? 6 : 8) : frame === 6 ? 5 : frame === 5 ? 4 : 0;
+        if (!target) return release(-100); // from 4 the page goes and the scrub rewinds with it
+        interrupt();
+        goTo(target);
       };
 
       function onWheel(e: WheelEvent) {
@@ -1405,8 +1408,9 @@ export default function Infrastructure() {
          the runway's end first — the scrub completing on the way — and
          the page holds there while the frame plays. */
       goToFrameRef.current = (target) => {
-        if (anyActive() || tl2.isActive()) return;
+        if (tl2.isActive() || target === frameRef.current) return;
         free = true;
+        interrupt();
         if (reduced) return goTo(target);
         if (!runwayOn()) {
           // no runway: the 3 -> 4 leg plays timed, then the target
