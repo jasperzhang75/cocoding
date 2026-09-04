@@ -126,19 +126,10 @@ const ENV_CALLOUTS = [
   },
 ];
 
-/* From stage 3 on, the frames (4 -> 5 -> 6) are timed transitions, one
-   per scroll gesture. At xl the page is CAPTURED at the pin position and
-   input is consumed as steps (see the effect). Below xl there is no
-   capture yet: the frames step off 300px bands of overtravel past stage
-   3, entering past ENTER and leaving below BACK — the gap is hysteresis
-   so the boundary doesn't flutter. */
-const ENTER = 0.35;
-const BACK = 0.2;
-/* Scroll-driven frame stepping is PARKED while frames 4-8 and their
-   in-frame interactions are built out; the inter-frame navigation gets
-   a holistic redesign after that. Frames switch by title click only.
-   The stages 1-3 scrub is unaffected. */
-const SCROLL_NAV = false;
+/* The RUNWAY: at xl the stage sticks at the viewport's center while this
+   much extra scroll passes underneath it, and that scroll drives the
+   3 -> 4 leg of the animation (see the effect's navigation section). */
+const RUNWAY = 500;
 
 /* Right-hand callouts: a hairline from x475 to x715 with a 13px mono label
    hanging under its right end. BUILD (stage 1) sits on the same middle
@@ -360,6 +351,7 @@ function makeNoiseTexture(): string {
 
 export default function Infrastructure() {
   const sectionRef = useRef<HTMLElement>(null);
+  const runwayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const activeFaceRef = useRef("lid");
@@ -668,9 +660,10 @@ export default function Infrastructure() {
 
   useEffect(() => {
     const section = sectionRef.current;
+    const runway = runwayRef.current;
     const panel = panelRef.current;
     const svg = svgRef.current;
-    if (!section || !panel || !svg) return;
+    if (!section || !runway || !panel || !svg) return;
 
     // the code-drawn grain (see makeNoiseTexture) feeds every noise slot
     const noiseUrl = makeNoiseTexture();
@@ -730,12 +723,13 @@ export default function Infrastructure() {
       tl.to(rects, { attr: { width: STACK.size, height: STACK.size }, duration: 0.26, ease: "power2.inOut" }, 0.72);
       tl.to(cube, { opacity: 1, duration: 0.26 }, 0.72);
 
-      /* The 3 -> 4 entrance — a timed sequence (~1.4s), fired once by the
-         runway trigger rather than scrubbed: the wash dissolves, the
-         legend surfaces, the cube's other faces materialize while the
-         stack eases into its frame-4 pose, and the ambient glow blooms
-         from its center outward. Callouts trail in last. Reversing plays
-         the same sequence backwards. */
+      /* The 3 -> 4 leg (~1.4 units long): the wash dissolves, the legend
+         surfaces, the cube's other faces materialize while the stack eases
+         into its frame-4 pose, and the ambient glow blooms from its center
+         outward. Callouts trail in last. At xl it is SCRUBBED by the
+         runway (progress = scroll position, see apply()); below xl a title
+         click plays it timed. Its one-shot side effects (the mark flicker,
+         building the morph) live in land(), not in the timeline. */
       const env = {
         wash: svg.querySelector("[data-wash]"),
         cube: svg.querySelector("[data-env-cube]"),
@@ -761,19 +755,8 @@ export default function Infrastructure() {
         0.35
       );
       tl2.to(env.callouts, { opacity: 1, duration: 0.28, ease: "power1.out" }, 1.12);
-      // clicks arm only once the entrance lands; reversing re-disarms them
+      // clicks arm only once the entrance lands; scrubbing back re-disarms them
       tl2.set([env.callouts, env.cube], { pointerEvents: "auto" }, 1.38);
-      // the mark's first light-up flickers too (not when reversing out)
-      tl2.call(
-        () => {
-          if (!tl2.reversed()) {
-            settleMarks(4, "lid");
-            flickerMark();
-          }
-        },
-        [],
-        0.7
-      );
 
       /* The 4 -> 5 transition (SCALABILITY): built lazily on first use so
          the left column's description heights are measured fresh. Timed
@@ -848,15 +831,6 @@ export default function Infrastructure() {
         tl3 = t;
         return t;
       };
-      // build it as frame 4 lands (see ensureTl3); the fallbacks below
-      // only matter if that never ran
-      tl2.call(
-        () => {
-          if (!tl2.reversed()) ensureTl3();
-        },
-        [],
-        tl2.duration()
-      );
 
       /* Frame 6 (INTEGRATIONS) transitions are one-way fades, never
          reversed: entering, the leaving frame fades out wholesale and the
@@ -1179,7 +1153,13 @@ export default function Infrastructure() {
       const anyActive = () =>
         [tl3, running, itemsRunning].some((t) => t && t.isActive());
 
+      /* FREE: the forced first visit is over — 8 was reached or a title
+         was clicked — and scrolling is never captured again this page
+         load (see the navigation section) */
+      let free = false;
+
       const goTo = (target: number) => {
+        if (target === 8) free = true; // the story's end ends the forced visit
         const cur = frameRef.current;
         if (target === cur) return;
         if (cur === 4 && tl2.progress() < 1) return; // frame 4 not landed
@@ -1193,96 +1173,41 @@ export default function Infrastructure() {
         if (target === 8) return stepTo8(cur as 4 | 5 | 6);
         stepToCube(cur as 6 | 8, target as 4 | 5);
       };
-      /* Title clicks switch frames too; if the page isn't captured yet
-         (clicked while approaching), capture first so the frame plays
-         centered. */
-      let captureNow: () => void = () => {};
-      goToFrameRef.current = (target) => {
-        if (anyActive() || tl2.isActive()) return;
-        captureNow();
-        /* with scroll stepping parked nothing else enters frame 4, so a
-           title click plays that entrance first and chains the target */
-        if (!entered) {
-          entered = true;
-          if (reduced) {
-            tl2.progress(1);
-            goTo(target);
-            return;
-          }
-          if (target !== 4) {
-            tl2.eventCallback("onComplete", () => {
-              tl2.eventCallback("onComplete", null);
-              goTo(target);
-            });
-          }
-          tl2.play();
-          return;
-        }
-        goTo(target);
-      };
+      /* ---------- SCROLL-DRIVEN NAVIGATION ----------
+         Frames 1-4 are ONE scrubbed animation: stages 1-3 while the panel
+         rises to the viewport's center (tl), 3 -> 4 over the RUNWAY the
+         stage stays stuck for (tl2). Both are pure functions of scroll
+         position, so scrolling up rewinds them. The scrub runs only while
+         frame 4 is the base: at 5/6/8 the runway is inert and the panel
+         keeps its frame wherever the page goes.
 
-      if (reduced) {
-        tl.progress(1);
-        tl2.progress(1);
-        return;
-      }
-
-      /* Scroll binding, anchored to the DIAMOND CLUSTER's own screen
-         position — not the section, whose top runs a full 400px+ ahead of
-         the artwork (anchoring there played the whole split below the
-         fold, so all you ever saw was the tail of the shrink). Fixed
-         design coordinates, no feedback from the animation itself.
-
-         p = 0  when the cluster's full excursion range (y240-439, the
-                split's outermost vertices) has cleared the viewport bottom
-                — the resting diamond rides in as plain scroll before that,
-                and every phase after it plays entirely on screen.
-         p = 1  when the cluster's center line (y340) reaches half-viewport
-                — just before the section is dead center, per the spec —
-                OR at the deepest scroll the page allows today, whichever
-                comes first. The section is currently the page's last block
-                so its center can't reach mid-viewport yet; the clamp makes
-                the full story reachable now and retires itself as later
-                sections add scroll room below.
-         Direct progress writes — no smoothing. */
+         The FIRST VISIT is forced: reaching the runway's end on the way
+         down captures the page (wheel, keys, touch) and each gesture steps
+         4 -> 5 -> 6 -> 8 and back, one per gesture, none while a
+         transition runs. Up from 4 releases the page (the scrub rewinds
+         with it); down from 8 releases it onward. The visit turns FREE —
+         no capture ever again this page load — once 8 has been reached or
+         a title was clicked; in free mode the next gesture releases
+         whichever way it goes, and frames change by click only. A title
+         click always brings the stage to the runway's end first (the
+         scrub completes on the way) and holds the page there for the
+         frame to play. Desktop pointers at xl only; reduced motion never
+         captures; below xl there is no runway and 3 -> 4 plays timed on
+         the first title click. */
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-      let entered = false; // frame 4 has been entered (tl2 played)
+      const runwayOn = () => window.matchMedia("(min-width: 1280px)").matches;
+      const captureOn = () =>
+        runwayOn() && window.matchMedia("(hover: hover)").matches && !reduced;
 
-      /* ONE STEP PER GESTURE. A gesture is a burst of input events; 250ms
-         of silence ends it. The first step a gesture causes locks it —
-         however hard the fling, one step. The next gesture takes the next. */
-      let gestureUsed = false;
-      let gestureTimer = 0;
-      const touchGesture = () => {
-        window.clearTimeout(gestureTimer);
-        gestureTimer = window.setTimeout(() => {
-          gestureUsed = false;
-        }, 250);
-      };
-      const fire = (fn: () => void) => {
-        if (gestureUsed) return;
-        gestureUsed = true;
-        fn();
-      };
-
-      /* SCROLL CAPTURE. Once the section reaches its pin position (stage 3
-         complete, cluster centered) the page stops scrolling: wheel,
-         touch and keys are intercepted and consumed as STEPS through the
-         frames — 3 -> 4 -> 5 -> 6 and back — one per gesture. Only at the
-         ends does a gesture release the page again: forward past the last
-         frame, or backward past stage 3. Crossing the pin position again
-         later (from either side) recaptures — the sequence is walked
-         every time. Desktop pointers at xl only; reduced motion never
-         captures. */
-      const capturable = () =>
-        window.matchMedia("(min-width: 1280px) and (hover: hover)").matches;
       let captured = false;
-      let prevTop: number | null = null; // panel.top last seen, for crossing
-      let awayFromPin = true; // must leave the pin before recapturing
-      const STEP_THRESH = 120; // wheel delta that makes a step
-      let acc = 0;
+      let landed = false; // frame 4 formed (tl2 at 1)
+      let lastTravel = NaN; // runway travel last seen, for the scroll direction
+      let arriving: (() => void) | null = null; // runs when a programmatic scroll lands
+      let arriveTimer = 0;
 
-      /* the panel top's target: stage 3 completes when panel.top == r1 */
+      /* stages 1-3 run while the panel's top rises from r0 (460px of it
+         showing) to r1 (centered) — fixed design coordinates, clamped to
+         the deepest scroll the page allows while this is its last block */
       const pinTarget = () => {
         const r = panel.getBoundingClientRect();
         const k = r.height / 679;
@@ -1290,49 +1215,100 @@ export default function Infrastructure() {
         const maxScroll =
           document.documentElement.scrollHeight - vh - window.scrollY;
         const minTop = r.top - Math.max(0, maxScroll); // panel.top at page bottom
-        return { r, k, vh, r0: vh - 460 * k, r1: Math.max(vh / 2 - 340 * k, minTop) };
+        return { r, r0: vh - 460 * k, r1: Math.max(vh / 2 - 340 * k, minTop) };
+      };
+      /* the runway (xl): how far the stuck stage has travelled into it
+         and how much of it the page can reach today — the section is the
+         page's last block, so the story clamps to the deepest scroll
+         available and the clamp retires as later sections add room */
+      const geometry = () => {
+        const vh = window.innerHeight;
+        const stickyTop = vh / 2 - 347; // the container's sticky top (panel centered)
+        const room = Math.max(0, document.documentElement.scrollHeight - vh - window.scrollY);
+        const travel = stickyTop - runway.getBoundingClientRect().top;
+        const runwayLen = Math.min(RUNWAY, Math.max(1, travel + room));
+        return { travel, runwayLen, overshoot: travel - runwayLen };
       };
 
-      const atStageThree = () => !entered && !tl2.isActive();
+      /* frame 4 has formed: its one-shot effects, and the 4<->5 morph is
+         built now, while its start values are what is on screen */
+      const land = () => {
+        landed = true;
+        settleMarks(4, "lid");
+        flickerMark();
+        ensureTl3();
+      };
+      const unland = () => {
+        landed = false;
+        flickerRef.current?.kill();
+      };
 
-      /* one step in a direction; +1 forward (down), -1 backward (up).
-         Returns true if the page should be RELEASED instead. */
-      const step = (dir: 1 | -1): boolean => {
-        if (anyActive() || tl2.isActive()) return false;
+      /* ONE STEP PER GESTURE. A gesture is a burst of input events; 200ms
+         of silence ends it. The first step a gesture causes spends it —
+         however long the fling, one step. The next gesture takes the next. */
+      let gestureUsed = false;
+      let gestureTimer = 0;
+      let acc = 0;
+      const touchGesture = () => {
+        window.clearTimeout(gestureTimer);
+        gestureTimer = window.setTimeout(() => {
+          gestureUsed = false;
+          acc = 0;
+        }, 200);
+      };
+      const STEP_THRESH = 60; // wheel delta that makes a step
+
+      const capture = (overshoot = 0) => {
+        if (captured) return;
+        captured = true;
+        acc = 0;
+        gestureUsed = true; // the gesture that brought us here is spent
+        touchGesture();
+        // align exactly on the runway's end, undoing any overshoot
+        if (overshoot > 0) window.scrollBy({ top: -overshoot, behavior: "instant" });
+        window.addEventListener("wheel", onWheel, { passive: false });
+        window.addEventListener("touchmove", onTouchMove, { passive: false });
+        window.addEventListener("keydown", onKey);
+      };
+      /* let the page go; a nudge starts it moving so a single wheel notch
+         or key press visibly leaves */
+      const release = (nudge = 0) => {
+        if (!captured) return;
+        captured = false;
+        window.removeEventListener("wheel", onWheel);
+        window.removeEventListener("touchmove", onTouchMove);
+        window.removeEventListener("keydown", onKey);
+        if (nudge) window.scrollBy({ top: nudge, behavior: "smooth" });
+      };
+
+      /* one gesture's step: +1 down, -1 up. A forced visit only ever
+         stands at 4, 5 or 6 here — reaching 8 makes it free. */
+      const step = (dir: 1 | -1) => {
+        if (anyActive()) return; // the running transition lands first
+        if (free) return release(dir * 100);
         const frame = frameRef.current;
         if (dir > 0) {
-          if (atStageThree()) {
-            entered = true;
-            tl2.play();
-          } else if (frame === 4) goTo(5);
+          if (frame === 4) goTo(5);
           else if (frame === 5) goTo(6);
-          else return true; // past the last frame: release downward
-        } else {
-          if (atStageThree()) return true; // before frame 4: release upward
-          if (frame === 6) goTo(5);
-          else if (frame === 5) goTo(4);
-          else if (frame === 4) {
-            entered = false;
-            tl2.reverse();
-          }
-        }
-        return false;
+          else goTo(8);
+        } else if (frame === 6) goTo(5);
+        else if (frame === 5) goTo(4);
+        else release(-100); // from 4 the page goes and the scrub rewinds with it
       };
 
-      const onWheel = (e: WheelEvent) => {
+      function onWheel(e: WheelEvent) {
         if (!captured) return;
         e.preventDefault();
         touchGesture();
-        const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-        acc += delta;
-        if (gestureUsed || Math.abs(acc) < STEP_THRESH) return;
+        if (gestureUsed) return;
+        acc += e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
+        if (Math.abs(acc) < STEP_THRESH) return;
         const dir: 1 | -1 = acc > 0 ? 1 : -1;
         acc = 0;
-        fire(() => {
-          if (step(dir)) release();
-        });
-      };
-      const onKey = (e: KeyboardEvent) => {
+        gestureUsed = true;
+        step(dir);
+      }
+      function onKey(e: KeyboardEvent) {
         if (!captured) return;
         const t = e.target as HTMLElement | null;
         if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
@@ -1342,93 +1318,94 @@ export default function Infrastructure() {
         if (!dir) return;
         e.preventDefault();
         touchGesture();
-        const d = dir;
-        fire(() => {
-          if (step(d)) release();
-        });
-      };
-      const onTouchMove = (e: TouchEvent) => {
+        if (gestureUsed) return;
+        gestureUsed = true;
+        step(dir);
+      }
+      function onTouchMove(e: TouchEvent) {
         if (captured) e.preventDefault();
-      };
+      }
 
-      const capture = () => {
-        if (captured) return;
-        captured = true;
-        acc = 0;
-        gestureUsed = true; // the gesture that brought us here is spent
-        touchGesture();
-        // align exactly on the pin, undoing any overshoot of the last event
-        const { r, r1 } = pinTarget();
-        window.scrollBy({ top: r.top - r1, behavior: "instant" });
-        window.addEventListener("wheel", onWheel, { passive: false });
-        window.addEventListener("touchmove", onTouchMove, { passive: false });
-        window.addEventListener("keydown", onKey);
+      /* scroll the page so the stage sits at the runway's end; `then`
+         runs when it lands (apply() sees it) — or after 1.5s regardless */
+      const scrollToRunwayEnd = (then: () => void) => {
+        const { overshoot } = geometry();
+        arriving = then;
+        window.clearTimeout(arriveTimer);
+        arriveTimer = window.setTimeout(() => {
+          const f = arriving;
+          arriving = null;
+          f?.();
+        }, 1500);
+        window.scrollTo({ top: window.scrollY - overshoot, behavior: "smooth" });
       };
-      const release = () => {
-        if (!captured) return;
-        captured = false;
-        awayFromPin = false;
-        prevTop = null;
-        window.removeEventListener("wheel", onWheel);
-        window.removeEventListener("touchmove", onTouchMove);
-        window.removeEventListener("keydown", onKey);
-      };
-      captureNow = () => {
-        if (SCROLL_NAV && capturable() && !reduced) capture();
+      const arrived = () => {
+        const f = arriving;
+        arriving = null;
+        window.clearTimeout(arriveTimer);
+        f?.();
       };
 
       const apply = () => {
         const { r, r1, r0 } = pinTarget();
-        tl.progress(clamp01((r0 - r.top) / Math.max(r0 - r1, 1)));
-        if (!SCROLL_NAV) return; // frame stepping parked (see SCROLL_NAV)
-        if (captured) return; // the scrollbar can still move us; ignore
-
-        if (capturable()) {
-          /* native scrolling: watch the panel cross the pin position in
-             either direction, then capture there */
-          if (Math.abs(r.top - r1) > 40) awayFromPin = true;
-          if (prevTop !== null && awayFromPin) {
-            const crossedDown = prevTop > r1 && r.top <= r1;
-            const crossedUp = prevTop < r1 && r.top >= r1;
-            if (crossedDown || crossedUp) {
-              capture();
-              return;
-            }
+        const base4 = frameRef.current === 4;
+        if (base4) tl.progress(clamp01((r0 - r.top) / Math.max(r0 - r1, 1)));
+        if (!runwayOn()) return; // no runway below xl: frames by click only
+        const g = geometry();
+        if (base4) {
+          const p = clamp01(g.travel / g.runwayLen);
+          tl2.progress(p);
+          if (p >= 1 && !landed) land();
+          else if (p < 1 && landed) unland();
+        }
+        if (arriving && Math.abs(g.overshoot) <= 2) arrived();
+        if (captured) {
+          // the scrollbar can still drag the page away: that quits the sequence
+          if (Math.abs(g.overshoot) > 40) {
+            release();
+            free = true;
           }
-          prevTop = r.top;
           return;
         }
-
-        /* below xl there is no capture yet (responsive pass pending):
-           the frames step off 300px bands of overtravel past stage 3,
-           one per gesture */
-        touchGesture();
-        const q = clamp01((r1 - r.top) / 300);
-        const q2 = clamp01((r1 - r.top - 300) / 300);
-        const q3 = clamp01((r1 - r.top - 600) / 300);
-        const frame = frameRef.current;
-        if (!entered && q >= ENTER) {
-          fire(() => {
-            entered = true;
-            tl2.play();
-          });
-        } else if (entered && frame === 4 && q <= BACK && !anyActive()) {
-          fire(() => {
-            entered = false;
-            tl2.reverse();
-          });
-        } else if (anyActive()) {
-          // let the running transition land before judging the next
-        } else if (frame === 4 && tl2.progress() === 1 && q2 >= ENTER) {
-          fire(() => goTo(5));
-        } else if (frame === 5 && q2 <= BACK) {
-          fire(() => goTo(4));
-        } else if (frame === 5 && q3 >= ENTER) {
-          fire(() => goTo(6));
-        } else if (frame === 6 && q3 <= BACK) {
-          fire(() => goTo(5));
-        }
+        const goingDown = Number.isFinite(lastTravel) && g.travel > lastTravel + 0.5;
+        lastTravel = g.travel;
+        // the first visit is held at the runway's end on the way down
+        if (!free && captureOn() && base4 && landed && goingDown && g.overshoot >= 0) capture(g.overshoot);
       };
+
+      /* Title clicks: the user drives from here (free). The stage comes to
+         the runway's end first — the scrub completing on the way — and
+         the page holds there while the frame plays. */
+      goToFrameRef.current = (target) => {
+        if (anyActive() || tl2.isActive()) return;
+        free = true;
+        if (reduced) return goTo(target);
+        if (!runwayOn()) {
+          // no runway: the 3 -> 4 leg plays timed, then the target
+          if (tl2.progress() < 1) {
+            tl2.eventCallback("onComplete", () => {
+              tl2.eventCallback("onComplete", null);
+              land();
+              if (target !== 4) goTo(target);
+            });
+            tl2.play();
+          } else goTo(target);
+          return;
+        }
+        const go = () => {
+          if (captureOn()) capture(Math.max(0, geometry().overshoot));
+          goTo(target);
+        };
+        if (Math.abs(geometry().overshoot) > 2) scrollToRunwayEnd(go);
+        else go();
+      };
+
+      if (reduced) {
+        tl.progress(1);
+        tl2.progress(1);
+        land();
+        return;
+      }
 
       let listening = false;
       const on = () => {
@@ -1462,6 +1439,7 @@ export default function Infrastructure() {
         off();
         release();
         window.clearTimeout(gestureTimer);
+        window.clearTimeout(arriveTimer);
       };
     }, svg);
 
@@ -1471,7 +1449,14 @@ export default function Infrastructure() {
   return (
     <section ref={sectionRef} className="px-5 md:px-10 xl:px-0">
       <div className="pt-24 xl:pt-[120px]">
-      <div className="relative mx-auto max-w-[600px] md:max-w-none xl:h-[686px] xl:w-[1200px] xl:max-w-none">
+      {/* the runway: at xl the stage below sticks at the viewport's center
+          while this box's extra height scrolls by, driving 3 -> 4 */}
+      <div
+        ref={runwayRef}
+        className="xl:h-[calc(686px+var(--runway))]"
+        style={{ "--runway": `${RUNWAY}px` } as CSSProperties}
+      >
+      <div className="relative mx-auto max-w-[600px] md:max-w-none xl:sticky xl:top-[calc(50vh-347px)] xl:h-[686px] xl:w-[1200px] xl:max-w-none">
         {/* left column */}
         <div className="xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
           {/* same one-shot scramble as the FEATURES eyebrow */}
@@ -2392,6 +2377,7 @@ export default function Infrastructure() {
             </text>
           </svg>
         </div>
+      </div>
       </div>
       </div>
     </section>
