@@ -906,18 +906,45 @@ export default function Infrastructure() {
       };
       const frameGroup = (frame: 6 | 8) =>
         svg.querySelector(frame === 6 ? "[data-frame6]" : "[data-frame8]");
+      /* everything the cube frames (4 and 5) draw — both callout sets and
+         every stack layer — for hiding wholesale, whatever state a morph
+         or crossfade left them in */
+      const cubeAll = () => {
+        const sq = (sel: string) => svg.querySelector(sel);
+        return {
+          groups: [sq("[data-env-callouts]"), sq("[data-env5-callouts]"), sq("[data-env-legend]"), sq("[data-env-cube]")],
+          faces: svg.querySelectorAll("[data-face], [data-face-x]"),
+          clickable: [sq("[data-env-callouts]"), sq("[data-env5-callouts]"), sq("[data-env-cube]")],
+        };
+      };
       /* every crossfade starts the same way: the frame we are leaving
-         fades out wholesale and stops taking clicks */
-      const fadeOutFrame = (t: gsap.core.Timeline, from: 4 | 5 | 6 | 8) => {
+         fades out wholesale and stops taking clicks — or, when it is being
+         abandoned mid-way for the next gesture, vanishes at once */
+      const fadeOutFrame = (t: gsap.core.Timeline, from: 4 | 5 | 6 | 8, instant = false) => {
+        const d = instant ? 0 : 0.3;
         if (from === 6 || from === 8) {
           const g = frameGroup(from);
-          t.to(g, { opacity: 0, duration: 0.3 }, 0);
+          t.to(g, { opacity: 0, duration: d }, 0);
           t.set(g, { pointerEvents: "none" }, 0.01);
         } else {
-          const p = sceneParts(from);
-          t.to(p.groups, { opacity: 0, duration: 0.3 }, 0);
-          t.to(p.faces, { opacity: 0, duration: 0.3 }, 0.05);
-          t.set(p.clickable, { pointerEvents: "none" }, 0.01);
+          const c = cubeAll();
+          t.to(c.groups, { opacity: 0, duration: d }, 0);
+          t.to(c.faces, { opacity: 0, duration: d }, instant ? 0 : 0.05);
+          t.set(c.clickable, { pointerEvents: "none" }, 0.01);
+        }
+      };
+      /* every frame but `keep` is gone at once — the bedrock under the
+         crossfades: whatever an interrupted transition left part-way never
+         survives into the next one */
+      const hideOthers = (keep: number[]) => {
+        if (!keep.includes(4) && !keep.includes(5)) {
+          const c = cubeAll();
+          gsap.set(c.groups, { opacity: 0 });
+          gsap.set(c.faces, { opacity: 0 });
+          gsap.set(c.clickable, { pointerEvents: "none" });
+        }
+        for (const f of [6, 8] as const) {
+          if (!keep.includes(f)) gsap.set(frameGroup(f), { opacity: 0, pointerEvents: "none" });
         }
       };
 
@@ -959,11 +986,13 @@ export default function Infrastructure() {
          is showing). The morph keeps its playhead: a following stepTo5 or
          stepBack4 resumes it, a fade-out pauses it. */
       const interrupt = () => {
+        const inFlight = !!(running?.isActive() || itemsRunning?.isActive() || tl3?.isActive());
         running?.kill();
         running = null;
         itemsRunning?.kill();
         itemsRunning = null;
         flickerRef.current?.kill();
+        return inFlight;
       };
       /* the cube frames' own groups whole and clickable again — an
          interrupted crossfade may have left them part-way */
@@ -976,6 +1005,7 @@ export default function Infrastructure() {
 
       const stepTo5 = () => {
         frameRef.current = 5;
+        hideOthers([4, 5]);
         flickerRef.current?.kill();
         normalizeToLid();
         gsap.delayedCall(0.35, () => resetCallouts(4));
@@ -988,6 +1018,7 @@ export default function Infrastructure() {
       };
       const stepBack4 = () => {
         frameRef.current = 4;
+        hideOthers([4, 5]);
         flickerRef.current?.kill();
         normalizeToLid();
         gsap.delayedCall(0.35, () => resetCallouts(5));
@@ -999,8 +1030,9 @@ export default function Infrastructure() {
       };
       /* into 6 from anywhere: the leaving frame fades, the card row plays
          its self-contained entrance (rows reset to rest unseen first) */
-      const stepTo6 = (from: 4 | 5 | 8) => {
+      const stepTo6 = (from: 4 | 5 | 8, instant = false) => {
         frameRef.current = 6;
+        hideOthers([from, 6]);
         flickerRef.current?.kill();
         scoreTlRef.current?.kill();
         if (from !== 8) {
@@ -1016,7 +1048,7 @@ export default function Infrastructure() {
             rowsBusyRef.current = false;
           },
         });
-        fadeOutFrame(t, from);
+        fadeOutFrame(t, from, instant);
         appendEntrance6(t);
         appendItemSwap(t, ITEM_OF[from], "integrations");
         run(t);
@@ -1111,8 +1143,9 @@ export default function Infrastructure() {
         });
       };
       /* into 8 from anywhere: the leaving frame fades, the scorecard plays */
-      const stepTo8 = (from: 4 | 5 | 6) => {
+      const stepTo8 = (from: 4 | 5 | 6, instant = false) => {
         frameRef.current = 8;
+        hideOthers([from, 8]);
         flickerRef.current?.kill();
         if (from !== 6) {
           tl3?.pause();
@@ -1121,7 +1154,7 @@ export default function Infrastructure() {
         }
         resetScorecard();
         const t = gsap.timeline({ paused: true });
-        fadeOutFrame(t, from);
+        fadeOutFrame(t, from, instant);
         t.fromTo(frameGroup(8), { opacity: 0 }, { opacity: 1, duration: 0.45 }, 0.35);
         t.call(() => playScorecard(), [], 0.6);
         appendItemSwap(t, ITEM_OF[from], "analytics");
@@ -1130,8 +1163,9 @@ export default function Infrastructure() {
       /* from 6/8 into a cube frame: the leaving frame fades, the cube is
          posed unseen (tl3 at 0 = frame 4, at 1 = frame 5, lid lit, default
          callouts) and fades in already in place */
-      const stepToCube = (from: 6 | 8, target: 4 | 5) => {
+      const stepToCube = (from: 6 | 8, target: 4 | 5, instant = false) => {
         frameRef.current = target;
+        hideOthers([from, target]);
         flickerRef.current?.kill();
         scoreTlRef.current?.kill();
         const morph = ensureTl3();
@@ -1154,7 +1188,7 @@ export default function Infrastructure() {
         settleMarks(target, "lid");
         resetCallouts(target);
         const t = gsap.timeline({ paused: true });
-        fadeOutFrame(t, from);
+        fadeOutFrame(t, from, instant);
         t.to(p.groups, { opacity: 1, duration: 0.35 }, 0.35);
         t.to(p.faces, { opacity: 0.8, duration: 0.35 }, 0.35);
         t.set(p.clickable, { pointerEvents: "auto" }, 0.7);
@@ -1168,16 +1202,18 @@ export default function Infrastructure() {
          load (see the navigation section) */
       let free = false;
 
-      const goTo = (target: number) => {
+      /* `instant`: the frame we are leaving was itself still arriving
+         (abandoned for this gesture) — it vanishes instead of fading */
+      const goTo = (target: number, instant = false) => {
         if (target === 8) free = true; // the story's end ends the forced visit
         const cur = frameRef.current;
         if (target === cur) return;
         if (cur === 4 && tl2.progress() < 1) return; // frame 4 not landed
         if (cur === 4 && target === 5) return stepTo5();
         if (cur === 5 && target === 4) return stepBack4();
-        if (target === 6) return stepTo6(cur as 4 | 5 | 8);
-        if (target === 8) return stepTo8(cur as 4 | 5 | 6);
-        stepToCube(cur as 6 | 8, target as 4 | 5);
+        if (target === 6) return stepTo6(cur as 4 | 5 | 8, instant);
+        if (target === 8) return stepTo8(cur as 4 | 5 | 6, instant);
+        stepToCube(cur as 6 | 8, target as 4 | 5, instant);
       };
       /* ---------- SCROLL-DRIVEN NAVIGATION ----------
          Frames 1-4 are ONE scrubbed animation: stages 1-3 while the panel
@@ -1266,6 +1302,8 @@ export default function Infrastructure() {
       let decayed = true; // its stream has died down (or nothing is in progress)
       let trough = 0; // the smallest |delta| seen since it decayed
       let lastStepAt = 0;
+      let lastEventAt = 0;
+      const PUSH = 10; // a single event this big is a real push
       const resetGesture = () => {
         gestureUsed = false;
         acc = 0;
@@ -1310,8 +1348,7 @@ export default function Infrastructure() {
         const frame = frameRef.current;
         const target = dir > 0 ? (frame === 4 ? 5 : frame === 5 ? 6 : 8) : frame === 6 ? 5 : frame === 5 ? 4 : 0;
         if (!target) return release(-100); // from 4 the page goes and the scrub rewinds with it
-        interrupt();
-        goTo(target);
+        goTo(target, interrupt());
       };
 
       function onWheel(e: WheelEvent) {
@@ -1320,8 +1357,9 @@ export default function Infrastructure() {
         const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
         const abs = Math.abs(delta);
         touchGesture();
+        const now = performance.now();
         // a fresh flick (not within 120ms of a step, where a flick is still ramping up)
-        if (gestureUsed && decayed && abs >= Math.max(10, trough * 3) && performance.now() - lastStepAt > 120) {
+        if (gestureUsed && decayed && abs >= Math.max(PUSH, trough * 3) && now - lastStepAt > 120) {
           resetGesture();
           decayed = false;
         }
@@ -1330,9 +1368,14 @@ export default function Infrastructure() {
           decayed = true;
           trough = abs;
         } else if (decayed) trough = Math.min(trough, abs);
+        // sparse events (an inertia tail after the quiet reset) never add
+        // up to a step: only events within 60ms of each other accumulate
+        if (now - lastEventAt > 60) acc = 0;
+        lastEventAt = now;
         if (gestureUsed) return;
         acc += delta;
-        if (Math.abs(acc) < STEP_THRESH) return;
+        // a step takes a real push: one event of PUSH, or STEP_THRESH within a dense burst
+        if (Math.abs(acc) < STEP_THRESH && abs < PUSH) return;
         const dir: 1 | -1 = acc > 0 ? 1 : -1;
         acc = 0;
         gestureUsed = true;
@@ -1410,8 +1453,8 @@ export default function Infrastructure() {
       goToFrameRef.current = (target) => {
         if (tl2.isActive() || target === frameRef.current) return;
         free = true;
-        interrupt();
-        if (reduced) return goTo(target);
+        const instant = interrupt();
+        if (reduced) return goTo(target, instant);
         if (!runwayOn()) {
           // no runway: the 3 -> 4 leg plays timed, then the target
           if (tl2.progress() < 1) {
@@ -1421,12 +1464,12 @@ export default function Infrastructure() {
               if (target !== 4) goTo(target);
             });
             tl2.play();
-          } else goTo(target);
+          } else goTo(target, instant);
           return;
         }
         const go = () => {
           if (captureOn()) capture(Math.max(0, geometry().overshoot));
-          goTo(target);
+          goTo(target, instant);
         };
         if (Math.abs(geometry().overshoot) > 2) scrollToRunwayEnd(go);
         else go();
