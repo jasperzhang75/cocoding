@@ -442,7 +442,7 @@ export default function Infrastructure() {
     // (0.25s) rather than waiting for the exact arrival, which read as lag
     const BURST_AT = LOOP - 0.25;
     t.fromTo(fills, { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power4.out" }, BURST_AT);
-    t.to(fills, { opacity: 0, duration: 2.6, ease: "power1.out" }, BURST_AT + 0.15);
+    t.to(fills, { opacity: 0, duration: 2.2, ease: "power1.out" }, BURST_AT + 0.15);
     // ...while the outline settles into the resting gradient
     t.to(bases, { opacity: 0, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
     t.to(rests, { opacity: 0.7, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
