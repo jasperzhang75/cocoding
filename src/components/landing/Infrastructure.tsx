@@ -1301,37 +1301,37 @@ export default function Infrastructure() {
         flickerRef.current?.kill();
       };
 
-      /* ONE STEP PER GESTURE. A gesture is a burst of input events. It
-         ends after 90ms of silence — or, because a trackpad keeps streaming
-         inertia for a second or two after the finger lifts and the next
-         flick lands inside that stream, when a fresh flick shows: the
-         stream had DECAYED (a delta under 35% of the gesture's peak) and a
-         delta then jumps to at least 10 and at least three times the
-         decayed tail's lowest value. The first step a gesture causes spends
-         it — however long the fling, one step. A gesture that lands while a
-         transition runs is dropped: what plays must always be the answer
-         to the scroll happening now, never a queued one. */
+      /* ONE STEP PER GESTURE. A gesture is one continuous stream of wheel
+         events — finger down to finger up and the momentum after it —
+         and however its speed varies inside, it steps once. It ends after
+         90ms of silence. A momentum tail can stream for a second or two,
+         so there is one more ending: once the stream has run TINY (2px or
+         less per event) for 150ms it counts as over, and from then on only
+         a real push (one event of PUSH) can start the next step — a crawl
+         never adds up to one. Nothing inside a live stream ever re-arms
+         it: a hard swipe, a long drag, a slow-then-fast drag are all one
+         step. A step is also never taken within 250ms of the last. */
       let gestureUsed = false;
       let gestureTimer = 0;
       let acc = 0;
-      let peak = 0; // the largest |delta| of the gesture in progress
-      let decayed = true; // its stream has died down (or nothing is in progress)
-      let trough = 0; // the smallest |delta| seen since it decayed
       let lastStepAt = 0;
       let lastEventAt = 0;
+      let tinySince = 0; // when the stream went tiny (0 = it is not)
+      let pushOnly = false; // re-armed by a tail: the next step needs a push
       const PUSH = 10; // a single event this big is a real push
+      const TINY = 2;
+      const TINY_MS = 150;
+      const STEP_THRESH = 30; // dense small events adding up to a step
       const resetGesture = () => {
         gestureUsed = false;
         acc = 0;
-        peak = 0;
-        decayed = true;
-        trough = 0;
+        pushOnly = false;
+        tinySince = 0;
       };
       const touchGesture = () => {
         window.clearTimeout(gestureTimer);
         gestureTimer = window.setTimeout(resetGesture, 90);
       };
-      const STEP_THRESH = 30; // wheel delta that makes a step
 
       const capture = (overshoot = 0) => {
         if (captured) return;
@@ -1374,30 +1374,29 @@ export default function Infrastructure() {
         const abs = Math.abs(delta);
         touchGesture();
         const now = performance.now();
-        // a fresh flick: the previous stream had died down for real (a tail
-        // under 6, not just the dip as the finger lifts before the momentum
-        // phase kicks in) and a push follows; never inside 250ms of a step
-        if (gestureUsed && decayed && trough <= 6 && abs >= Math.max(PUSH, trough * 3) && now - lastStepAt > 250) {
-          resetGesture();
-          decayed = false;
-        }
-        peak = Math.max(peak, abs);
-        if (!decayed && peak >= 8 && abs <= peak * 0.35) {
-          decayed = true;
-          trough = abs;
-        } else if (decayed) trough = Math.min(trough, abs);
-        // sparse events (an inertia tail after the quiet reset) never add
-        // up to a step: only events within 60ms of each other accumulate
+        // the tail: tiny for TINY_MS ends the spent gesture, push-only from here
+        if (abs <= TINY) {
+          if (!tinySince) tinySince = now;
+          else if (gestureUsed && now - tinySince >= TINY_MS) {
+            resetGesture();
+            pushOnly = true;
+          }
+        } else tinySince = 0;
+        // sparse events never add up to a step: only events within 60ms of
+        // each other accumulate
         if (now - lastEventAt > 60) acc = 0;
         lastEventAt = now;
         if (gestureUsed) return;
         acc += delta;
-        // a step takes a real push: one event of PUSH, or STEP_THRESH within a dense burst
-        if (Math.abs(acc) < STEP_THRESH && abs < PUSH) return;
+        const push = abs >= PUSH;
+        if (!push && (pushOnly || Math.abs(acc) < STEP_THRESH)) return;
+        if (now - lastStepAt < 250) return;
         const dir: 1 | -1 = acc > 0 ? 1 : -1;
         acc = 0;
         gestureUsed = true;
-        lastStepAt = performance.now();
+        pushOnly = false;
+        tinySince = 0;
+        lastStepAt = now;
         step(dir);
       }
       function onKey(e: KeyboardEvent) {
