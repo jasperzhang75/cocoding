@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { HyperText } from "@/components/magicui/hyper-text";
 import { ICONS6 } from "./infra-icons";
 import { BRAND7 } from "./infra-brand-icons";
+import { FACE_MARKS } from "./infra-face-marks";
 
 /* Infrastructure — the isometric story (Figma 17205:89133 -> 87420 ->
    87636), scrubbed by scroll. The three approved frames are keyframes on
@@ -542,15 +543,35 @@ export default function Infrastructure() {
     gsap.set(svg.querySelector('[data-tab-ul="connectors"]'), { opacity: 0 });
   };
 
-  /* Mark flicker: whenever a lid mark lights up, its bright and dim rows
+  /* The marks riding the cube's faces: frame 4 has one per face (server
+     on the lid, database-arrow-up on the left, send-to-back on the right),
+     frame 5 only the lid's arrow. Each is a group with a bright (-a) and a
+     dim (-b) half. */
+  const MARK_OF: Record<string, string> = {
+    lid: "[data-cube-mark]",
+    left: '[data-mark-side="left"]',
+    right: '[data-mark-side="right"]',
+    lid5: "[data-mark5]",
+  };
+  const MARK_HALVES: Record<string, [string, string]> = {
+    lid: ["[data-mark-a]", "[data-mark-b]"],
+    left: ['[data-mark-side="left"] [data-mark-side-a]', '[data-mark-side="left"] [data-mark-side-b]'],
+    right: ['[data-mark-side="right"] [data-mark-side-a]', '[data-mark-side="right"] [data-mark-side-b]'],
+    lid5: ["[data-mark5-a]", "[data-mark5-b]"],
+  };
+  /* which mark a face shows in a frame (null: none) */
+  const markKey = (frame: number, face: string) =>
+    frame === 5 ? (face === "lid" ? "lid5" : null) : face;
+
+  /* Mark flicker: whenever a mark lights up, its bright and dim halves
      trade places — fast at first, each gap 1.5x the last — before
-     settling. Serves both lid marks: frame 4's server and frame 5's
-     arrow. Skipped under reduced motion. */
-  const flickerMark = (five = false) => {
+     settling. Skipped under reduced motion. */
+  const flickerMark = (key = "lid") => {
     const svg = svgRef.current;
     if (!svg) return;
-    const a = svg.querySelector(five ? "[data-mark5-a]" : "[data-mark-a]");
-    const b = svg.querySelector(five ? "[data-mark5-b]" : "[data-mark-b]");
+    const [selA, selB] = MARK_HALVES[key];
+    const a = svg.querySelector(selA);
+    const b = svg.querySelector(selB);
     if (!a || !b) return;
     flickerRef.current?.kill();
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -604,14 +625,17 @@ export default function Infrastructure() {
     fade(`[${p}-active="${co}"]`, 1, 0.35);
     fade(`[${p}-base="${co}"]`, 0, 0.35);
     fade(`[${p}-desc="${co}"]`, 1, 0.3, 0.12);
-    // the light crosses the cube; the lid's mark exists only while the
-    // lid holds it (frame 4's server flickers awake, frame 5's arrow not)
+    // the light crosses the cube; a mark exists only while its face holds
+    // the light, and flickers awake as it takes it
     fade(`[data-face-lit="${prevFace}"]`, 0, 0.35);
     fade(`[data-face-lit="${face}"]`, 1, 0.35);
-    const mark = frame === 5 ? "[data-mark5]" : "[data-cube-mark]";
-    fade(mark, face === "lid" ? 1 : 0, 0.3);
-    if (face === "lid") flickerMark(frame === 5);
-    else flickerRef.current?.kill();
+    const prevKey = markKey(frame, prevFace);
+    const key = markKey(frame, face);
+    if (prevKey) fade(MARK_OF[prevKey], 0, 0.3);
+    if (key) {
+      fade(MARK_OF[key], 1, 0.3);
+      flickerMark(key);
+    } else flickerRef.current?.kill();
   };
 
   /* Reset a frame's callout internals to its default holder (lid) — run
@@ -787,7 +811,7 @@ export default function Infrastructure() {
         // the arrow flickers awake as it lights (not when reversing out)
         t.call(
           () => {
-            if (!t.reversed()) flickerMark(true);
+            if (!t.reversed()) flickerMark("lid5");
           },
           [],
           1.0
@@ -898,6 +922,7 @@ export default function Infrastructure() {
         if (activeFaceRef.current !== "lid") {
           gsap.to(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1, duration: 0.3, overwrite: "auto" });
           gsap.to(svg.querySelectorAll('[data-face-lit="left"], [data-face-lit="right"]'), { opacity: 0, duration: 0.3, overwrite: "auto" });
+          gsap.to(svg.querySelectorAll("[data-mark-side]"), { opacity: 0, duration: 0.3, overwrite: "auto" });
           activeFaceRef.current = "lid";
         }
       };
@@ -1109,6 +1134,7 @@ export default function Infrastructure() {
             // (a never-played morph leaves them wherever the last click did)
             gsap.set(svg.querySelector("[data-cube-mark]"), { opacity: target === 4 ? 1 : 0 });
             gsap.set(svg.querySelector("[data-mark5]"), { opacity: target === 5 ? 1 : 0 });
+            gsap.set(svg.querySelectorAll("[data-mark-side]"), { opacity: 0 });
             activeFaceRef.current = "lid";
             resetCallouts(target);
           },
@@ -1119,7 +1145,7 @@ export default function Infrastructure() {
         t.to(p.faces, { opacity: 0.8, duration: 0.35 }, 0.35);
         t.set(p.clickable, { pointerEvents: "auto" }, 0.7);
         appendItemSwap(t, ITEM_OF[from], ITEM_OF[target]);
-        t.eventCallback("onComplete", () => flickerMark(target === 5));
+        t.eventCallback("onComplete", () => flickerMark(target === 5 ? "lid5" : "lid"));
         run(t);
       };
 
@@ -1760,6 +1786,7 @@ export default function Infrastructure() {
                 stroke="#FFFFFF"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                style={{ pointerEvents: "none" }}
               >
                 {/* the two server rows, split so the lit/dim halves can
                     trade places in the attention flicker */}
@@ -1772,6 +1799,41 @@ export default function Infrastructure() {
                   <path d="M5 15H5.00833" strokeWidth="0.75" />
                 </g>
               </g>
+              {/* the side faces' marks (frame 4): lucide/database-arrow-up
+                  on the left, lucide/send-to-back on the right — each
+                  present only while its face holds the light, with the
+                  same bright/dim split for the flicker. Path data and
+                  placement come from Figma's export (see FACE_MARKS). */}
+              {(["left", "right"] as const).map((side) => {
+                const m = FACE_MARKS[side];
+                const draw = (paths: typeof m.lit) =>
+                  paths.map((pth) => (
+                    <path
+                      key={pth.d.slice(0, 32)}
+                      d={pth.d}
+                      fill={pth.fill ? "#FFFFFF" : undefined}
+                      stroke={pth.fill ? "none" : undefined}
+                      strokeWidth={pth.strokeWidth}
+                    />
+                  ));
+                return (
+                  <g
+                    key={side}
+                    data-mark-side={side}
+                    transform={`translate(${m.translate})`}
+                    fill="none"
+                    stroke="#FFFFFF"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ opacity: 0, pointerEvents: "none" }}
+                  >
+                    <g data-mark-side-a>{draw(m.lit)}</g>
+                    <g data-mark-side-b opacity="0.3">
+                      {draw(m.dim)}
+                    </g>
+                  </g>
+                );
+              })}
               {/* frame 5's lid mark — lucide/arrow-down-up, same lit/dim
                   split for its own future flicker */}
               <g
@@ -1782,7 +1844,7 @@ export default function Infrastructure() {
                 strokeWidth="0.75"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{ opacity: 0 }}
+                style={{ opacity: 0, pointerEvents: "none" }}
               >
                 <g data-mark5-a>
                   <path d="M2.5 13.3333L5.83333 16.6667L9.16667 13.3333" />
