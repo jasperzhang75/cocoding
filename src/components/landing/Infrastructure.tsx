@@ -965,6 +965,7 @@ export default function Infrastructure() {
           f?.();
         });
         swapItems("env", "scalability");
+        t.timeScale(1); // a hurried run before must not carry over
         if (reduced) {
           t.progress(1);
           const f = afterTl3Complete;
@@ -979,6 +980,7 @@ export default function Infrastructure() {
         gsap.delayedCall(0.35, () => resetCallouts(5));
         const t = ensureTl3();
         swapItems("scalability", "env");
+        t.timeScale(1);
         if (reduced) t.progress(0);
         else t.reverse(0); // 0 = from the very end
       };
@@ -1243,20 +1245,57 @@ export default function Infrastructure() {
         flickerRef.current?.kill();
       };
 
-      /* ONE STEP PER GESTURE. A gesture is a burst of input events; 200ms
-         of silence ends it. The first step a gesture causes spends it —
-         however long the fling, one step. The next gesture takes the next. */
+      /* ONE STEP PER GESTURE. A gesture is a burst of input events. It
+         ends after 90ms of silence — or, because a trackpad keeps streaming
+         inertia long after the finger lifts and the next flick lands
+         before that dies, when a fresh flick shows: the stream had DECAYED
+         (a delta under 35% of the gesture's peak) and a delta then jumps to
+         at least 10 and at least three times the decayed tail's lowest
+         value. The first step a gesture causes spends it; the next gesture
+         takes the next. */
       let gestureUsed = false;
       let gestureTimer = 0;
       let acc = 0;
+      let peak = 0; // the largest |delta| of the gesture in progress
+      let decayed = true; // its stream has died down (or nothing is in progress)
+      let trough = 0; // the smallest |delta| seen since it decayed
+      let lastStepAt = 0;
+      const resetGesture = () => {
+        gestureUsed = false;
+        acc = 0;
+        peak = 0;
+        decayed = true;
+        trough = 0;
+      };
       const touchGesture = () => {
         window.clearTimeout(gestureTimer);
-        gestureTimer = window.setTimeout(() => {
-          gestureUsed = false;
-          acc = 0;
-        }, 200);
+        gestureTimer = window.setTimeout(resetGesture, 90);
       };
       const STEP_THRESH = 60; // wheel delta that makes a step
+
+      /* Impatience is honored: gestures arriving while a transition runs
+         are not dropped — they queue (net, up to three steps) and every
+         transition on the way is hurried so it lands sooner. Three quick
+         flicks leave the section in a couple of seconds. */
+      let pending = 0; // net steps owed: +down, -up
+      let flushing = false;
+      const hurry = () => {
+        for (const t of [tl3, running, itemsRunning]) if (t && t.isActive()) t.timeScale(2.5);
+      };
+      const flush = () => {
+        if (anyActive()) {
+          if (pending) hurry();
+          return;
+        }
+        if (!pending) {
+          gsap.ticker.remove(flush);
+          flushing = false;
+          return;
+        }
+        const d: 1 | -1 = pending > 0 ? 1 : -1;
+        pending -= d;
+        step(d);
+      };
 
       const capture = (overshoot = 0) => {
         if (captured) return;
@@ -1284,7 +1323,16 @@ export default function Infrastructure() {
       /* one gesture's step: +1 down, -1 up. A forced visit only ever
          stands at 4, 5 or 6 here — reaching 8 makes it free. */
       const step = (dir: 1 | -1) => {
-        if (anyActive()) return; // the running transition lands first
+        if (anyActive()) {
+          // the running transition lands first, faster; this step follows
+          pending = Math.max(-3, Math.min(3, pending + dir));
+          hurry();
+          if (!flushing) {
+            flushing = true;
+            gsap.ticker.add(flush);
+          }
+          return;
+        }
         if (free) return release(dir * 100);
         const frame = frameRef.current;
         if (dir > 0) {
@@ -1299,13 +1347,26 @@ export default function Infrastructure() {
       function onWheel(e: WheelEvent) {
         if (!captured) return;
         e.preventDefault();
+        const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
+        const abs = Math.abs(delta);
         touchGesture();
+        // a fresh flick (not within 120ms of a step, where a flick is still ramping up)
+        if (gestureUsed && decayed && abs >= Math.max(10, trough * 3) && performance.now() - lastStepAt > 120) {
+          resetGesture();
+          decayed = false;
+        }
+        peak = Math.max(peak, abs);
+        if (!decayed && peak >= 8 && abs <= peak * 0.35) {
+          decayed = true;
+          trough = abs;
+        } else if (decayed) trough = Math.min(trough, abs);
         if (gestureUsed) return;
-        acc += e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
+        acc += delta;
         if (Math.abs(acc) < STEP_THRESH) return;
         const dir: 1 | -1 = acc > 0 ? 1 : -1;
         acc = 0;
         gestureUsed = true;
+        lastStepAt = performance.now();
         step(dir);
       }
       function onKey(e: KeyboardEvent) {
@@ -1438,6 +1499,7 @@ export default function Infrastructure() {
         io.disconnect();
         off();
         release();
+        gsap.ticker.remove(flush);
         window.clearTimeout(gestureTimer);
         window.clearTimeout(arriveTimer);
       };
