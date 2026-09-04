@@ -948,15 +948,30 @@ export default function Infrastructure() {
         }
       };
 
+      /* Helper tweens a transition starts beside its main timeline —
+         settling the cube's groups, re-lighting the lid, resetting callouts
+         a moment later. Registered here so an interruption kills them with
+         the rest: left alive, a 0.3s "settle to 1" would keep writing over
+         the next transition's instant hide and leave the old frame showing. */
+      let side: gsap.core.Tween[] = [];
+      const aside = (tw: gsap.core.Tween) => {
+        side.push(tw);
+        return tw;
+      };
+      const killSide = () => {
+        for (const tw of side) tw.kill();
+        side = [];
+      };
+
       const normalizeToLid = () => {
         if (activeFaceRef.current !== "lid") {
-          gsap.to(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1, duration: 0.3, overwrite: "auto" });
-          gsap.to(svg.querySelectorAll('[data-face-lit="left"], [data-face-lit="right"]'), { opacity: 0, duration: 0.3, overwrite: "auto" });
+          aside(gsap.to(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1, duration: 0.3, overwrite: "auto" }));
+          aside(gsap.to(svg.querySelectorAll('[data-face-lit="left"], [data-face-lit="right"]'), { opacity: 0, duration: 0.3, overwrite: "auto" }));
           activeFaceRef.current = "lid";
         }
         // the side marks go dark whatever the light was doing (the lid
         // marks are the morph's or the pose's to set)
-        gsap.to(svg.querySelectorAll("[data-mark-side]"), { opacity: 0, duration: 0.3, overwrite: "auto" });
+        aside(gsap.to(svg.querySelectorAll("[data-mark-side]"), { opacity: 0, duration: 0.3, overwrite: "auto" }));
       };
 
       /* Transitions. 4 <-> 5 is the cube morph (tl3, played/reversed);
@@ -991,6 +1006,7 @@ export default function Infrastructure() {
         running = null;
         itemsRunning?.kill();
         itemsRunning = null;
+        killSide();
         flickerRef.current?.kill();
         return inFlight;
       };
@@ -998,8 +1014,8 @@ export default function Infrastructure() {
          interrupted crossfade may have left them part-way */
       const settleCube = () => {
         const sq = (sel: string) => svg.querySelector(sel);
-        gsap.to([sq("[data-env-legend]"), sq("[data-env-cube]")], { opacity: 1, duration: 0.3, overwrite: "auto" });
-        gsap.to(svg.querySelectorAll("[data-face]"), { opacity: 0.8, duration: 0.3, overwrite: "auto" });
+        aside(gsap.to([sq("[data-env-legend]"), sq("[data-env-cube]")], { opacity: 1, duration: 0.3, overwrite: "auto" }));
+        aside(gsap.to(svg.querySelectorAll("[data-face]"), { opacity: 0.8, duration: 0.3, overwrite: "auto" }));
         gsap.set(sq("[data-env-cube]"), { pointerEvents: "auto" });
       };
 
@@ -1008,7 +1024,7 @@ export default function Infrastructure() {
         hideOthers([4, 5]);
         flickerRef.current?.kill();
         normalizeToLid();
-        gsap.delayedCall(0.35, () => resetCallouts(4));
+        aside(gsap.delayedCall(0.35, () => resetCallouts(4)));
         const t = ensureTl3();
         t.eventCallback("onComplete", () => settleMarks(5, activeFaceRef.current));
         settleCube();
@@ -1021,7 +1037,7 @@ export default function Infrastructure() {
         hideOthers([4, 5]);
         flickerRef.current?.kill();
         normalizeToLid();
-        gsap.delayedCall(0.35, () => resetCallouts(5));
+        aside(gsap.delayedCall(0.35, () => resetCallouts(5)));
         const t = ensureTl3();
         settleCube();
         swapItems("scalability", "env");
@@ -1038,7 +1054,7 @@ export default function Infrastructure() {
         if (from !== 8) {
           tl3?.pause(); // a morph in flight stops; the fade takes it from here
           normalizeToLid();
-          gsap.delayedCall(0.35, () => resetCallouts(from));
+          aside(gsap.delayedCall(0.35, () => resetCallouts(from)));
         }
         resetRows();
         rowsBusyRef.current = true;
@@ -1150,7 +1166,7 @@ export default function Infrastructure() {
         if (from !== 6) {
           tl3?.pause();
           normalizeToLid();
-          gsap.delayedCall(0.35, () => resetCallouts(from));
+          aside(gsap.delayedCall(0.35, () => resetCallouts(from)));
         }
         resetScorecard();
         const t = gsap.timeline({ paused: true });
@@ -1358,8 +1374,10 @@ export default function Infrastructure() {
         const abs = Math.abs(delta);
         touchGesture();
         const now = performance.now();
-        // a fresh flick (not within 120ms of a step, where a flick is still ramping up)
-        if (gestureUsed && decayed && abs >= Math.max(PUSH, trough * 3) && now - lastStepAt > 120) {
+        // a fresh flick: the previous stream had died down for real (a tail
+        // under 6, not just the dip as the finger lifts before the momentum
+        // phase kicks in) and a push follows; never inside 250ms of a step
+        if (gestureUsed && decayed && trough <= 6 && abs >= Math.max(PUSH, trough * 3) && now - lastStepAt > 250) {
           resetGesture();
           decayed = false;
         }
