@@ -6,7 +6,7 @@ import gsap from "gsap";
 import { HyperText } from "@/components/magicui/hyper-text";
 import { ICONS6 } from "./infra-icons";
 import { BRAND7 } from "./infra-brand-icons";
-import { FACE_MARKS } from "./infra-face-marks";
+import { FACE_MARKS, type FaceMarkKey } from "./infra-face-marks";
 
 /* Infrastructure — the isometric story (Figma 17205:89133 -> 87420 ->
    87636), scrubbed by scroll. The three approved frames are keyframes on
@@ -232,6 +232,20 @@ const ENV5_CALLOUTS = [
 ];
 
 /* Which callout each face lights, per frame. */
+/* The marks riding the cube's faces, one per face per frame (see
+   FACE_MARKS for the side ones); each is a group with a bright (-a) and a
+   dim (-b) half that the attention flicker trades. */
+const SIDE_MARK_KEYS: FaceMarkKey[] = ["left", "right", "left5", "right5"];
+const MARK_OF: Record<string, string> = { lid: "[data-cube-mark]", lid5: "[data-mark5]" };
+const MARK_HALVES: Record<string, [string, string]> = {
+  lid: ["[data-mark-a]", "[data-mark-b]"],
+  lid5: ["[data-mark5-a]", "[data-mark5-b]"],
+};
+for (const k of SIDE_MARK_KEYS) {
+  MARK_OF[k] = `[data-mark-side="${k}"]`;
+  MARK_HALVES[k] = [`${MARK_OF[k]} [data-mark-side-a]`, `${MARK_OF[k]} [data-mark-side-b]`];
+}
+
 const FACE_MAP: Record<number, Record<string, string>> = {
   4: { lid: "ni", left: "ab", right: "ha" },
   5: { lid: "as", left: "zdd", right: "ged" },
@@ -543,25 +557,11 @@ export default function Infrastructure() {
     gsap.set(svg.querySelector('[data-tab-ul="connectors"]'), { opacity: 0 });
   };
 
-  /* The marks riding the cube's faces: frame 4 has one per face (server
-     on the lid, database-arrow-up on the left, send-to-back on the right),
-     frame 5 only the lid's arrow. Each is a group with a bright (-a) and a
-     dim (-b) half. */
-  const MARK_OF: Record<string, string> = {
-    lid: "[data-cube-mark]",
-    left: '[data-mark-side="left"]',
-    right: '[data-mark-side="right"]',
-    lid5: "[data-mark5]",
-  };
-  const MARK_HALVES: Record<string, [string, string]> = {
-    lid: ["[data-mark-a]", "[data-mark-b]"],
-    left: ['[data-mark-side="left"] [data-mark-side-a]', '[data-mark-side="left"] [data-mark-side-b]'],
-    right: ['[data-mark-side="right"] [data-mark-side-a]', '[data-mark-side="right"] [data-mark-side-b]'],
-    lid5: ["[data-mark5-a]", "[data-mark5-b]"],
-  };
-  /* which mark a face shows in a frame (null: none) */
+  /* which mark a face shows in a frame: each frame has one per face
+     (frame 4: server / database-arrow-up / send-to-back; frame 5:
+     arrow-down-up / list-clock / globe-check) */
   const markKey = (frame: number, face: string) =>
-    frame === 5 ? (face === "lid" ? "lid5" : null) : face;
+    frame === 5 ? (face === "lid" ? "lid5" : `${face}5`) : face;
 
   /* Mark flicker: whenever a mark lights up, its bright and dim halves
      trade places — fast at first, each gap 1.5x the last — before
@@ -629,13 +629,10 @@ export default function Infrastructure() {
     // the light, and flickers awake as it takes it
     fade(`[data-face-lit="${prevFace}"]`, 0, 0.35);
     fade(`[data-face-lit="${face}"]`, 1, 0.35);
-    const prevKey = markKey(frame, prevFace);
+    fade(MARK_OF[markKey(frame, prevFace)], 0, 0.3);
     const key = markKey(frame, face);
-    if (prevKey) fade(MARK_OF[prevKey], 0, 0.3);
-    if (key) {
-      fade(MARK_OF[key], 1, 0.3);
-      flickerMark(key);
-    } else flickerRef.current?.kill();
+    fade(MARK_OF[key], 1, 0.3);
+    flickerMark(key);
   };
 
   /* Reset a frame's callout internals to its default holder (lid) — run
@@ -1799,12 +1796,13 @@ export default function Infrastructure() {
                   <path d="M5 15H5.00833" strokeWidth="0.75" />
                 </g>
               </g>
-              {/* the side faces' marks (frame 4): lucide/database-arrow-up
-                  on the left, lucide/send-to-back on the right — each
-                  present only while its face holds the light, with the
-                  same bright/dim split for the flicker. Path data and
-                  placement come from Figma's export (see FACE_MARKS). */}
-              {(["left", "right"] as const).map((side) => {
+              {/* the side faces' marks: frame 4 has database-arrow-up left
+                  and send-to-back right, frame 5 list-clock left and
+                  globe-check right — each present only while its face
+                  holds the light in its frame, with the same bright/dim
+                  split for the flicker. Path data and placement come from
+                  Figma's export (see FACE_MARKS). */}
+              {SIDE_MARK_KEYS.map((side) => {
                 const m = FACE_MARKS[side];
                 const draw = (paths: typeof m.lit) =>
                   paths.map((pth) => (
