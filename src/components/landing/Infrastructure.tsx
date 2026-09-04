@@ -558,7 +558,7 @@ export default function Infrastructure() {
   };
 
   /* which mark a face shows in a frame: each frame has one per face
-     (frame 4: server / database-arrow-up / send-to-back; frame 5:
+     (frame 4: server / save-all / send-to-back; frame 5:
      arrow-down-up / list-clock / globe-check) */
   const markKey = (frame: number, face: string) =>
     frame === 5 ? (face === "lid" ? "lid5" : `${face}5`) : face;
@@ -1826,7 +1826,7 @@ export default function Infrastructure() {
                   <path d="M5 15H5.00833" strokeWidth="0.75" />
                 </g>
               </g>
-              {/* the side faces' marks: frame 4 has database-arrow-up left
+              {/* the side faces' marks: frame 4 has save-all left
                   and send-to-back right, frame 5 list-clock left and
                   globe-check right — each present only while its face
                   holds the light in its frame, with the same bright/dim
