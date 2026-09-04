@@ -523,14 +523,17 @@ export default function Infrastructure() {
 
   /* Both rows back to their authored rest (BUILD-IN showing) — run while
      frame 6 is hidden, before each entrance. A hidden row must not take
-     pointer events, or it steals hovers from the row beneath it. */
+     pointer events, or it steals hovers from the row beneath it. The
+     showing row is "inherit", never "auto": an explicit auto on a child
+     overrides the frame-6 group's none, so the hidden group's cards would
+     keep intercepting clicks meant for the cube faces under them. */
   const resetRows = () => {
     const svg = svgRef.current;
     if (!svg) return;
     (Object.keys(ROWS) as RowKey[]).forEach((row) => {
       restRow(row);
       const on = row === "buildin";
-      gsap.set(svg.querySelector(`[data-row="${row}"]`), { opacity: on ? 1 : 0, pointerEvents: on ? "auto" : "none" });
+      gsap.set(svg.querySelector(`[data-row="${row}"]`), { opacity: on ? 1 : 0, pointerEvents: on ? "inherit" : "none" });
     });
     tabRef.current = "buildin";
     gsap.set(svg.querySelector('[data-tab-text="buildin"]'), { opacity: 1 });
@@ -1029,10 +1032,11 @@ export default function Infrastructure() {
         t.to(fromLitEl.querySelector("[data-icon]"), { opacity: 0, duration: 0.15 }, flipAt);
         t.to(fromLitEl.querySelector("[data-cface]"), { attr: { transform: FACE_EDGE }, duration: 0.22, ease: "power1.in" }, flipAt);
         t.to(fromLitEl, { x: mid.x, y: mid.y, duration: 0.22, ease: "power1.in" }, flipAt);
-        // rows trade places at zero width (pointer events go with them)
+        // rows trade places at zero width (pointer events go with them;
+        // "inherit" so the group's own switch still gates the row)
         const swapAt = flipAt + 0.22;
         t.set(sq(`[data-row="${from}"]`), { opacity: 0, pointerEvents: "none" }, swapAt);
-        t.set(sq(`[data-row="${to}"]`), { pointerEvents: "auto" }, swapAt);
+        t.set(sq(`[data-row="${to}"]`), { pointerEvents: "inherit" }, swapAt);
         t.set(svg.querySelectorAll(`[data-card^="${to}:"]`), { x: mid.x, y: mid.y, opacity: 0 }, swapAt);
         t.set(toLitEl, { opacity: 1 }, swapAt);
         t.set(toLitEl.querySelector("[data-cface]"), { attr: { transform: FACE_EDGE } }, swapAt);
@@ -1962,7 +1966,8 @@ export default function Infrastructure() {
                     data-row={row}
                     style={{
                       opacity: row === "buildin" ? 1 : 0,
-                      pointerEvents: row === "buildin" ? "auto" : "none",
+                      // the showing row inherits the group's switch (see resetRows)
+                      pointerEvents: row === "buildin" ? "inherit" : "none",
                     }}
                   >
                     {/* drawn right to left so the nearest card is in front */}
