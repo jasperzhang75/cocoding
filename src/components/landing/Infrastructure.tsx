@@ -671,7 +671,7 @@ export default function Infrastructure() {
       im.setAttribute("href", noiseUrl);
     });
 
-    /* PANEL LAYOUT. The art is authored in a 751x679 space. Below lg the
+    /* PANEL LAYOUT. The art is authored in a 751x679 space. Below xl the
        panel is as wide as the page but keeps the design's height, so the
        space is re-anchored rather than scaled: the SVG's viewBox takes the
        panel's width, everything the cube owns (stack, cube, glows, wash,
@@ -683,7 +683,7 @@ export default function Infrastructure() {
        drawn). Anywhere else the panel keeps the design's proportions and
        simply scales, so nothing here moves. */
     const stage = runway.firstElementChild as HTMLElement;
-    const fluidMq = window.matchMedia("(min-width: 768px) and (max-width: 1023px)");
+    const fluidMq = window.matchMedia("(min-width: 768px) and (max-width: 1279px)");
     let relayout: () => void = () => {};
     const layoutPanel = () => {
       const W = fluidMq.matches ? Math.round(panel.clientWidth) : 751;
@@ -1303,7 +1303,7 @@ export default function Infrastructure() {
          xl only; reduced motion never captures; below xl there is no
          runway and 3 -> 4 plays timed on the first title click. */
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-      const runwayOn = () => window.matchMedia("(min-width: 1024px)").matches;
+      const runwayOn = () => window.matchMedia("(min-width: 1280px)").matches;
       const captureOn = () =>
         runwayOn() && window.matchMedia("(hover: hover)").matches && !reduced;
 
@@ -1649,22 +1649,21 @@ export default function Infrastructure() {
   return (
     <section ref={sectionRef} className="px-5 md:px-10 xl:px-0">
       <div className="pt-24 xl:pt-[120px]">
-      {/* the runway: from lg the stage below sticks at the viewport's center
-          while this box's extra height scrolls by, driving 3 -> 4. The
-          stage's height (--stage-h) is measured, since from lg to xl the
-          panel scales with the width. */}
+      {/* the runway: at xl the stage below sticks at the viewport's center
+          while this box's extra height scrolls by, driving 3 -> 4.
+          --stage-h is twice the panel's measured center within the stage,
+          so 50vh - --stage-h/2 puts the panel mid-viewport. */}
       <div
         ref={runwayRef}
-        className="lg:h-[calc(var(--stage-h)+var(--runway))]"
-        style={{ "--runway": `${RUNWAY}px`, "--stage-h": "686px" } as CSSProperties}
+        className="xl:h-[calc(var(--stage-h)+var(--runway))]"
+        style={{ "--runway": `${RUNWAY}px`, "--stage-h": "693px" } as CSSProperties}
       >
-      {/* the stage. Three layouts: below lg the text stacks over a
+      {/* the stage. Two layouts: below xl the text stacks over a
           full-width panel of the design's height (its art re-anchors, see
-          layoutPanel); lg-xl the desktop pair with a 340px text column and
-          the panel scaled to what is left; xl the 1200px design. */}
-      <div className="relative mx-auto max-w-[600px] md:max-w-none lg:sticky lg:top-[calc(50vh-var(--stage-h)/2)] lg:flex lg:w-full lg:max-w-[1200px] lg:items-start lg:gap-[41px] xl:block xl:h-[686px] xl:w-[1200px]">
+          layoutPanel); xl the 1200px design. */}
+      <div className="relative mx-auto max-w-[600px] md:max-w-none xl:sticky xl:top-[calc(50vh-var(--stage-h)/2)] xl:h-[686px] xl:w-[1200px]">
         {/* left column */}
-        <div className="lg:w-[340px] lg:shrink-0 xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
+        <div className="xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
           {/* same one-shot scramble as the FEATURES eyebrow */}
           <HyperText
             as="p"
@@ -1682,21 +1681,25 @@ export default function Infrastructure() {
             Launch confidently.
           </h2>
 
-          {/* the items: a list at lg and above; below lg a two-column grid
-              (row 1: environment, scalability; row 2: integrations,
-              analytics) with the card-sized type of the Features cards */}
-          <div className="mt-[72px] md:mt-12 md:grid md:grid-cols-2 md:gap-x-5 md:gap-y-[26px] lg:mt-[72px] lg:block xl:w-[350px]">
+          {/* the items: a list at xl; below it a two-column grid (row 1:
+              environment, scalability; row 2: integrations, analytics) at
+              the Features cards' 16 / 14 type, 20px gutter. The rows have
+              the design's heights (99 = 72 + 27 gap, 110) as minimums, so
+              the block stays 209px tall and the panel below never moves as
+              items open — unless a description cannot fit at all (narrow
+              widths), when its row grows just enough. */}
+          <div className="mt-[72px] md:mt-[60px] md:grid md:grid-cols-2 md:gap-x-5 md:gap-y-0 md:[grid-template-rows:minmax(99px,auto)_minmax(110px,auto)] xl:mt-[72px] xl:block xl:w-[350px]">
             {ITEMS.map((item, i) => (
               <div key={item.key}>
                 {i > 0 && (
-                  <div className="mt-[26px] h-px bg-white/[0.06] opacity-70 md:hidden lg:block" />
+                  <div className="mt-[26px] h-px bg-white/[0.06] opacity-70 md:hidden xl:block" />
                 )}
                 <p
                   data-item-title={item.key}
                   className={
                     (item.open
-                      ? "text-body-md text-text-primary lg:text-heading-sm"
-                      : "mt-[26px] text-body-md text-text-primary opacity-20 md:mt-0 lg:mt-[26px] lg:text-heading-sm") +
+                      ? "text-body-md text-text-primary xl:text-heading-sm"
+                      : "mt-[26px] text-body-md text-text-primary opacity-20 md:mt-0 xl:mt-[26px] xl:text-heading-sm") +
                     " cursor-pointer"
                   }
                   onClick={() =>
@@ -1710,7 +1713,7 @@ export default function Infrastructure() {
                 {item.desc && (
                   <p
                     data-item-desc={item.key}
-                    className="mt-3 text-body-sm text-text-body/60 lg:text-body-md"
+                    className="mt-3 text-body-sm text-text-body/60 xl:text-body-md"
                     style={item.open ? undefined : { display: "none" }}
                   >
                     {item.desc}
@@ -1724,7 +1727,7 @@ export default function Infrastructure() {
         {/* stage panel — bottom edge runs off the section (no border there) */}
         <div
           ref={panelRef}
-          className="relative mt-12 aspect-[751/679] w-full overflow-hidden rounded-t-lg md:mt-10 md:aspect-auto md:h-[679px] lg:mt-[7px] lg:aspect-[751/679] lg:h-auto lg:w-auto lg:min-w-0 lg:max-w-[751px] lg:flex-1 xl:absolute xl:left-[449px] xl:top-[7px] xl:mt-0 xl:aspect-auto xl:h-[679px] xl:w-[751px] xl:max-w-none"
+          className="relative mt-12 aspect-[751/679] w-full overflow-hidden rounded-t-lg md:mt-6 md:aspect-auto md:h-[679px] xl:absolute xl:left-[449px] xl:top-[7px] xl:mt-0 xl:h-[679px] xl:w-[751px]"
           style={{
             background:
               "linear-gradient(0deg, rgba(55,80,200,0.02), rgba(55,80,200,0.02)), #000",
