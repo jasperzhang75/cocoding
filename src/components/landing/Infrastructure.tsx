@@ -843,13 +843,14 @@ export default function Infrastructure() {
         const { cards, raise } = ROWS.buildin;
         const first = cards[0];
         const firstEl = sq(`[data-card="buildin:${first.key}"]`);
-        t.set(svg.querySelectorAll('[data-card^="buildin:"]'), { x: first.x, y: first.y }, 0.35);
-        t.set(sq(`[data-callout="buildin:${first.key}"]`), { opacity: 0 }, 0.35);
-        t.set(sq("[data-frame6]"), { opacity: 1 }, 0.35);
-        t.set(sq("[data-frame6]"), { pointerEvents: "auto" }, 1.3);
+        const e = 0.4; // the entrance shows from here, under the leaving cube's dissolve
+        t.set(svg.querySelectorAll('[data-card^="buildin:"]'), { x: first.x, y: first.y }, e);
+        t.set(sq(`[data-callout="buildin:${first.key}"]`), { opacity: 0 }, e);
+        t.set(sq("[data-frame6]"), { opacity: 1 }, e);
+        t.set(sq("[data-frame6]"), { pointerEvents: "auto" }, e + 0.95);
         // the leftmost card appears first, alone, level with the rest
-        t.fromTo(firstEl, { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.4);
-        t.fromTo(sq("[data-f6-tab]"), { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.6);
+        t.fromTo(firstEl, { opacity: 0 }, { opacity: 1, duration: 0.3 }, e + 0.05);
+        t.fromTo(sq("[data-f6-tab]"), { opacity: 0 }, { opacity: 1, duration: 0.4 }, e + 0.25);
         // accordion: cards spring right, overshooting their spacing like a
         // rubber band before settling, nearest first
         cards.forEach((card, i) => {
@@ -857,13 +858,13 @@ export default function Infrastructure() {
           t.to(
             sq(`[data-card="buildin:${card.key}"]`),
             { x: card.x, y: card.y, duration: 1.1, ease: "elastic.out(1, 0.62)" },
-            0.68 + (i - 1) * 0.055
+            e + 0.33 + (i - 1) * 0.055
           );
         });
         // once the row has settled, the first card rises a little and its
         // legend hangs beneath it
-        t.to(firstEl, { y: first.y - raise, duration: 0.5, ease: "power2.inOut" }, 1.3);
-        t.to(sq(`[data-callout="buildin:${first.key}"]`), { opacity: 1, duration: 0.35 }, 1.55);
+        t.to(firstEl, { y: first.y - raise, duration: 0.5, ease: "power2.inOut" }, e + 0.95);
+        t.to(sq(`[data-callout="buildin:${first.key}"]`), { opacity: 1, duration: 0.35 }, e + 1.2);
       };
       /* The left column: every item that is showing folds (normally one,
          but an interrupted swap can leave two part-way), the target opens
@@ -926,9 +927,9 @@ export default function Infrastructure() {
           t.to(g, { opacity: 0, duration: instant ? 0 : 0.3 }, 0);
           t.set(g, { pointerEvents: "none" }, 0.01);
         } else {
-          // the cube is a large, single object: it dissolves over 0.6s (a
+          // the cube is a large, single object: it dissolves over 0.8s (a
           // 0.3s cut read as abrupt), overlapping the next frame's entrance
-          const d = instant ? 0 : 0.6;
+          const d = instant ? 0 : 0.8;
           const c = cubeAll();
           t.to(c.groups, { opacity: 0, duration: d, ease: "power1.inOut" }, 0);
           t.to(c.faces, { opacity: 0, duration: d, ease: "power1.inOut" }, instant ? 0 : 0.05);
