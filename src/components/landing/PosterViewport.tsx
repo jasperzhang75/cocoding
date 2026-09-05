@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
    vectors and animations are all pinned to it — so instead of refloating
    anything we scale the whole stage.
 
-   Pass-through is decided by POSITIONING, not width: at lg the className
+   Pass-through is decided by POSITIONING, not width: at xl the className
    makes this wrapper `absolute inset-0` over the card's fixed 600x-H box,
    so the stage sits unscaled and the desktop geometry is byte-identical.
    Anywhere else the wrapper is in flow, and the stage scales by width/600
@@ -43,27 +43,10 @@ export default function PosterViewport({
 
     const apply = () => {
       if (getComputedStyle(wrap).position === "absolute") {
-        /* desktop: the wrapper fills the card. From lg to xl the card is
-           narrower than the 600px design while its copy keeps its size, so
-           the art alone scales down, anchored to the card's bottom-left:
-           its bottom and side edges stay on the card's, and the room it
-           gives up opens between the copy and the art. */
         wrap.style.removeProperty("height");
-        // measure the CARD (the wrapper's offset parent): the wrapper sits
-        // inside the card's 1px border, so its own width is 598 at the
-        // 600px design and would read as a scale of 0.997
-        const card = wrap.offsetParent as HTMLElement | null;
-        const kd = (card ? card.offsetWidth : wrap.clientWidth) / 600;
-        if (kd >= 0.999) {
-          stage.style.removeProperty("transform");
-          stage.style.removeProperty("transform-origin");
-        } else {
-          stage.style.transformOrigin = "left bottom";
-          stage.style.transform = `scale(${kd})`;
-        }
+        stage.style.removeProperty("transform");
         return;
       }
-      stage.style.removeProperty("transform-origin");
       const k = wrap.clientWidth / 600;
       /* The crop trims the design's headroom so a shrunken poster still
          reads. It must FADE OUT as the stage approaches 1:1 — at ~600px
@@ -77,9 +60,9 @@ export default function PosterViewport({
     apply();
     const ro = new ResizeObserver(apply);
     ro.observe(wrap);
-    /* crossing lg flips the wrapper between flow and absolute without
+    /* crossing xl flips the wrapper between flow and absolute without
        necessarily changing its width, which ResizeObserver would miss */
-    const mq = window.matchMedia("(min-width: 1024px)");
+    const mq = window.matchMedia("(min-width: 1280px)");
     mq.addEventListener("change", apply);
     return () => {
       ro.disconnect();
