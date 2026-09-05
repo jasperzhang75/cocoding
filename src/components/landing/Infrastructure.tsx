@@ -1218,15 +1218,9 @@ export default function Infrastructure() {
         run(t);
       };
 
-      /* FREE: the forced first visit is over — 8 was reached or a title
-         was clicked — and scrolling is never captured again this page
-         load (see the navigation section) */
-      let free = false;
-
       /* `instant`: the frame we are leaving was itself still arriving
          (abandoned for this gesture) — it vanishes instead of fading */
       const goTo = (target: number, instant = false) => {
-        if (target === 8) free = true; // the story's end ends the forced visit
         const cur = frameRef.current;
         if (target === cur) return;
         if (cur === 4 && tl2.progress() < 1) return; // frame 4 not landed
@@ -1244,19 +1238,20 @@ export default function Infrastructure() {
          frame 4 is the base: at 5/6/8 the runway is inert and the panel
          keeps its frame wherever the page goes.
 
-         The FIRST VISIT is forced: reaching the runway's end on the way
-         down captures the page (wheel, keys, touch) and each gesture steps
-         4 -> 5 -> 6 -> 8 and back, one per gesture, none while a
-         transition runs. Up from 4 releases the page (the scrub rewinds
-         with it); down from 8 releases it onward. The visit turns FREE —
-         no capture ever again this page load — once 8 has been reached or
-         a title was clicked; in free mode the next gesture releases
-         whichever way it goes, and frames change by click only. A title
-         click always brings the stage to the runway's end first (the
-         scrub completes on the way) and holds the page there for the
-         frame to play. Desktop pointers at xl only; reduced motion never
-         captures; below xl there is no runway and 3 -> 4 plays timed on
-         the first title click. */
+         EVERY pass is walked frame by frame. Whenever the page crosses the
+         runway's end — coming down from Features or back up from below,
+         the first time or the tenth — it is captured (wheel, keys, touch)
+         and each gesture steps one frame: 4 -> 5 -> 6 -> 8 downward,
+         8 -> 6 -> 5 -> 4 upward, none while a transition runs (a gesture
+         interrupts one instead). There are exactly two ways out: up from
+         4, which releases the page and lets the scrub rewind with it, and
+         down from 8, which releases it onward. A title click switches the
+         frame and keeps the page held — it first brings the stage to the
+         runway's end (the scrub completing on the way) — so the exits are
+         still 4-up and 8-down. Dragging the scrollbar away releases, and
+         the next crossing of the end captures again. Desktop pointers at
+         xl only; reduced motion never captures; below xl there is no
+         runway and 3 -> 4 plays timed on the first title click. */
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
       const runwayOn = () => window.matchMedia("(min-width: 1280px)").matches;
       const captureOn = () =>
@@ -1264,7 +1259,7 @@ export default function Infrastructure() {
 
       let captured = false;
       let landed = false; // frame 4 formed (tl2 at 1)
-      let lastTravel = NaN; // runway travel last seen, for the scroll direction
+      let lastOvershoot = NaN; // where the page stood against the runway's end last time
       let arriving: (() => void) | null = null; // runs when a programmatic scroll lands
       let arriveTimer = 0;
 
@@ -1290,7 +1285,7 @@ export default function Infrastructure() {
         const room = Math.max(0, document.documentElement.scrollHeight - vh - window.scrollY);
         const travel = stickyTop - runway.getBoundingClientRect().top;
         const runwayLen = Math.min(RUNWAY, Math.max(1, travel + room));
-        return { travel, runwayLen, overshoot: travel - runwayLen };
+        return { travel, runwayLen, overshoot: travel - runwayLen, room };
       };
 
       /* frame 4 has formed: its one-shot effects, and the 4<->5 morph is
@@ -1363,8 +1358,8 @@ export default function Infrastructure() {
         acc = 0;
         gestureUsed = true; // the gesture that brought us here is spent
         touchGesture();
-        // align exactly on the runway's end, undoing any overshoot
-        if (overshoot > 0) window.scrollBy({ top: -overshoot, behavior: "instant" });
+        // align exactly on the runway's end, whichever side we came from
+        if (Math.abs(overshoot) > 0.5) window.scrollBy({ top: -overshoot, behavior: "instant" });
         window.addEventListener("wheel", onWheel, { passive: false });
         window.addEventListener("touchmove", onTouchMove, { passive: false });
         window.addEventListener("keydown", onKey);
@@ -1380,14 +1375,22 @@ export default function Infrastructure() {
         if (nudge) window.scrollBy({ top: nudge, behavior: "smooth" });
       };
 
-      /* one gesture's step: +1 down, -1 up. A forced visit only ever
-         stands at 4, 5 or 6 here — reaching 8 makes it free. A transition
-         in flight yields to it (see interrupt). */
+      /* one gesture's step: +1 down, -1 up. Past the last frame in either
+         direction the page is released; a transition in flight yields to
+         the step (see interrupt). */
       const step = (dir: 1 | -1) => {
-        if (free) return release(dir * 100);
         const frame = frameRef.current;
-        const target = dir > 0 ? (frame === 4 ? 5 : frame === 5 ? 6 : 8) : frame === 6 ? 5 : frame === 5 ? 4 : 0;
-        if (!target) return release(-100); // from 4 the page goes and the scrub rewinds with it
+        const target =
+          dir > 0
+            ? frame === 4 ? 5 : frame === 5 ? 6 : frame === 6 ? 8 : 0
+            : frame === 8 ? 6 : frame === 6 ? 5 : frame === 5 ? 4 : 0;
+        if (!target) {
+          // 8-down leaves onward — unless the page has nowhere further to go
+          // yet (this is its last block until Pricing lands), then the stage
+          // simply stays held; 4-up leaves and the scrub rewinds with it
+          if (dir > 0 && geometry().room <= 1) return;
+          return release(dir * 100);
+        }
         goTo(target, interrupt());
       };
 
@@ -1502,25 +1505,24 @@ export default function Infrastructure() {
         }
         if (arriving && Math.abs(g.overshoot) <= 2) arrived();
         if (captured) {
-          // the scrollbar can still drag the page away: that quits the sequence
-          if (Math.abs(g.overshoot) > 40) {
-            release();
-            free = true;
-          }
+          // the scrollbar can still drag the page away: let it go (the next
+          // crossing of the end captures again)
+          if (Math.abs(g.overshoot) > 40) release();
+          lastOvershoot = g.overshoot;
           return;
         }
-        const goingDown = Number.isFinite(lastTravel) && g.travel > lastTravel + 0.5;
-        lastTravel = g.travel;
-        // the first visit is held at the runway's end on the way down
-        if (!free && captureOn() && base4 && landed && goingDown && g.overshoot >= 0) capture(g.overshoot);
+        // the runway's end captures whenever the page crosses it, from either side
+        const crossedDown = lastOvershoot < 0 && g.overshoot >= 0;
+        const crossedUp = lastOvershoot > 0 && g.overshoot <= 0;
+        lastOvershoot = g.overshoot;
+        if (captureOn() && (crossedDown || crossedUp)) capture(g.overshoot);
       };
 
-      /* Title clicks: the user drives from here (free). The stage comes to
-         the runway's end first — the scrub completing on the way — and
-         the page holds there while the frame plays. */
+      /* Title clicks switch the frame and keep the page held. The stage
+         comes to the runway's end first — the scrub completing on the
+         way — then the frame plays. */
       goToFrameRef.current = (target) => {
         if (tl2.isActive() || target === frameRef.current) return;
-        free = true;
         const instant = interrupt();
         if (reduced) return goTo(target, instant);
         if (!runwayOn()) {
@@ -1536,7 +1538,7 @@ export default function Infrastructure() {
           return;
         }
         const go = () => {
-          if (captureOn()) capture(Math.max(0, geometry().overshoot));
+          if (captureOn()) capture(geometry().overshoot);
           goTo(target, instant);
         };
         if (Math.abs(geometry().overshoot) > 2) scrollToRunwayEnd(go);
