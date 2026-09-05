@@ -927,9 +927,9 @@ export default function Infrastructure() {
           t.to(g, { opacity: 0, duration: instant ? 0 : 0.3 }, 0);
           t.set(g, { pointerEvents: "none" }, 0.01);
         } else {
-          // the cube is a large, single object: it dissolves over 0.8s (a
+          // the cube is a large, single object: it dissolves over 0.7s (a
           // 0.3s cut read as abrupt), overlapping the next frame's entrance
-          const d = instant ? 0 : 0.8;
+          const d = instant ? 0 : 0.7;
           const c = cubeAll();
           t.to(c.groups, { opacity: 0, duration: d, ease: "power1.inOut" }, 0);
           t.to(c.faces, { opacity: 0, duration: d, ease: "power1.inOut" }, instant ? 0 : 0.05);
