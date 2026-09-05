@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
 import AgentsDiagram from "./AgentsDiagram";
 import PosterViewport from "./PosterViewport";
+import StageScaler from "./StageScaler";
 import TokensCard from "./TokensCard";
 import TerminalCard from "./TerminalCard";
 import SecurityCard from "./SecurityCard";
@@ -60,20 +61,20 @@ function CardHeader({
   title,
   desc,
   descWidthClass,
-  leftClass = "xl:left-[36px]",
+  leftClass = "lg:left-[36px]",
 }: {
   title: string;
   desc: string;
-  /** e.g. "xl:w-[332px]" — the design's fixed copy width at xl */
+  /** e.g. "lg:w-[332px]" — the design's fixed copy width at lg */
   descWidthClass: string;
   leftClass?: string;
 }) {
   return (
     <div
-      className={`flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:top-[35px] xl:w-[496px] xl:p-0 ${leftClass}`}
+      className={`flex flex-col gap-3 px-7 pb-6 pt-8 lg:absolute lg:top-[35px] lg:w-[496px] lg:p-0 ${leftClass}`}
     >
-      <p className="text-body-md text-text-primary xl:text-heading-sm">{title}</p>
-      <p className={`text-balance text-body-sm text-text-body xl:text-wrap xl:text-body-md ${descWidthClass}`}>{desc}</p>
+      <p className="text-body-md text-text-primary lg:text-heading-sm">{title}</p>
+      <p className={`text-balance text-body-sm text-text-body lg:text-wrap lg:text-body-md ${descWidthClass}`}>{desc}</p>
     </div>
   );
 }
@@ -103,15 +104,15 @@ function Bleed({
 
 function AgentsCard() {
   return (
-    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.08] bg-black md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
+    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.08] bg-black md:rounded-none md:rounded-tl-lg md:border-b-0 lg:absolute lg:left-0 lg:top-0 lg:h-[610px] lg:w-[600px] lg:max-w-none">
       <CardHeader
-        leftClass="xl:left-[35px]"
+        leftClass="lg:left-[35px]"
         title="Go faster with parallel agents"
         desc="Multiple agents run in parallel to handle tasks simultaneously and speed up every build."
-        descWidthClass="xl:w-[332px]"
+        descWidthClass="lg:w-[332px]"
       />
 
-      <PosterViewport designHeight={610} crop={120} className="xl:absolute xl:inset-0">
+      <PosterViewport designHeight={610} crop={120} className="lg:absolute lg:inset-0">
       <div
         className="absolute inset-0"
         style={mask("/features/f1-mask-outer.svg", "970px 814px", "-223px -69px")}
@@ -196,7 +197,7 @@ export default function Features() {
         >
           Features
         </HyperText>
-        <h2 className="mt-3 text-heading-lg text-text-primary xl:text-display">
+        <h2 className="mt-3 text-heading-lg text-text-primary lg:text-display">
           Build faster.
           <br />
           Spend less. Stay in control.
@@ -207,18 +208,20 @@ export default function Features() {
         {/* three tiers. base: single stack, narrative order via order-N
             (the column wrappers dissolve to display:contents). md: the
             DESKTOP pairing — two flush columns (1+4 | 2+3), no gap, desktop
-            corner scheme, only the posters scale. xl: the absolute bento
+            corner scheme, only the posters scale. lg: the absolute bento
             canvas (wrappers dissolve again). */}
-        <div className="mt-12 flex flex-col items-center gap-6 md:mt-[73px] md:flex-row md:items-stretch md:justify-center md:gap-0 xl:relative xl:mx-auto xl:block xl:h-[1074px] xl:w-[1200px]">
-          <div className="contents md:flex md:w-1/2 md:max-w-[600px] md:flex-col xl:contents">
-            <AgentsCard />
-            <SecurityCard />
+        <StageScaler designWidth={1200} designHeight={1074}>
+          <div className="mt-12 flex flex-col items-center gap-6 md:mt-[73px] md:flex-row md:items-stretch md:justify-center md:gap-0 lg:relative lg:mx-auto lg:block lg:h-[1074px] lg:w-[1200px]">
+            <div className="contents md:flex md:w-1/2 md:max-w-[600px] md:flex-col lg:contents">
+              <AgentsCard />
+              <SecurityCard />
+            </div>
+            <div className="contents md:flex md:w-1/2 md:max-w-[600px] md:flex-col lg:contents">
+              <TokensCard />
+              <TerminalCard />
+            </div>
           </div>
-          <div className="contents md:flex md:w-1/2 md:max-w-[600px] md:flex-col xl:contents">
-            <TokensCard />
-            <TerminalCard />
-          </div>
-        </div>
+        </StageScaler>
       </div>
     </section>
   );

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
    vectors and animations are all pinned to it — so instead of refloating
    anything we scale the whole stage.
 
-   Pass-through is decided by POSITIONING, not width: at xl the className
+   Pass-through is decided by POSITIONING, not width: at lg the className
    makes this wrapper `absolute inset-0` over the card's fixed 600x-H box,
    so the stage sits unscaled and the desktop geometry is byte-identical.
    Anywhere else the wrapper is in flow, and the stage scales by width/600
@@ -60,9 +60,9 @@ export default function PosterViewport({
     apply();
     const ro = new ResizeObserver(apply);
     ro.observe(wrap);
-    /* crossing xl flips the wrapper between flow and absolute without
+    /* crossing lg flips the wrapper between flow and absolute without
        necessarily changing its width, which ResizeObserver would miss */
-    const mq = window.matchMedia("(min-width: 1280px)");
+    const mq = window.matchMedia("(min-width: 1024px)");
     mq.addEventListener("change", apply);
     return () => {
       ro.disconnect();
