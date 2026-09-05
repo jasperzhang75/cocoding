@@ -425,7 +425,7 @@ export default function Infrastructure() {
       0
     );
     // 100: the light is gone, the white outline flares for a beat, and the
-    // tile fills in a burst — full in 0.45s, then dissipating slowly from
+    // tile fills in a burst — full in 0.3s, then dissipating slowly from
     // its peak (the agents' fill logic from the Features card)...
     const fills = svg.querySelectorAll("[data-tile-fill]");
     t.set([tails, heads], { opacity: 0 }, LOOP);
@@ -433,8 +433,8 @@ export default function Infrastructure() {
     // the light decelerates into its finish, so the burst leads it a little
     // (0.25s) rather than waiting for the exact arrival, which read as lag
     const BURST_AT = LOOP - 0.25;
-    t.fromTo(fills, { opacity: 0 }, { opacity: 1, duration: 0.45, ease: "power4.out" }, BURST_AT);
-    t.to(fills, { opacity: 0, duration: 2.2, ease: "power1.out" }, BURST_AT + 0.45);
+    t.fromTo(fills, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power4.out" }, BURST_AT);
+    t.to(fills, { opacity: 0, duration: 2.2, ease: "power1.out" }, BURST_AT + 0.3);
     // ...while the outline settles into the resting gradient
     t.to(bases, { opacity: 0, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
     t.to(rests, { opacity: 0.7, duration: 0.6, ease: "power2.out" }, LOOP + 0.12);
