@@ -1311,9 +1311,20 @@ export default function Infrastructure() {
          so there is one more ending: once the stream has run TINY (2px or
          less per event) for 150ms it counts as over, and from then on only
          a real push (one event of PUSH) can start the next step — a crawl
-         never adds up to one. Nothing inside a live stream ever re-arms
-         it: a hard swipe, a long drag, a slow-then-fast drag are all one
-         step. A step is also never taken within 250ms of the last. */
+         never adds up to one. A hard swipe, a long drag, a slow-then-fast
+         drag are all one step. A step is also never taken within 250ms of
+         the last.
+
+         One thing inside a live stream does re-arm it: a FRESH FLICK
+         landing in a momentum tail. Momentum decays in a shape nothing
+         else has — deltas falling without a rise for a long stretch — so a
+         fresh flick is a rise (to at least PUSH and twice the previous
+         event) that follows at least 200ms of non-increasing deltas which
+         have fallen to half or less of where they started. The dip as a
+         finger lifts followed by the momentum kick is too short a fall to
+         qualify; a slow stretch of a drag jitters and does not keep
+         falling. (Known residual: a finger that decelerates smoothly for
+         200ms+ and then accelerates reads as a fresh flick.) */
       let gestureUsed = false;
       let gestureTimer = 0;
       let acc = 0;
@@ -1321,15 +1332,23 @@ export default function Infrastructure() {
       let lastEventAt = 0;
       let tinySince = 0; // when the stream went tiny (0 = it is not)
       let pushOnly = false; // re-armed by a tail: the next step needs a push
+      let prevAbs = 0; // |delta| of the previous event in the stream
+      let runStart = 0; // when the current non-increasing run began (0 = none)
+      let runStartAbs = 0; // |delta| at its start
+      let riseFrom: number | null = null; // the low a small rise (under PUSH) started from, pending judgement
       const PUSH = 10; // a single event this big is a real push
       const TINY = 2;
       const TINY_MS = 150;
       const STEP_THRESH = 30; // dense small events adding up to a step
+      const RUN_MS = 200; // how long deltas must have been falling to count as a tail
       const resetGesture = () => {
         gestureUsed = false;
         acc = 0;
         pushOnly = false;
         tinySince = 0;
+        runStart = 0;
+        prevAbs = 0;
+        riseFrom = null;
       };
       const touchGesture = () => {
         window.clearTimeout(gestureTimer);
@@ -1377,6 +1396,33 @@ export default function Infrastructure() {
         const abs = Math.abs(delta);
         touchGesture();
         const now = performance.now();
+        // the decay run. A rise beyond jitter is judged against the run:
+        // a fresh flick re-arms the gesture; a big rise that is not one (the
+        // momentum kick) restarts the run; a small rise (a flick's first
+        // ramp event, or jitter) is held pending — the next event decides:
+        // rising further keeps judging from the low it left, falling back
+        // means jitter and the run restarts there.
+        if (!runStart) {
+          runStart = now;
+          runStartAbs = abs;
+        } else if (abs > prevAbs + 1) {
+          const base = riseFrom ?? prevAbs;
+          const fell = now - runStart >= RUN_MS && runStartAbs >= 2 * Math.max(base, 1);
+          if (gestureUsed && fell && abs >= Math.max(PUSH, 2 * base) && now - lastStepAt >= 250) {
+            resetGesture(); // a fresh flick: this event starts the next gesture
+            runStart = now;
+            runStartAbs = abs;
+          } else if (abs >= PUSH) {
+            runStart = now;
+            runStartAbs = abs;
+            riseFrom = null;
+          } else if (riseFrom === null) riseFrom = prevAbs;
+        } else if (riseFrom !== null) {
+          runStart = now;
+          runStartAbs = abs;
+          riseFrom = null;
+        }
+        prevAbs = abs;
         // the tail: tiny for TINY_MS ends the spent gesture, push-only from here
         if (abs <= TINY) {
           if (!tinySince) tinySince = now;
