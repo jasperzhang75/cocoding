@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import gsap from "gsap";
 import { HyperText } from "@/components/magicui/hyper-text";
@@ -76,6 +76,22 @@ const STACK = { x: 372, y: [343.5, 326.1, 302.7], size: 65.8 };
 
 /* Frame 4 poses the settled stack ~8px lower with 80% faces. */
 const ENV_STACK_Y = [351.7, 334.3, 311];
+
+/* THE TABLET PANEL (md, 768-1279; Figma bHyNfFfV0ocgVPCHtOyYBp 1166:917,
+   1166:1019, 1168:1080, 1165:742). Two columns again, the panel 344 wide
+   at 768 and growing to the design's 751. The art keeps its size and
+   re-centers; the cube frames ride MD_LIFT higher so one callout — the
+   lit face's — can sit centered beneath the cube, the stage layers sit
+   at their own frames' heights, and the stage labels gather under the
+   layers, centered, without their hairlines. */
+const MD_LIFT = 77; // frame 4's lid: 246.16 -> 169.17
+const SPREAD_Y_MD = SPREAD_Y.map((v) => v + 6); // the layers spread 71 higher, not 77
+const STACK_Y_MD = STACK.y.map((v) => v + 10.3); // the stack settles 66.7 higher
+const FACE_Y0 = 294.6; // the stage-1 block, on the middle layer's line
+const FACE_Y0_MD = FACE_Y0 + 6;
+const LABEL_Y = { top: 310.5, mid: 364.5, bot: 418.5 }; // baselines under the callout lines
+const LABEL_Y_MD = { top: 401.5, mid: 433.5, bot: 466.5 }; // stacked beneath the layers (boxes 389/421/454)
+const CO_MD = { label: 436.5, desc: 461.1, hitTop: 416, hitH: 92 }; // the one centered callout (boxes 424 / 448)
 
 /* Interactive callouts, frames 4 and 5. One is "lit" at a time: gradient
    label plus its description; the others rest gray. Clicking a callout OR
@@ -349,7 +365,21 @@ function makeNoiseTexture(): string {
   return cv.toDataURL("image/png");
 }
 
+/* The stage is built for one layout — the tablet panel (md) or the
+   1200px design — and its timelines hold that layout's numbers, so
+   crossing 1280 remounts it rather than re-deriving them mid-flight. */
 export default function Infrastructure() {
+  const [layout, setLayout] = useState(0);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px) and (max-width: 1279px)");
+    const bump = () => setLayout((v) => v + 1);
+    mq.addEventListener("change", bump);
+    return () => mq.removeEventListener("change", bump);
+  }, []);
+  return <InfrastructureStage key={layout} />;
+}
+
+function InfrastructureStage() {
   const sectionRef = useRef<HTMLElement>(null);
   const runwayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -444,6 +474,13 @@ export default function Infrastructure() {
   /* Frame 6 rows: which card holds the light in each, and which tab
      shows. Hover/tap moves the light; the tab switch is in the effect. */
   const litRef = useRef<Record<RowKey, string>>({ buildin: "database", connectors: "notion" });
+  /* where each card stands in the panel's 751 space: the design's x, or
+     where layoutCards put it for a narrower panel */
+  const cardXRef = useRef<Record<RowKey, Record<string, number>>>({
+    buildin: Object.fromEntries(CARDS6.map((c) => [c.key, c.x])),
+    connectors: Object.fromEntries(CARDS7.map((c) => [c.key, c.x])),
+  });
+  const cardX = (row: RowKey, key: string) => cardXRef.current[row][key];
   const tabRef = useRef<RowKey>("buildin");
   const switchTabRef = useRef<(to: RowKey) => void>(() => {});
   /* while the rows are animating (entrance, tab switch) cards sweep under
@@ -671,17 +708,15 @@ export default function Infrastructure() {
       im.setAttribute("href", noiseUrl);
     });
 
-    /* PANEL LAYOUT. The art is authored in a 751x679 space. Below xl the
-       panel is as wide as the page but keeps the design's height, so the
-       space is re-anchored rather than scaled: the SVG's viewBox takes the
-       panel's width, everything the cube owns (stack, cube, glows, wash,
-       the card row, the scorecard) shifts to stay centered, right-hand
-       callouts and the BUILD labels keep their 36px from the right edge,
-       left-hand ones stay put, and each callout line keeps its design
-       length unless that would run into the cube — then it ends at the
-       design's clearance from it (688px: left line 190, right 195, as
-       drawn). Anywhere else the panel keeps the design's proportions and
-       simply scales, so nothing here moves. */
+    /* PANEL LAYOUT. The art is authored in a 751x679 space. At md the
+       panel is narrower (344 at 768, the design's 751 from ~1176) but
+       keeps the design's height, so the space is re-anchored rather than
+       scaled: the SVG's viewBox takes the panel's width, everything
+       centered (stack, cube, glows, the card rows, the scorecard) shifts
+       to stay centered and the cube frames ride MD_LIFT higher; the
+       labels are re-placed for the tablet composition (see the MD
+       constants) and the card rows close up (layoutCards). Below md the
+       panel keeps the design's proportions and simply scales. */
     const stage = runway.firstElementChild as HTMLElement;
     const fluidMq = window.matchMedia("(min-width: 768px) and (max-width: 1279px)");
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -720,30 +755,107 @@ export default function Infrastructure() {
     /* the runway's length: the 3 -> 4 scrub, plus four bands when they run */
     const runwayLen = () => (bandsOn() ? RUNWAY + 4 * bandLen() : RUNWAY);
     let relayout: () => void = () => {};
+    /* THE CARD ROWS (frames 6/7). Authored at a 55px pitch for the 751
+       panel. On a narrower one the pitch closes up first, down to 44px
+       (the cards stand in front of each other; at 44 every icon still
+       shows whole), and only when even that overflows do the cards
+       shrink to fit at the whole-icon pitch for their size. The legends
+       hanging under them keep their type size. 12px clear of the panel's
+       sides. Positions land in cardXRef for the entrance and tab swap. */
+    const CARD_W = 67.2; // a card's projected width
+    const PITCH_MIN = 44;
+    const CARD_MARGIN = 12;
+    const layoutCards = (W: number) => {
+      for (const row of ["buildin", "connectors"] as RowKey[]) {
+        const { cards, lineDx } = ROWS[row];
+        const n = cards.length;
+        const p0 = (cards[n - 1].x - cards[0].x) / (n - 1); // the design's pitch
+        const avail = W - 2 * CARD_MARGIN;
+        let s = 1;
+        let p = Math.min(p0, (avail - CARD_W) / (n - 1));
+        if (p < PITCH_MIN) {
+          s = avail / (PITCH_MIN * (n - 1) + CARD_W);
+          p = PITCH_MIN * s;
+        }
+        const natural = W === 751; // the design's own positions
+        const x0 = 375.5 - ((n - 1) * p + CARD_W * s) / 2;
+        cards.forEach((c, i) => {
+          const x = natural ? c.x : Math.round((x0 + i * p) * 10) / 10;
+          cardXRef.current[row][c.key] = x;
+          const card = svg.querySelector(`[data-card="${row}:${c.key}"]`);
+          if (card) {
+            gsap.set(card, { x });
+            card.querySelector("[data-cscale]")?.setAttribute("transform", s === 1 ? "" : `scale(${s})`);
+          }
+          const co = svg.querySelector(`[data-callout="${row}:${c.key}"]`);
+          if (!co) return;
+          const lx = x + lineDx * s;
+          const line = co.querySelector("line");
+          line?.setAttribute("x1", String(lx));
+          line?.setAttribute("x2", String(lx));
+          line?.setAttribute("y1", String(281 + 110 * s));
+          co.querySelector("text")?.setAttribute("x", String(lx + 0.5));
+        });
+      }
+    };
     const layoutPanel = () => {
-      const W = fluidMq.matches ? Math.round(panel.clientWidth) : 751;
+      const md = fluidMq.matches;
+      const W = md ? Math.round(panel.clientWidth) : 751;
       const dxC = (W - 751) / 2; // centered things
-      const dxR = W - 751; // right-anchored things
+      const cx = W / 2;
       svg.setAttribute("viewBox", `0 0 ${W} 679`);
       svg.querySelectorAll<SVGElement>('[data-anchor="center"]').forEach((g) => {
-        g.setAttribute("transform", dxC ? `translate(${dxC} 0)` : "");
+        const dy = md && g.hasAttribute("data-md-lift") ? -MD_LIFT : 0;
+        g.setAttribute("transform", dxC || dy ? `translate(${dxC} ${dy})` : "");
       });
-      svg.querySelectorAll<SVGElement>('[data-anchor="right"]').forEach((g) => {
-        g.setAttribute("transform", dxR ? `translate(${dxR} 0)` : "");
+      const show = (sel: string, on: boolean) =>
+        svg.querySelectorAll<SVGElement>(sel).forEach((el) => {
+          el.style.display = on ? "" : "none";
+        });
+      // the stage labels: under their hairlines, right-aligned, at xl; at
+      // md the hairlines go and the labels gather centered under the layers
+      show("[data-line]", !md);
+      svg.querySelectorAll<SVGElement>("[data-label], [data-build]").forEach((t) => {
+        t.setAttribute("x", String(md ? cx : 715));
+        t.setAttribute("text-anchor", md ? "middle" : "end");
       });
-      // callout lines: inner ends give way to the cube on a narrow panel
-      const squeeze = Math.max(0, -dxC); // how far the cube has moved toward the left-anchored side
-      const setEnds = (attr: string, list: typeof ENV_CALLOUTS | typeof ENV5_CALLOUTS) => {
+      svg.querySelectorAll<SVGElement>('[data-label="mid"], [data-build]').forEach((t) => {
+        t.setAttribute("y", String(md ? LABEL_Y_MD.mid : LABEL_Y.mid));
+      });
+      // the cube frames' callouts: three around the cube at xl; at md one
+      // centered block beneath it — the lit face's label and description
+      // (the resting gray labels and the hairlines are not drawn)
+      const place = (p: "data-co" | "data-co5", list: typeof ENV_CALLOUTS | typeof ENV5_CALLOUTS) => {
+        show(`[${p}-line], [${p}-base]`, !md);
         for (const c of list) {
-          const line = svg.querySelector(`[${attr}="${c.key}"]`);
-          if (!line) continue;
-          if (c.anchor === "start") line.setAttribute("x2", String(c.x2 - squeeze));
-          else line.setAttribute("x1", String(c.x1 + squeeze));
+          const lx = c.anchor === "end" ? c.x2 : c.x1;
+          const x = md ? cx : lx;
+          const anchor = md ? "middle" : c.anchor;
+          svg.querySelectorAll(`[${p}-active="${c.key}"], [${p}-base="${c.key}"]`).forEach((t) => {
+            t.setAttribute("x", String(x));
+            t.setAttribute("y", String(md ? CO_MD.label : c.y + 24.5));
+            t.setAttribute("text-anchor", anchor);
+          });
+          const d = svg.querySelector(`[${p}-desc="${c.key}"]`);
+          if (d) {
+            d.setAttribute("text-anchor", anchor);
+            d.querySelectorAll("tspan").forEach((t, i) => {
+              t.setAttribute("x", String(x));
+              t.setAttribute("y", String((md ? CO_MD.desc : c.y + 49.1) + i * 19.5));
+            });
+          }
+          const hit = svg.querySelector(`[${p}-hit="${c.key}"]`);
+          if (hit) {
+            hit.setAttribute("x", String(md ? cx - 100 : c.x1));
+            hit.setAttribute("y", String(md ? CO_MD.hitTop : c.y - 10));
+            hit.setAttribute("width", String(md ? 200 : c.x2 - c.x1));
+            hit.setAttribute("height", String(md ? CO_MD.hitH : 44));
+          }
         }
       };
-      setEnds("data-co-line", ENV_CALLOUTS);
-      setEnds("data-co5-line", ENV5_CALLOUTS);
-      svg.querySelectorAll<SVGElement>("[data-line]").forEach((l) => l.setAttribute("x1", String(475 + squeeze)));
+      place("data-co", ENV_CALLOUTS);
+      place("data-co5", ENV5_CALLOUTS);
+      layoutCards(W);
       // the stage sticks at --stick-top while the runway — the wrapper's
       // height beyond the stage — scrolls under it. A centered stage stops
       // the page's end short of the runway's end by its offset: bands add
@@ -779,6 +891,13 @@ export default function Infrastructure() {
       const line = (k: string) => svg.querySelector(`[data-line="${k}"]`);
       const label = (k: string) => svg.querySelector(`[data-label="${k}"]`);
 
+      // the stage geometry for this layout (see the MD constants)
+      const md = fluidMq.matches;
+      const SY = md ? SPREAD_Y_MD : SPREAD_Y;
+      const STY = md ? STACK_Y_MD : STACK.y;
+      const LY = md ? LABEL_Y_MD : LABEL_Y;
+      gsap.set(faces, { y: md ? FACE_Y0_MD : FACE_Y0 });
+
       const tl = gsap.timeline({ paused: true, defaults: { ease: "none" } });
 
       /* 0.00-0.10 rests at stage 1 so it registers while entering. */
@@ -787,8 +906,8 @@ export default function Infrastructure() {
       // splits with it — two clones ride up and down IN SYNC with the
       // faces (same span, same ease), each staying centered on its layer
       tl.to(build, { opacity: 0, duration: 0.1, ease: "power1.out" }, 0.1);
-      tl.to(faces[2], { y: SPREAD_Y[2], duration: 0.33, ease: "power2.inOut" }, 0.12);
-      tl.to(faces[0], { y: SPREAD_Y[0], duration: 0.33, ease: "power2.inOut" }, 0.12);
+      tl.to(faces[2], { y: SY[2], duration: 0.33, ease: "power2.inOut" }, 0.12);
+      tl.to(faces[0], { y: SY[0], duration: 0.33, ease: "power2.inOut" }, 0.12);
       tl.to(line("top"), { attr: { y1: 286, y2: 286 }, duration: 0.33, ease: "power2.inOut" }, 0.12);
       tl.to(line("bot"), { attr: { y1: 394, y2: 394 }, duration: 0.33, ease: "power2.inOut" }, 0.12);
       // the clones surface while still overlapping the original, so no pop
@@ -797,8 +916,8 @@ export default function Infrastructure() {
       // the three labels surface together while the lines split, each
       // riding beneath its own line from BUILD's spot — so BUILD reads as
       // becoming FRONTEND / BACKEND / DATABASE rather than being replaced
-      tl.fromTo(label("top"), { attr: { y: 340 + 24.5 } }, { attr: { y: 286 + 24.5 }, duration: 0.33, ease: "power2.inOut" }, 0.12);
-      tl.fromTo(label("bot"), { attr: { y: 340 + 24.5 } }, { attr: { y: 394 + 24.5 }, duration: 0.33, ease: "power2.inOut" }, 0.12);
+      tl.fromTo(label("top"), { attr: { y: LY.mid } }, { attr: { y: LY.top }, duration: 0.33, ease: "power2.inOut" }, 0.12);
+      tl.fromTo(label("bot"), { attr: { y: LY.mid } }, { attr: { y: LY.bot }, duration: 0.33, ease: "power2.inOut" }, 0.12);
       tl.to([label("top"), label("mid"), label("bot")], { opacity: 1, duration: 0.15 }, 0.18);
 
       /* 0.65-0.70 rests at stage 2. */
@@ -810,7 +929,7 @@ export default function Infrastructure() {
         0.7
       );
       faces.forEach((f, i) => {
-        tl.to(f, { x: STACK.x, y: STACK.y[i], duration: 0.26, ease: "power2.inOut" }, 0.72);
+        tl.to(f, { x: STACK.x, y: STY[i], duration: 0.26, ease: "power2.inOut" }, 0.72);
       });
       tl.to(rects, { attr: { width: STACK.size, height: STACK.size }, duration: 0.26, ease: "power2.inOut" }, 0.72);
       tl.to(cube, { opacity: 1, duration: 0.26 }, 0.72);
@@ -933,7 +1052,7 @@ export default function Infrastructure() {
         const first = cards[0];
         const firstEl = sq(`[data-card="buildin:${first.key}"]`);
         const e = 0.4; // the entrance shows from here, under the leaving cube's dissolve
-        t.set(svg.querySelectorAll('[data-card^="buildin:"]'), { x: first.x, y: first.y }, e);
+        t.set(svg.querySelectorAll('[data-card^="buildin:"]'), { x: cardX("buildin", first.key), y: first.y }, e);
         t.set(sq(`[data-callout="buildin:${first.key}"]`), { opacity: 0 }, e);
         t.set(sq("[data-frame6]"), { opacity: 1 }, e);
         t.set(sq("[data-frame6]"), { pointerEvents: "auto" }, e + 0.95);
@@ -946,7 +1065,7 @@ export default function Infrastructure() {
           if (i === 0) return;
           t.to(
             sq(`[data-card="buildin:${card.key}"]`),
-            { x: card.x, y: card.y, duration: 1.1, ease: "elastic.out(1, 0.62)" },
+            { x: cardX("buildin", card.key), y: card.y, duration: 1.1, ease: "elastic.out(1, 0.62)" },
             e + 0.33 + (i - 1) * 0.055
           );
         });
@@ -1185,8 +1304,8 @@ export default function Infrastructure() {
         restRow(to);
         const fromLitEl = sq(`[data-card="${from}:${fromLit.key}"]`)!;
         const toLitEl = sq(`[data-card="${to}:${toLit.key}"]`)!;
-        const spotFrom = { x: fromLit.x, y: fromLit.y - F.raise };
-        const spotTo = { x: toLit.x, y: toLit.y - T.raise };
+        const spotFrom = { x: cardX(from, fromLit.key), y: fromLit.y - F.raise };
+        const spotTo = { x: cardX(to, toLit.key), y: toLit.y - T.raise };
         const mid = { x: (spotFrom.x + spotTo.x) / 2, y: (spotFrom.y + spotTo.y) / 2 };
         rowsBusyRef.current = true;
         const t = gsap.timeline({
@@ -1206,7 +1325,7 @@ export default function Infrastructure() {
         const others = F.cards.filter((c) => c.key !== fromLit.key);
         others
           .slice()
-          .sort((a, b) => Math.abs(b.x - fromLit.x) - Math.abs(a.x - fromLit.x))
+          .sort((a, b) => Math.abs(cardX(from, b.key) - spotFrom.x) - Math.abs(cardX(from, a.key) - spotFrom.x))
           .forEach((c, i) => {
             const el = sq(`[data-card="${from}:${c.key}"]`);
             t.to(el, { x: spotFrom.x, y: spotFrom.y, duration: 0.45, ease: "power2.in" }, i * 0.04);
@@ -1239,7 +1358,7 @@ export default function Infrastructure() {
           .forEach((c, i) => {
             const el = sq(`[data-card="${to}:${c.key}"]`);
             t.to(el, { opacity: 1, duration: 0.15 }, openAt + i * 0.055);
-            t.to(el, { x: c.x, y: c.y, duration: 1.1, ease: "elastic.out(1, 0.62)" }, openAt + i * 0.055);
+            t.to(el, { x: cardX(to, c.key), y: c.y, duration: 1.1, ease: "elastic.out(1, 0.62)" }, openAt + i * 0.055);
           });
         t.to(sq(`[data-callout="${to}:${toLit.key}"]`), { opacity: 1, duration: 0.35 }, openAt + 0.9);
         // leave the folded row tidy for its next turn
@@ -1247,7 +1366,7 @@ export default function Infrastructure() {
         t.set(fromLitEl, { x: spotFrom.x, y: spotFrom.y }, openAt);
         t.set(fromLitEl.querySelector("[data-icon]"), { opacity: 1 }, openAt);
         others.forEach((c) => {
-          t.set(sq(`[data-card="${from}:${c.key}"]`), { x: c.x, y: c.y, opacity: 1 }, openAt);
+          t.set(sq(`[data-card="${from}:${c.key}"]`), { x: cardX(from, c.key), y: c.y, opacity: 1 }, openAt);
         });
       };
       /* into 8 from anywhere: the leaving frame fades, the scorecard plays */
@@ -1727,7 +1846,7 @@ export default function Infrastructure() {
 
   return (
     <section ref={sectionRef} className="px-5 md:px-10 xl:px-0">
-      <div className="pt-24 xl:pt-[120px]">
+      <div className="pt-24 md:pt-[110px] xl:pt-[120px]">
       {/* the runway: from md the stage below sticks (at --stick-top, see
           stickTop) while this box's height beyond it scrolls by, driving
           3 -> 4 and, on touch, the frames after. Both vars are measured
@@ -1737,12 +1856,14 @@ export default function Infrastructure() {
         className="md:h-[calc(var(--stage-full)+var(--runway))]"
         style={{ "--runway": `${RUNWAY}px` } as CSSProperties}
       >
-      {/* the stage. Two layouts: below xl the text stacks over a
-          full-width panel of the design's height (its art re-anchors, see
-          layoutPanel); xl the 1200px design. */}
-      <div className="relative mx-auto max-w-[600px] md:sticky md:top-[var(--stick-top)] md:max-w-none xl:h-[686px] xl:w-[1200px]">
+      {/* the stage. Three layouts: below md the text stacks over a
+          panel of the design's proportions; md two columns, 41px apart —
+          the panel 344 wide at 768 and growing to the design's 751, the
+          text taking the rest (its art re-anchors, see layoutPanel); xl
+          the 1200px design. */}
+      <div className="relative mx-auto max-w-[600px] md:sticky md:top-[var(--stick-top)] md:flex md:max-w-none md:items-start md:gap-[41px] xl:block xl:h-[686px] xl:w-[1200px]">
         {/* left column */}
-        <div className="xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
+        <div className="md:min-w-0 md:flex-1 xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
           {/* same one-shot scramble as the FEATURES eyebrow */}
           <HyperText
             as="p"
@@ -1754,31 +1875,27 @@ export default function Infrastructure() {
           >
             Infrastructure
           </HyperText>
-          <h2 className="mt-3 text-heading-lg text-text-primary xl:text-display">
+          <h2 className="mt-3 text-heading-lg text-text-primary md:whitespace-nowrap xl:whitespace-normal xl:text-display">
             Build freely.
             <br />
             Launch confidently.
           </h2>
 
-          {/* the items: a list at xl; below it a two-column grid (row 1:
-              environment, scalability; row 2: integrations, analytics) at
-              the Features cards' 16 / 14 type, 20px gutter. The rows have
-              the design's heights (99 = 72 + 27 gap, 110) as minimums, so
-              the block stays 209px tall and the panel below never moves as
-              items open — unless a description cannot fit at all (narrow
-              widths), when its row grows just enough. */}
-          <div className="mt-[72px] md:mt-[60px] md:grid md:grid-cols-2 md:gap-x-5 md:gap-y-0 md:[grid-template-rows:minmax(99px,auto)_minmax(110px,auto)] xl:mt-[72px] xl:block xl:w-[350px]">
+          {/* the items: a list — at the Features cards' 16 / 14 type
+              below xl, the design's 20 / 16 at xl — 26px around each
+              hairline, 12px between a title and its description */}
+          <div className="mt-[72px] md:mt-[60px] xl:mt-[72px] xl:w-[350px]">
             {ITEMS.map((item, i) => (
               <div key={item.key}>
                 {i > 0 && (
-                  <div className="mt-[26px] h-px bg-white/[0.06] opacity-70 md:hidden xl:block" />
+                  <div className="mt-[26px] h-px bg-white/[0.06] opacity-70" />
                 )}
                 <p
                   data-item-title={item.key}
                   className={
                     (item.open
                       ? "text-body-md text-text-primary xl:text-heading-sm"
-                      : "mt-[26px] text-body-md text-text-primary opacity-20 md:mt-0 xl:mt-[26px] xl:text-heading-sm") +
+                      : "mt-[26px] text-body-md text-text-primary opacity-20 xl:text-heading-sm") +
                     " cursor-pointer"
                   }
                   onClick={() =>
@@ -1792,7 +1909,7 @@ export default function Infrastructure() {
                 {item.desc && (
                   <p
                     data-item-desc={item.key}
-                    className="mt-3 text-body-sm text-text-body/60 xl:text-body-md"
+                    className="mt-3 text-body-sm text-text-body/60 md:text-text-body xl:text-body-md xl:text-text-body/60"
                     style={item.open ? undefined : { display: "none" }}
                   >
                     {item.desc}
@@ -1806,7 +1923,7 @@ export default function Infrastructure() {
         {/* stage panel — bottom edge runs off the section (no border there) */}
         <div
           ref={panelRef}
-          className="relative mt-12 aspect-[751/679] w-full overflow-hidden rounded-t-lg md:mt-6 md:aspect-auto md:h-[679px] xl:absolute xl:left-[449px] xl:top-[7px] xl:mt-0 xl:h-[679px] xl:w-[751px]"
+          className="relative mt-12 aspect-[751/679] w-full overflow-hidden rounded-t-lg md:mt-0 md:aspect-auto md:h-[679px] md:w-[min(751px,calc(100%-344px))] md:shrink-0 xl:absolute xl:left-[449px] xl:top-[7px] xl:h-[679px] xl:w-[751px]"
           style={{
             background:
               "linear-gradient(0deg, rgba(55,80,200,0.02), rgba(55,80,200,0.02)), #000",
@@ -1902,6 +2019,8 @@ export default function Infrastructure() {
                 two Figma fills — the 52% radial with the grain tiled over
                 it at LIGHTEN — live in an isolated group so the lighten
                 stays inside the paint stack, as in Figma. */}
+            {/* the ambient keeps its height on the tablet panel (the design
+                leaves it at cy 344.5 while the cube rises) — no lift */}
             <g data-anchor="center">
             <g data-env-back style={{ opacity: 0 }}>
               {/* Ellipse 21888 — the ambient, layer-blurred 300; its grain
@@ -1976,7 +2095,7 @@ export default function Infrastructure() {
             />
 
             {/* the three layers, authored coincident (stage 1) */}
-            <g data-cube data-anchor="center" opacity="0.9" style={{ mixBlendMode: "plus-lighter" }}>
+            <g data-cube data-anchor="center" data-md-lift opacity="0.9" style={{ mixBlendMode: "plus-lighter" }}>
               {SPREAD_Y.map((y) => (
                 <g key={y} data-face transform="translate(375.5 294.6)">
                   <rect
@@ -2024,7 +2143,7 @@ export default function Infrastructure() {
                 AVAILABILITY. Each carries its dim skin (the translucent
                 pair) with a lit overlay (the lid's gradient in its own
                 local space) crossfaded by the swap. */}
-            <g data-env-cube data-anchor="center" style={{ opacity: 0, pointerEvents: "none" }}>
+            <g data-env-cube data-anchor="center" data-md-lift style={{ opacity: 0, pointerEvents: "none" }}>
               <g
                 data-cube-face="lid"
                 transform={CUBE.lid}
@@ -2219,7 +2338,7 @@ export default function Infrastructure() {
                 const lx = c.anchor === "end" ? c.x2 : c.x1;
                 const active = c.key === "ni";
                 return (
-                  <g key={c.key} data-anchor={c.anchor === "end" ? "right" : "left"}>
+                  <g key={c.key}>
                     <line
                       data-co-line={c.key}
                       x1={c.x1}
@@ -2279,6 +2398,7 @@ export default function Infrastructure() {
                     </text>
                     {/* hit zone: the line + label band */}
                     <rect
+                      data-co-hit={c.key}
                       x={c.x1}
                       y={c.y - 10}
                       width={c.x2 - c.x1}
@@ -2353,6 +2473,9 @@ export default function Infrastructure() {
                           onClick={() => lightCard(row, c.key)}
                           style={{ cursor: "pointer" }}
                         >
+                          {/* the card's body — face and icon — scales for a
+                              narrow panel (layoutCards); its legend does not */}
+                          <g data-cscale>
                           <g data-cface transform={face}>
                             <rect width="77.5" height="77.5" rx="8" fill="#617FDC" fillOpacity="0.1" />
                             <rect
@@ -2400,6 +2523,7 @@ export default function Infrastructure() {
                                 dangerouslySetInnerHTML={{ __html: BRAND7[c.key].markup }}
                               />
                             )}
+                          </g>
                           </g>
                         </g>
                       );
@@ -2563,7 +2687,7 @@ export default function Infrastructure() {
                 const lx = c.anchor === "end" ? c.x2 : c.x1;
                 const active = c.face === "lid";
                 return (
-                  <g key={c.key} data-anchor={c.anchor === "end" ? "right" : "left"}>
+                  <g key={c.key}>
                     <line
                       data-co5-line={c.key}
                       x1={c.x1}
@@ -2619,6 +2743,7 @@ export default function Infrastructure() {
                       ))}
                     </text>
                     <rect
+                      data-co5-hit={c.key}
                       x={c.x1}
                       y={c.y - 10}
                       width={c.x2 - c.x1}
@@ -2636,7 +2761,7 @@ export default function Infrastructure() {
                 the other two are full-width clones parked on top of it,
                 hidden until they ride out with the split */}
             {CALLOUTS.map((c) => (
-              <g key={c.key} data-anchor="right">
+              <g key={c.key}>
                 <line
                   data-line={c.key}
                   x1="475"
@@ -2663,7 +2788,6 @@ export default function Infrastructure() {
             ))}
             <text
               data-build
-              data-anchor="right"
               x="715"
               y="364.5"
               textAnchor="end"
