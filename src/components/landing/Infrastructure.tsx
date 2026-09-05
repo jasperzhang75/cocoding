@@ -921,15 +921,17 @@ export default function Infrastructure() {
          fades out wholesale and stops taking clicks — or, when it is being
          abandoned mid-way for the next gesture, vanishes at once */
       const fadeOutFrame = (t: gsap.core.Timeline, from: 4 | 5 | 6 | 8, instant = false) => {
-        const d = instant ? 0 : 0.3;
         if (from === 6 || from === 8) {
           const g = frameGroup(from);
-          t.to(g, { opacity: 0, duration: d }, 0);
+          t.to(g, { opacity: 0, duration: instant ? 0 : 0.3 }, 0);
           t.set(g, { pointerEvents: "none" }, 0.01);
         } else {
+          // the cube is a large, single object: it dissolves over 0.6s (a
+          // 0.3s cut read as abrupt), overlapping the next frame's entrance
+          const d = instant ? 0 : 0.6;
           const c = cubeAll();
-          t.to(c.groups, { opacity: 0, duration: d }, 0);
-          t.to(c.faces, { opacity: 0, duration: d }, instant ? 0 : 0.05);
+          t.to(c.groups, { opacity: 0, duration: d, ease: "power1.inOut" }, 0);
+          t.to(c.faces, { opacity: 0, duration: d, ease: "power1.inOut" }, instant ? 0 : 0.05);
           t.set(c.clickable, { pointerEvents: "none" }, 0.01);
         }
       };
