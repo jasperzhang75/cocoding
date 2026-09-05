@@ -704,10 +704,12 @@ export default function Infrastructure() {
       // the clones surface while still overlapping the original, so no pop
       tl.to([line("top"), line("bot")], { opacity: 1, duration: 0.08 }, 0.12);
 
-      // only once the split has landed do the three labels appear
-      tl.to(label("top"), { opacity: 1, duration: 0.12 }, 0.45);
-      tl.to(label("mid"), { opacity: 1, duration: 0.12 }, 0.49);
-      tl.to(label("bot"), { opacity: 1, duration: 0.12 }, 0.53);
+      // the three labels surface together while the lines split, each
+      // riding beneath its own line from BUILD's spot — so BUILD reads as
+      // becoming FRONTEND / BACKEND / DATABASE rather than being replaced
+      tl.fromTo(label("top"), { attr: { y: 340 + 24.5 } }, { attr: { y: 286 + 24.5 }, duration: 0.33, ease: "power2.inOut" }, 0.12);
+      tl.fromTo(label("bot"), { attr: { y: 340 + 24.5 } }, { attr: { y: 394 + 24.5 }, duration: 0.33, ease: "power2.inOut" }, 0.12);
+      tl.to([label("top"), label("mid"), label("bot")], { opacity: 1, duration: 0.15 }, 0.18);
 
       /* 0.65-0.70 rests at stage 2. */
 
