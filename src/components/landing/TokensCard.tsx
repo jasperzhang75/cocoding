@@ -147,11 +147,11 @@ export default function TokensCard() {
   return (
     <div
       ref={cardRef}
-      className="order-2 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.08] bg-black md:rounded-none md:rounded-tr-lg md:border-b-0 md:border-l-0 lg:absolute lg:left-[600px] lg:top-0 lg:h-[462px] lg:w-[600px] lg:max-w-none"
+      className="order-2 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.08] bg-black md:rounded-none md:rounded-tr-lg md:border-b-0 md:border-l-0 lg:absolute lg:left-1/2 lg:top-0 lg:h-[462px] lg:w-1/2 lg:max-w-none"
     >
-      <div className="flex flex-col gap-3 px-7 pb-6 pt-8 lg:absolute lg:left-[36px] lg:top-[35px] lg:w-[496px] lg:p-0">
+      <div className="flex flex-col gap-3 px-7 pb-6 pt-8 lg:absolute lg:left-[36px] lg:right-[68px] lg:top-[35px] lg:p-0">
         <p className="text-body-md text-text-primary lg:text-heading-sm">Less tokens, more builds</p>
-        <p className="text-balance text-body-sm text-text-body lg:text-wrap lg:text-body-md lg:w-[370px]">
+        <p className="text-balance text-body-sm text-text-body lg:max-w-full lg:text-wrap lg:text-body-md lg:w-[370px]">
           Optimized call to LLMs and smart search in big code base to allow more efficient token usage.
         </p>
       </div>

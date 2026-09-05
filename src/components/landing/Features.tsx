@@ -3,7 +3,6 @@ import type { CSSProperties } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
 import AgentsDiagram from "./AgentsDiagram";
 import PosterViewport from "./PosterViewport";
-import StageScaler from "./StageScaler";
 import TokensCard from "./TokensCard";
 import TerminalCard from "./TerminalCard";
 import SecurityCard from "./SecurityCard";
@@ -62,19 +61,22 @@ function CardHeader({
   desc,
   descWidthClass,
   leftClass = "lg:left-[36px]",
+  /** the copy's right edge: 600 - left - 496 at the design width */
+  rightClass = "lg:right-[68px]",
 }: {
   title: string;
   desc: string;
   /** e.g. "lg:w-[332px]" — the design's fixed copy width at lg */
   descWidthClass: string;
   leftClass?: string;
+  rightClass?: string;
 }) {
   return (
     <div
-      className={`flex flex-col gap-3 px-7 pb-6 pt-8 lg:absolute lg:top-[35px] lg:w-[496px] lg:p-0 ${leftClass}`}
+      className={`flex flex-col gap-3 px-7 pb-6 pt-8 lg:absolute lg:top-[35px] lg:p-0 ${leftClass} ${rightClass}`}
     >
       <p className="text-body-md text-text-primary lg:text-heading-sm">{title}</p>
-      <p className={`text-balance text-body-sm text-text-body lg:text-wrap lg:text-body-md ${descWidthClass}`}>{desc}</p>
+      <p className={`text-balance text-body-sm text-text-body lg:max-w-full lg:text-wrap lg:text-body-md ${descWidthClass}`}>{desc}</p>
     </div>
   );
 }
@@ -104,9 +106,10 @@ function Bleed({
 
 function AgentsCard() {
   return (
-    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.08] bg-black md:rounded-none md:rounded-tl-lg md:border-b-0 lg:absolute lg:left-0 lg:top-0 lg:h-[610px] lg:w-[600px] lg:max-w-none">
+    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.08] bg-black md:rounded-none md:rounded-tl-lg md:border-b-0 lg:absolute lg:left-0 lg:top-0 lg:h-[610px] lg:w-1/2 lg:max-w-none">
       <CardHeader
         leftClass="lg:left-[35px]"
+        rightClass="lg:right-[69px]"
         title="Go faster with parallel agents"
         desc="Multiple agents run in parallel to handle tasks simultaneously and speed up every build."
         descWidthClass="lg:w-[332px]"
@@ -210,18 +213,20 @@ export default function Features() {
             DESKTOP pairing — two flush columns (1+4 | 2+3), no gap, desktop
             corner scheme, only the posters scale. lg: the absolute bento
             canvas (wrappers dissolve again). */}
-        <StageScaler designWidth={1200} designHeight={1074}>
-          <div className="mt-12 flex flex-col items-center gap-6 md:mt-[73px] md:flex-row md:items-stretch md:justify-center md:gap-0 lg:relative lg:mx-auto lg:block lg:h-[1074px] lg:w-[1200px]">
-            <div className="contents md:flex md:w-1/2 md:max-w-[600px] md:flex-col lg:contents">
-              <AgentsCard />
-              <SecurityCard />
-            </div>
-            <div className="contents md:flex md:w-1/2 md:max-w-[600px] md:flex-col lg:contents">
-              <TokensCard />
-              <TerminalCard />
-            </div>
+        {/* lg: the absolute bento canvas. Its width follows the viewport up
+            to the 1200px design (1024 -> 944px); card widths and lefts are
+            halves, heights stay the design's, the copy keeps its size and
+            only each card's poster scales (see PosterViewport). */}
+        <div className="mt-12 flex flex-col items-center gap-6 md:mt-[73px] md:flex-row md:items-stretch md:justify-center md:gap-0 lg:relative lg:mx-auto lg:block lg:h-[1074px] lg:w-full lg:max-w-[1200px]">
+          <div className="contents md:flex md:w-1/2 md:max-w-[600px] md:flex-col lg:contents">
+            <AgentsCard />
+            <SecurityCard />
           </div>
-        </StageScaler>
+          <div className="contents md:flex md:w-1/2 md:max-w-[600px] md:flex-col lg:contents">
+            <TokensCard />
+            <TerminalCard />
+          </div>
+        </div>
       </div>
     </section>
   );

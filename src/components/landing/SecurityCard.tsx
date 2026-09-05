@@ -156,7 +156,7 @@ export default function SecurityCard() {
   return (
     <div
       ref={rootRef}
-      className="order-4 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.08] md:grow md:rounded-none md:rounded-bl-lg lg:block lg:grow-0 lg:absolute lg:left-0 lg:top-[610px] lg:h-[464px] lg:w-[600px] lg:max-w-none"
+      className="order-4 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.08] md:grow md:rounded-none md:rounded-bl-lg lg:block lg:grow-0 lg:absolute lg:left-0 lg:top-[610px] lg:h-[464px] lg:w-1/2 lg:max-w-none"
       style={{
         background:
           "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
@@ -189,9 +189,9 @@ export default function SecurityCard() {
         </div>
       </div>
 
-      <div className="px-7 pb-6 pt-8 lg:absolute lg:left-[33px] lg:top-[35px] lg:w-[496px] lg:p-0">
+      <div className="px-7 pb-6 pt-8 lg:absolute lg:left-[33px] lg:right-[71px] lg:top-[35px] lg:p-0">
         <p className="pr-12 text-body-md text-text-primary lg:pr-0 lg:text-heading-sm">Built-in security, by default</p>
-        <p className="mt-3 text-balance text-body-sm text-text-body lg:text-wrap lg:text-body-md lg:w-[394px]">
+        <p className="mt-3 text-balance text-body-sm text-text-body lg:max-w-full lg:text-wrap lg:text-body-md lg:w-[394px]">
           With robust security safeguards already in place, your data and user information stay protected as you build.
         </p>
       </div>
@@ -265,7 +265,7 @@ export default function SecurityCard() {
         aria-checked={on}
         aria-label="Toggle security"
         onClick={() => setOn((v) => !v)}
-        className="absolute right-7 top-[33px] block lg:left-[529px] lg:right-auto lg:top-[35px]"
+        className="absolute right-7 top-[33px] block lg:right-[41px] lg:top-[35px]"
       >
         <div
           ref={pillRef}
