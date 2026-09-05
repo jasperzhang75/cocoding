@@ -684,6 +684,41 @@ export default function Infrastructure() {
        simply scales, so nothing here moves. */
     const stage = runway.firstElementChild as HTMLElement;
     const fluidMq = window.matchMedia("(min-width: 768px) and (max-width: 1279px)");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    /* INPUT MODES. From md up the stage sticks while a runway scrolls
+       under it. A hovering pointer is CAPTURED at the runway's end and
+       steps frames by gesture (see the navigation block); touch reads the
+       frames off scroll BANDS instead. Below md there is no runway. */
+    const mdMq = window.matchMedia("(min-width: 768px)");
+    const xlMq = window.matchMedia("(min-width: 1280px)");
+    const hoverMq = window.matchMedia("(hover: hover)");
+    const runwayOn = () => mdMq.matches;
+    const captureOn = () => runwayOn() && hoverMq.matches && !reduced;
+    const bandsOn = () => runwayOn() && !hoverMq.matches && !reduced;
+    /* where the stage sticks (its `top`): xl centers the panel; the
+       stacked layout centers the whole stage when it fits the viewport,
+       otherwise rests the panel's bottom on the viewport's bottom and the
+       text above runs off the top */
+    const stickTop = () => {
+      const vh = window.innerHeight;
+      if (xlMq.matches) return vh / 2 - (panel.offsetTop + panel.offsetHeight / 2);
+      const h = stage.offsetHeight;
+      return Math.min(vh - h, (vh - h) / 2);
+    };
+    /* a band is 70% of the viewport's height (320-700px), fixed for a
+       viewport width so a browser bar sliding away mid-scroll cannot move
+       the boundaries */
+    let band = 0;
+    let bandAt = 0;
+    const bandLen = () => {
+      if (window.innerWidth !== bandAt) {
+        bandAt = window.innerWidth;
+        band = Math.round(Math.min(700, Math.max(320, window.innerHeight * 0.7)));
+      }
+      return band;
+    };
+    /* the runway's length: the 3 -> 4 scrub, plus four bands when they run */
+    const runwayLen = () => (bandsOn() ? RUNWAY + 4 * bandLen() : RUNWAY);
     let relayout: () => void = () => {};
     const layoutPanel = () => {
       const W = fluidMq.matches ? Math.round(panel.clientWidth) : 751;
@@ -709,10 +744,14 @@ export default function Infrastructure() {
       setEnds("data-co-line", ENV_CALLOUTS);
       setEnds("data-co5-line", ENV5_CALLOUTS);
       svg.querySelectorAll<SVGElement>("[data-line]").forEach((l) => l.setAttribute("x1", String(475 + squeeze)));
-      // the sticky offset centers the PANEL (it sits 7px into the stage):
-      // --stage-h is twice the panel's center within the stage, so that
-      // 50vh - --stage-h/2 puts that center mid-viewport
-      runway.style.setProperty("--stage-h", `${2 * (panel.offsetTop + panel.offsetHeight / 2)}px`);
+      // the stage sticks at --stick-top while the runway — the wrapper's
+      // height beyond the stage — scrolls under it. A centered stage stops
+      // the page's end short of the runway's end by its offset: bands add
+      // it (capture clamps to what is reachable instead, see geometry)
+      runway.style.setProperty("--stage-full", `${stage.offsetHeight}px`);
+      const top = stickTop();
+      runway.style.setProperty("--stick-top", `${top}px`);
+      runway.style.setProperty("--runway", `${runwayLen() + (bandsOn() ? Math.max(0, top) : 0)}px`);
       relayout();
     };
     layoutPanel();
@@ -720,6 +759,7 @@ export default function Infrastructure() {
     layoutRo.observe(panel);
     layoutRo.observe(stage);
     fluidMq.addEventListener("change", layoutPanel);
+    window.addEventListener("resize", layoutPanel);
 
     // the light starts on the lid with frame 4's mark — stated outright so
     // a re-run of this effect (dev hot reload) cannot inherit a stale light
@@ -815,9 +855,6 @@ export default function Infrastructure() {
          (~1.6s) like the frame-4 entrance — fired by threshold crossings
          in the second runway segment or by clicking the left column's
          titles; reverse plays it backwards. */
-      const reduced = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
       let tl3: gsap.core.Timeline | null = null;
       const ensureTl3 = () => {
         if (tl3) return tl3;
@@ -1299,13 +1336,11 @@ export default function Infrastructure() {
          frame and keeps the page held — it first brings the stage to the
          runway's end (the scrub completing on the way) — so the exits are
          still 4-up and 8-down. Dragging the scrollbar away releases, and
-         the next crossing of the end captures again. Desktop pointers at
-         xl only; reduced motion never captures; below xl there is no
-         runway and 3 -> 4 plays timed on the first title click. */
+         the next crossing of the end captures again. Hovering pointers
+         only (md up); touch reads BANDS instead (below); reduced motion
+         never captures; below md there is no runway and 3 -> 4 plays
+         timed on the first title click. */
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-      const runwayOn = () => window.matchMedia("(min-width: 1280px)").matches;
-      const captureOn = () =>
-        runwayOn() && window.matchMedia("(hover: hover)").matches && !reduced;
 
       let captured = false;
       let landed = false; // frame 4 formed (tl2 at 1)
@@ -1323,19 +1358,21 @@ export default function Infrastructure() {
         const maxScroll =
           document.documentElement.scrollHeight - vh - window.scrollY;
         const minTop = r.top - Math.max(0, maxScroll); // panel.top at page bottom
-        return { r, r0: vh - 460 * k, r1: Math.max(vh / 2 - 340 * k, minTop) };
+        // the panel's top once the stage sticks (centered on a phone, which has no runway)
+        const rest = runwayOn() ? stickTop() + panel.offsetTop : vh / 2 - 340 * k;
+        return { r, r0: vh - 460 * k, r1: Math.max(rest, minTop) };
       };
-      /* the runway (xl): how far the stuck stage has travelled into it
-         and how much of it the page can reach today — the section is the
-         page's last block, so the story clamps to the deepest scroll
-         available and the clamp retires as later sections add room */
+      /* the runway: how far the stuck stage has travelled into it and how
+         much of it the page can reach today — the section is the page's
+         last block, so the story clamps to the deepest scroll available
+         and the clamp retires as later sections add room. `scrub` is the
+         3 -> 4 leg's share of it. */
       const geometry = () => {
         const vh = window.innerHeight;
-        const stickyTop = vh / 2 - (panel.offsetTop + panel.offsetHeight / 2); // the stage's sticky top (panel centered)
         const room = Math.max(0, document.documentElement.scrollHeight - vh - window.scrollY);
-        const travel = stickyTop - runway.getBoundingClientRect().top;
-        const runwayLen = Math.min(RUNWAY, Math.max(1, travel + room));
-        return { travel, runwayLen, overshoot: travel - runwayLen, room };
+        const travel = stickTop() - runway.getBoundingClientRect().top;
+        const reach = Math.min(runwayLen(), Math.max(1, travel + room));
+        return { travel, runwayLen: reach, overshoot: travel - reach, room, scrub: Math.min(RUNWAY, reach) };
       };
 
       /* frame 4 has formed: its one-shot effects, and the 4<->5 morph is
@@ -1521,18 +1558,20 @@ export default function Infrastructure() {
         if (captured) e.preventDefault();
       }
 
-      /* scroll the page so the stage sits at the runway's end; `then`
-         runs when it lands (apply() sees it) — or after 1.5s regardless */
-      const scrollToRunwayEnd = (then: () => void) => {
-        const { overshoot } = geometry();
+      /* glide the page so the stage's travel into the runway is `to`;
+         `then` runs when it lands (apply() sees it) — or after 1.5s
+         regardless (a touch can cut a glide short) */
+      let arriveAt = 0;
+      const scrollToTravel = (to: number, then: () => void) => {
         arriving = then;
+        arriveAt = to;
         window.clearTimeout(arriveTimer);
         arriveTimer = window.setTimeout(() => {
           const f = arriving;
           arriving = null;
           f?.();
         }, 1500);
-        window.scrollTo({ top: window.scrollY - overshoot, behavior: "smooth" });
+        window.scrollTo({ top: window.scrollY + (to - geometry().travel), behavior: "smooth" });
       };
       const arrived = () => {
         const f = arriving;
@@ -1541,19 +1580,44 @@ export default function Infrastructure() {
         f?.();
       };
 
+      /* BANDS (touch). Past the scrub the runway is four bands of one
+         BAND each: frame 4 holds through the first, then 5, 6, 8. Nothing
+         is held — the page scrolls freely and the frame follows the band
+         the stage is in, one step at a time in either direction (a swipe
+         over two boundaries walks the frame between, a paint apart). A
+         boundary has a dead zone of ±15% of a band around it, so resting
+         on one never flaps. A title tap switches at once and glides the
+         page to that frame's band; the bands sleep during the glide. */
+      const BAND_FRAMES = [4, 5, 6, 8];
+      const DEAD = 0.15;
+      let bandRaf = 0;
+      const bands = (travel: number) => {
+        if (arriving) return;
+        const i = BAND_FRAMES.indexOf(frameRef.current);
+        if (i < 0 || (i === 0 && !landed)) return;
+        const pos = (travel - RUNWAY) / bandLen();
+        const next = pos >= i + 1 + DEAD ? i + 1 : pos < i - DEAD ? i - 1 : i;
+        if (next === i || next < 0 || next >= BAND_FRAMES.length) return;
+        goTo(BAND_FRAMES[next], interrupt());
+        if (frameRef.current !== BAND_FRAMES[next]) return;
+        window.cancelAnimationFrame(bandRaf);
+        bandRaf = window.requestAnimationFrame(() => bands(geometry().travel));
+      };
+
       const apply = () => {
         const { r, r1, r0 } = pinTarget();
         const base4 = frameRef.current === 4;
         if (base4) tl.progress(clamp01((r0 - r.top) / Math.max(r0 - r1, 1)));
-        if (!runwayOn()) return; // no runway below xl: frames by click only
+        if (!runwayOn()) return; // no runway below md: frames by click only
         const g = geometry();
         if (base4) {
-          const p = clamp01(g.travel / g.runwayLen);
+          const p = clamp01(g.travel / g.scrub);
           tl2.progress(p);
           if (p >= 1 && !landed) land();
           else if (p < 1 && landed) unland();
         }
-        if (arriving && Math.abs(g.overshoot) <= 2) arrived();
+        if (arriving && Math.abs(g.travel - arriveAt) <= 2) arrived();
+        if (bandsOn()) return bands(g.travel);
         if (captured) {
           // the scrollbar can still drag the page away: let it go (the next
           // crossing of the end captures again)
@@ -1587,11 +1651,24 @@ export default function Infrastructure() {
           } else goTo(target, instant);
           return;
         }
+        if (bandsOn()) {
+          // switch now — or, before frame 4 has formed, when the glide
+          // lands (the scrub forms it on the way) — and glide to the
+          // frame's band; a glide cut short leaves the bands to settle it
+          goTo(target, instant);
+          const to = RUNWAY + (BAND_FRAMES.indexOf(target) + 0.5) * bandLen();
+          scrollToTravel(to, () => {
+            if (frameRef.current !== target) goTo(target, interrupt());
+            bands(geometry().travel);
+          });
+          return;
+        }
         const go = () => {
           if (captureOn()) capture(geometry().overshoot);
           goTo(target, instant);
         };
-        if (Math.abs(geometry().overshoot) > 2) scrollToRunwayEnd(go);
+        const g = geometry();
+        if (Math.abs(g.overshoot) > 2) scrollToTravel(g.runwayLen, go);
         else go();
       };
 
@@ -1636,12 +1713,14 @@ export default function Infrastructure() {
         release();
         window.clearTimeout(gestureTimer);
         window.clearTimeout(arriveTimer);
+        window.cancelAnimationFrame(bandRaf);
       };
     }, svg);
 
     return () => {
       layoutRo.disconnect();
       fluidMq.removeEventListener("change", layoutPanel);
+      window.removeEventListener("resize", layoutPanel);
       ctx.revert();
     };
   }, []);
@@ -1649,19 +1728,19 @@ export default function Infrastructure() {
   return (
     <section ref={sectionRef} className="px-5 md:px-10 xl:px-0">
       <div className="pt-24 xl:pt-[120px]">
-      {/* the runway: at xl the stage below sticks at the viewport's center
-          while this box's extra height scrolls by, driving 3 -> 4.
-          --stage-h is twice the panel's measured center within the stage,
-          so 50vh - --stage-h/2 puts the panel mid-viewport. */}
+      {/* the runway: from md the stage below sticks (at --stick-top, see
+          stickTop) while this box's height beyond it scrolls by, driving
+          3 -> 4 and, on touch, the frames after. Both vars are measured
+          by layoutPanel; until then the box is just the stage's height. */}
       <div
         ref={runwayRef}
-        className="xl:h-[calc(var(--stage-h)+var(--runway))]"
-        style={{ "--runway": `${RUNWAY}px`, "--stage-h": "693px" } as CSSProperties}
+        className="md:h-[calc(var(--stage-full)+var(--runway))]"
+        style={{ "--runway": `${RUNWAY}px` } as CSSProperties}
       >
       {/* the stage. Two layouts: below xl the text stacks over a
           full-width panel of the design's height (its art re-anchors, see
           layoutPanel); xl the 1200px design. */}
-      <div className="relative mx-auto max-w-[600px] md:max-w-none xl:sticky xl:top-[calc(50vh-var(--stage-h)/2)] xl:h-[686px] xl:w-[1200px]">
+      <div className="relative mx-auto max-w-[600px] md:sticky md:top-[var(--stick-top)] md:max-w-none xl:h-[686px] xl:w-[1200px]">
         {/* left column */}
         <div className="xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
           {/* same one-shot scramble as the FEATURES eyebrow */}
