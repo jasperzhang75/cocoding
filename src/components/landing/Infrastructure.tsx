@@ -671,6 +671,56 @@ export default function Infrastructure() {
       im.setAttribute("href", noiseUrl);
     });
 
+    /* PANEL LAYOUT. The art is authored in a 751x679 space. Below lg the
+       panel is as wide as the page but keeps the design's height, so the
+       space is re-anchored rather than scaled: the SVG's viewBox takes the
+       panel's width, everything the cube owns (stack, cube, glows, wash,
+       the card row, the scorecard) shifts to stay centered, right-hand
+       callouts and the BUILD labels keep their 36px from the right edge,
+       left-hand ones stay put, and each callout line keeps its design
+       length unless that would run into the cube — then it ends at the
+       design's clearance from it (688px: left line 190, right 195, as
+       drawn). Anywhere else the panel keeps the design's proportions and
+       simply scales, so nothing here moves. */
+    const stage = runway.firstElementChild as HTMLElement;
+    const fluidMq = window.matchMedia("(min-width: 768px) and (max-width: 1023px)");
+    let relayout: () => void = () => {};
+    const layoutPanel = () => {
+      const W = fluidMq.matches ? Math.round(panel.clientWidth) : 751;
+      const dxC = (W - 751) / 2; // centered things
+      const dxR = W - 751; // right-anchored things
+      svg.setAttribute("viewBox", `0 0 ${W} 679`);
+      svg.querySelectorAll<SVGElement>('[data-anchor="center"]').forEach((g) => {
+        g.setAttribute("transform", dxC ? `translate(${dxC} 0)` : "");
+      });
+      svg.querySelectorAll<SVGElement>('[data-anchor="right"]').forEach((g) => {
+        g.setAttribute("transform", dxR ? `translate(${dxR} 0)` : "");
+      });
+      // callout lines: inner ends give way to the cube on a narrow panel
+      const squeeze = Math.max(0, -dxC); // how far the cube has moved toward the left-anchored side
+      const setEnds = (attr: string, list: typeof ENV_CALLOUTS | typeof ENV5_CALLOUTS) => {
+        for (const c of list) {
+          const line = svg.querySelector(`[${attr}="${c.key}"]`);
+          if (!line) continue;
+          if (c.anchor === "start") line.setAttribute("x2", String(c.x2 - squeeze));
+          else line.setAttribute("x1", String(c.x1 + squeeze));
+        }
+      };
+      setEnds("data-co-line", ENV_CALLOUTS);
+      setEnds("data-co5-line", ENV5_CALLOUTS);
+      svg.querySelectorAll<SVGElement>("[data-line]").forEach((l) => l.setAttribute("x1", String(475 + squeeze)));
+      // the sticky offset centers the PANEL (it sits 7px into the stage):
+      // --stage-h is twice the panel's center within the stage, so that
+      // 50vh - --stage-h/2 puts that center mid-viewport
+      runway.style.setProperty("--stage-h", `${2 * (panel.offsetTop + panel.offsetHeight / 2)}px`);
+      relayout();
+    };
+    layoutPanel();
+    const layoutRo = new ResizeObserver(layoutPanel);
+    layoutRo.observe(panel);
+    layoutRo.observe(stage);
+    fluidMq.addEventListener("change", layoutPanel);
+
     // the light starts on the lid with frame 4's mark — stated outright so
     // a re-run of this effect (dev hot reload) cannot inherit a stale light
     frameRef.current = 4;
@@ -1253,7 +1303,7 @@ export default function Infrastructure() {
          xl only; reduced motion never captures; below xl there is no
          runway and 3 -> 4 plays timed on the first title click. */
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-      const runwayOn = () => window.matchMedia("(min-width: 1280px)").matches;
+      const runwayOn = () => window.matchMedia("(min-width: 1024px)").matches;
       const captureOn = () =>
         runwayOn() && window.matchMedia("(hover: hover)").matches && !reduced;
 
@@ -1281,7 +1331,7 @@ export default function Infrastructure() {
          available and the clamp retires as later sections add room */
       const geometry = () => {
         const vh = window.innerHeight;
-        const stickyTop = vh / 2 - 347; // the container's sticky top (panel centered)
+        const stickyTop = vh / 2 - (panel.offsetTop + panel.offsetHeight / 2); // the stage's sticky top (panel centered)
         const room = Math.max(0, document.documentElement.scrollHeight - vh - window.scrollY);
         const travel = stickyTop - runway.getBoundingClientRect().top;
         const runwayLen = Math.min(RUNWAY, Math.max(1, travel + room));
@@ -1567,6 +1617,7 @@ export default function Infrastructure() {
       };
 
       apply();
+      relayout = apply;
       on();
       // detach the listeners whenever the section is far off screen
       const io = new IntersectionObserver(
@@ -1588,22 +1639,32 @@ export default function Infrastructure() {
       };
     }, svg);
 
-    return () => ctx.revert();
+    return () => {
+      layoutRo.disconnect();
+      fluidMq.removeEventListener("change", layoutPanel);
+      ctx.revert();
+    };
   }, []);
 
   return (
     <section ref={sectionRef} className="px-5 md:px-10 xl:px-0">
       <div className="pt-24 xl:pt-[120px]">
-      {/* the runway: at xl the stage below sticks at the viewport's center
-          while this box's extra height scrolls by, driving 3 -> 4 */}
+      {/* the runway: from lg the stage below sticks at the viewport's center
+          while this box's extra height scrolls by, driving 3 -> 4. The
+          stage's height (--stage-h) is measured, since from lg to xl the
+          panel scales with the width. */}
       <div
         ref={runwayRef}
-        className="xl:h-[calc(686px+var(--runway))]"
-        style={{ "--runway": `${RUNWAY}px` } as CSSProperties}
+        className="lg:h-[calc(var(--stage-h)+var(--runway))]"
+        style={{ "--runway": `${RUNWAY}px`, "--stage-h": "686px" } as CSSProperties}
       >
-      <div className="relative mx-auto max-w-[600px] md:max-w-none xl:sticky xl:top-[calc(50vh-347px)] xl:h-[686px] xl:w-[1200px] xl:max-w-none">
+      {/* the stage. Three layouts: below lg the text stacks over a
+          full-width panel of the design's height (its art re-anchors, see
+          layoutPanel); lg-xl the desktop pair with a 340px text column and
+          the panel scaled to what is left; xl the 1200px design. */}
+      <div className="relative mx-auto max-w-[600px] md:max-w-none lg:sticky lg:top-[calc(50vh-var(--stage-h)/2)] lg:flex lg:w-full lg:max-w-[1200px] lg:items-start lg:gap-[41px] xl:block xl:h-[686px] xl:w-[1200px]">
         {/* left column */}
-        <div className="xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
+        <div className="lg:w-[340px] lg:shrink-0 xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
           {/* same one-shot scramble as the FEATURES eyebrow */}
           <HyperText
             as="p"
@@ -1621,18 +1682,21 @@ export default function Infrastructure() {
             Launch confidently.
           </h2>
 
-          <div className="mt-[72px] xl:w-[350px]">
+          {/* the items: a list at lg and above; below lg a two-column grid
+              (row 1: environment, scalability; row 2: integrations,
+              analytics) with the card-sized type of the Features cards */}
+          <div className="mt-[72px] md:mt-12 md:grid md:grid-cols-2 md:gap-x-5 md:gap-y-[26px] lg:mt-[72px] lg:block xl:w-[350px]">
             {ITEMS.map((item, i) => (
               <div key={item.key}>
                 {i > 0 && (
-                  <div className="mt-[26px] h-px bg-white/[0.06] opacity-70" />
+                  <div className="mt-[26px] h-px bg-white/[0.06] opacity-70 md:hidden lg:block" />
                 )}
                 <p
                   data-item-title={item.key}
                   className={
                     (item.open
-                      ? "text-heading-sm text-text-primary"
-                      : "mt-[26px] text-heading-sm text-text-primary opacity-20") +
+                      ? "text-body-md text-text-primary lg:text-heading-sm"
+                      : "mt-[26px] text-body-md text-text-primary opacity-20 md:mt-0 lg:mt-[26px] lg:text-heading-sm") +
                     " cursor-pointer"
                   }
                   onClick={() =>
@@ -1646,7 +1710,7 @@ export default function Infrastructure() {
                 {item.desc && (
                   <p
                     data-item-desc={item.key}
-                    className="mt-3 text-body-md text-text-body/60"
+                    className="mt-3 text-body-sm text-text-body/60 lg:text-body-md"
                     style={item.open ? undefined : { display: "none" }}
                   >
                     {item.desc}
@@ -1660,7 +1724,7 @@ export default function Infrastructure() {
         {/* stage panel — bottom edge runs off the section (no border there) */}
         <div
           ref={panelRef}
-          className="relative mt-12 aspect-[751/679] w-full overflow-hidden rounded-t-lg xl:absolute xl:left-[449px] xl:top-[7px] xl:mt-0 xl:aspect-auto xl:h-[679px] xl:w-[751px]"
+          className="relative mt-12 aspect-[751/679] w-full overflow-hidden rounded-t-lg md:mt-10 md:aspect-auto md:h-[679px] lg:mt-[7px] lg:aspect-[751/679] lg:h-auto lg:w-auto lg:min-w-0 lg:max-w-[751px] lg:flex-1 xl:absolute xl:left-[449px] xl:top-[7px] xl:mt-0 xl:aspect-auto xl:h-[679px] xl:w-[751px] xl:max-w-none"
           style={{
             background:
               "linear-gradient(0deg, rgba(55,80,200,0.02), rgba(55,80,200,0.02)), #000",
@@ -1756,6 +1820,7 @@ export default function Infrastructure() {
                 two Figma fills — the 52% radial with the grain tiled over
                 it at LIGHTEN — live in an isolated group so the lighten
                 stays inside the paint stack, as in Figma. */}
+            <g data-anchor="center">
             <g data-env-back style={{ opacity: 0 }}>
               {/* Ellipse 21888 — the ambient, layer-blurred 300; its grain
                   tile is 241.4px (sf 0.1178), two columns cover the box.
@@ -1793,8 +1858,10 @@ export default function Infrastructure() {
                 />
               </g>
             </g>
+            </g>
 
             {/* the blue wash rides along through stages 1-3 */}
+            <g data-anchor="center">
             <g
               data-wash
               transform="translate(-15 219) scale(1 -1)"
@@ -1808,6 +1875,7 @@ export default function Infrastructure() {
                 strokeOpacity="0.26"
                 strokeWidth="0.9"
               />
+            </g>
             </g>
 
             {/* the halo grain — kept but hidden: neither in nor under the
@@ -1826,7 +1894,7 @@ export default function Infrastructure() {
             />
 
             {/* the three layers, authored coincident (stage 1) */}
-            <g data-cube opacity="0.9" style={{ mixBlendMode: "plus-lighter" }}>
+            <g data-cube data-anchor="center" opacity="0.9" style={{ mixBlendMode: "plus-lighter" }}>
               {SPREAD_Y.map((y) => (
                 <g key={y} data-face transform="translate(375.5 294.6)">
                   <rect
@@ -1874,7 +1942,7 @@ export default function Infrastructure() {
                 AVAILABILITY. Each carries its dim skin (the translucent
                 pair) with a lit overlay (the lid's gradient in its own
                 local space) crossfaded by the swap. */}
-            <g data-env-cube style={{ opacity: 0, pointerEvents: "none" }}>
+            <g data-env-cube data-anchor="center" style={{ opacity: 0, pointerEvents: "none" }}>
               <g
                 data-cube-face="lid"
                 transform={CUBE.lid}
@@ -2069,8 +2137,9 @@ export default function Infrastructure() {
                 const lx = c.anchor === "end" ? c.x2 : c.x1;
                 const active = c.key === "ni";
                 return (
-                  <g key={c.key}>
+                  <g key={c.key} data-anchor={c.anchor === "end" ? "right" : "left"}>
                     <line
+                      data-co-line={c.key}
                       x1={c.x1}
                       y1={c.y}
                       x2={c.x2}
@@ -2145,7 +2214,7 @@ export default function Infrastructure() {
                 CONNECTORS tab header. The header per Figma: a 0.9 white
                 30% baseline under the whole row, the active label at full
                 #EBEBEB with a 0.7 underline, the other at 20%. */}
-            <g data-frame6 style={{ opacity: 0, pointerEvents: "none" }}>
+            <g data-frame6 data-anchor="center" style={{ opacity: 0, pointerEvents: "none" }}>
               <g data-f6-tab>
                 {(["buildin", "connectors"] as RowKey[]).map((row) => {
                   const x = row === "buildin" ? 299 : 374;
@@ -2284,7 +2353,7 @@ export default function Infrastructure() {
 
             {/* frame 8: the Google Lighthouse scorecard. Static; its own
                 animation comes next. */}
-            <g data-frame8 style={{ opacity: 0, pointerEvents: "none" }}>
+            <g data-frame8 data-anchor="center" style={{ opacity: 0, pointerEvents: "none" }}>
               <g data-f8-header opacity="0.8">
                 {/* mynaui:google-so, exported: a white 33% base with the
                     white -> #666 gradient at 83% over it */}
@@ -2412,8 +2481,9 @@ export default function Infrastructure() {
                 const lx = c.anchor === "end" ? c.x2 : c.x1;
                 const active = c.face === "lid";
                 return (
-                  <g key={c.key}>
+                  <g key={c.key} data-anchor={c.anchor === "end" ? "right" : "left"}>
                     <line
+                      data-co5-line={c.key}
                       x1={c.x1}
                       y1={c.y}
                       x2={c.x2}
@@ -2484,7 +2554,7 @@ export default function Infrastructure() {
                 the other two are full-width clones parked on top of it,
                 hidden until they ride out with the split */}
             {CALLOUTS.map((c) => (
-              <g key={c.key}>
+              <g key={c.key} data-anchor="right">
                 <line
                   data-line={c.key}
                   x1="475"
@@ -2511,6 +2581,7 @@ export default function Infrastructure() {
             ))}
             <text
               data-build
+              data-anchor="right"
               x="715"
               y="364.5"
               textAnchor="end"
