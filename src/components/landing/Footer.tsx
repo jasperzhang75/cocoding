@@ -1,11 +1,13 @@
 import Image from "next/image";
+import FooterWordmark from "./FooterWordmark";
 
 /* FOOTER (Figma yFciEPejue3E2xhstXF0Wu 16555:16756, "MacBook Air - 141").
    A 0.5px hairline across the page, then 72 below it the mark on the
    left with the copyright under it, five link columns on the right, and
    37 under those the giant "cocoding" — Montserrat Black 250px, blue
    fading toward white — cut off by the page's end so only its top 179px
-   show. Placeholder links. */
+   show (the footer's overflow clip does the cutting; the wordmark can
+   be pulled up out of it, see FooterWordmark). Placeholder links. */
 
 const COLUMNS: { title: string; width: string; links: string[] }[] = [
   { title: "Product", width: "xl:w-[70px]", links: ["Features", "Pricing", "Live demo", "Templates", "Changelog"] },
@@ -17,7 +19,7 @@ const COLUMNS: { title: string; width: string; links: string[] }[] = [
 
 export default function Footer() {
   return (
-    <footer className="overflow-hidden border-t-[0.5px] border-white/[0.12] px-5 md:px-10">
+    <footer className="overflow-clip border-t-[0.5px] border-white/[0.12] px-5 md:px-10">
       <div className="mx-auto w-full max-w-[1200px] pt-[72px]">
         <div className="flex flex-col gap-12 xl:flex-row xl:justify-between xl:gap-0">
           {/* the mark, and the line at the foot of the column block */}
@@ -52,18 +54,7 @@ export default function Footer() {
         {/* the wordmark: 250px at the design's width, scaling down with
             the viewport; its line box is 1.22em and the page ends 0.716em
             in, exactly where the design's frame cuts it */}
-        <div
-          aria-hidden
-          className="mt-[37px] h-[0.716em] overflow-hidden text-center text-[min(250px,20.8vw)] leading-[1.22] font-black tracking-[-0.04em] select-none"
-          style={{ fontFamily: "var(--font-montserrat), sans-serif" }}
-        >
-          <span
-            className="bg-clip-text text-transparent"
-            style={{ backgroundImage: "linear-gradient(180deg, rgba(13,56,177,0.75) 0%, #FFFFFF 79%)" }}
-          >
-            cocoding
-          </span>
-        </div>
+        <FooterWordmark />
       </div>
     </footer>
   );
