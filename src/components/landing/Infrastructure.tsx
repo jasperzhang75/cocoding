@@ -80,10 +80,11 @@ const ENV_STACK_Y = [351.7, 334.3, 311];
 /* THE TABLET PANEL (md, 768-1279; Figma bHyNfFfV0ocgVPCHtOyYBp 1166:917,
    1166:1019, 1168:1080, 1165:742). Two columns again, the panel 344 wide
    at 768 and growing to the design's 751. The art keeps its size and
-   re-centers; the cube frames ride MD_LIFT higher so one callout — the
-   lit face's — can sit centered beneath the cube, the stage layers sit
-   at their own frames' heights, and the stage labels gather under the
-   layers, centered, without their hairlines. */
+   re-centers; the cube frames and the ambient ride MD_LIFT higher so
+   one callout — the lit face's — can sit centered beneath the cube
+   (frame 5's opened cube has its own place, see MD5), the stage layers
+   sit at their own frames' heights, and the stage labels gather under
+   the layers, centered, without their hairlines. */
 const MD_LIFT = 77; // frame 4's lid: 246.16 -> 169.17
 const SPREAD_Y_MD = SPREAD_Y.map((v) => v + 6); // the layers spread 71 higher, not 77
 const STACK_Y_MD = STACK.y.map((v) => v + 10.3); // the stack settles 66.7 higher
@@ -91,7 +92,16 @@ const FACE_Y0 = 294.6; // the stage-1 block, on the middle layer's line
 const FACE_Y0_MD = FACE_Y0 + 6;
 const LABEL_Y = { top: 310.5, mid: 364.5, bot: 418.5 }; // baselines under the callout lines
 const LABEL_Y_MD = { top: 401.5, mid: 433.5, bot: 466.5 }; // stacked beneath the layers (boxes 389/421/454)
-const CO_MD = { label: 436.5, desc: 461.1, hitTop: 416, hitH: 92 }; // the one centered callout (boxes 424 / 448)
+/* the one centered callout under the cube, per frame: 12px label and
+   description (boxes 416 / 440 in frame 4, 525 / 549 in frame 5 — the
+   opened cube reaches lower), baselines from the boxes' tops */
+const CO_MD = {
+  4: { label: 427.5, desc: 452.1, hitTop: 408 },
+  5: { label: 536.5, desc: 561.1, hitTop: 517 },
+};
+/* the legend: 24px boxes 16px apart at md (28px, 24 apart at xl) */
+const LEGEND_MD = { box: 24, rowY: [36, 76], textX: 72, textY: [51.5, 91.5] };
+const LEGEND_XL = { box: 28, rowY: [36, 88], textX: 76, textY: [53.5, 105.5] };
 
 /* Interactive callouts, frames 4 and 5. One is "lit" at a time: gradient
    label plus its description; the others rest gray. Clicking a callout OR
@@ -191,6 +201,30 @@ const CUBE5 = {
   icon: "matrix(0.846 0.534 -0.885 0.465 375.701 212)",
 };
 const STACK5 = { x: 375.85, size: 59.9, y: [370, 352, 333.9], extraY: [318.1, 296.8, 279] };
+
+/* frame 5's opened cube (Figma 1197:1135) stands 7.5 right of center and
+   38 above its desktop place — 39 below the lifted frame-4 pose */
+const shiftMatrix = (m: string, dx: number, dy: number) =>
+  m.replace(/matrix\(([^)]+)\)/, (_, v: string) => {
+    const n = v.trim().split(/\s+/).map(Number);
+    n[4] = Math.round((n[4] + dx) * 1000) / 1000;
+    n[5] = Math.round((n[5] + dy) * 1000) / 1000;
+    return `matrix(${n.join(" ")})`;
+  });
+const MD5 = { dx: 7.5, dy: 39 };
+const CUBE5_MD = {
+  ...CUBE5,
+  lid: shiftMatrix(CUBE5.lid, MD5.dx, MD5.dy),
+  left: shiftMatrix(CUBE5.left, MD5.dx, MD5.dy),
+  right: shiftMatrix(CUBE5.right, MD5.dx, MD5.dy),
+  icon: shiftMatrix(CUBE5.icon, MD5.dx, MD5.dy),
+};
+const STACK5_MD = {
+  ...STACK5,
+  x: STACK5.x + MD5.dx,
+  y: STACK5.y.map((v) => v + MD5.dy),
+  extraY: STACK5.extraY.map((v) => v + MD5.dy),
+};
 
 /* Frame 5's callouts: AUTO-SCALING holds the light by default (accent ->
    white gradient label + description at full #A1A1A1, as this frame draws
@@ -826,6 +860,7 @@ function InfrastructureStage() {
       // centered block beneath it — the lit face's label and description
       // (the resting gray labels and the hairlines are not drawn)
       const place = (p: "data-co" | "data-co5", list: typeof ENV_CALLOUTS | typeof ENV5_CALLOUTS) => {
+        const m = CO_MD[p === "data-co5" ? 5 : 4];
         show(`[${p}-line], [${p}-base]`, !md);
         for (const c of list) {
           const lx = c.anchor === "end" ? c.x2 : c.x1;
@@ -833,28 +868,52 @@ function InfrastructureStage() {
           const anchor = md ? "middle" : c.anchor;
           svg.querySelectorAll(`[${p}-active="${c.key}"], [${p}-base="${c.key}"]`).forEach((t) => {
             t.setAttribute("x", String(x));
-            t.setAttribute("y", String(md ? CO_MD.label : c.y + 24.5));
+            t.setAttribute("y", String(md ? m.label : c.y + 24.5));
             t.setAttribute("text-anchor", anchor);
+            t.setAttribute("font-size", md ? "12" : "13");
           });
           const d = svg.querySelector(`[${p}-desc="${c.key}"]`);
           if (d) {
             d.setAttribute("text-anchor", anchor);
+            d.setAttribute("font-size", md ? "12" : "13");
             d.querySelectorAll("tspan").forEach((t, i) => {
               t.setAttribute("x", String(x));
-              t.setAttribute("y", String((md ? CO_MD.desc : c.y + 49.1) + i * 19.5));
+              t.setAttribute("y", String(md ? m.desc + i * 18 : c.y + 49.1 + i * 19.5));
             });
           }
           const hit = svg.querySelector(`[${p}-hit="${c.key}"]`);
           if (hit) {
             hit.setAttribute("x", String(md ? cx - 100 : c.x1));
-            hit.setAttribute("y", String(md ? CO_MD.hitTop : c.y - 10));
+            hit.setAttribute("y", String(md ? m.hitTop : c.y - 10));
             hit.setAttribute("width", String(md ? 200 : c.x2 - c.x1));
-            hit.setAttribute("height", String(md ? CO_MD.hitH : 44));
+            hit.setAttribute("height", String(md ? 94 : 44));
           }
         }
       };
       place("data-co", ENV_CALLOUTS);
       place("data-co5", ENV5_CALLOUTS);
+      // the legend's boxes and rows
+      const L = md ? LEGEND_MD : LEGEND_XL;
+      svg.querySelectorAll("[data-env-legend] rect").forEach((rc, i) => {
+        rc.setAttribute("width", String(L.box));
+        rc.setAttribute("height", String(L.box));
+        rc.setAttribute("y", String(L.rowY[i]));
+      });
+      svg.querySelectorAll("[data-env-legend] text").forEach((t, i) => {
+        t.setAttribute("x", String(L.textX));
+        t.setAttribute("y", String(L.textY[i < 2 ? 0 : 1])); // ENVIRONMENT / INFRASTRUCTURE share row 1
+      });
+      // frame 5's parts that are placed, not tweened, into its tablet pose
+      // (the tweened ones take CUBE5_MD / STACK5_MD in the morph)
+      const C5 = md ? CUBE5_MD : CUBE5;
+      svg.querySelector("[data-mark5]")?.setAttribute("transform", C5.icon);
+      for (const side of ["left5", "right5"] as const) {
+        const [mx, my] = FACE_MARKS[side].translate.split(" ").map(Number);
+        svg
+          .querySelector(`[data-mark-side="${side}"]`)
+          ?.setAttribute("transform", `translate(${mx + (md ? MD5.dx : 0)} ${my + (md ? MD5.dy : 0)})`);
+      }
+      gsap.set(svg.querySelectorAll("[data-face-x]"), { x: (md ? STACK5_MD : STACK5).x });
       layoutCards(W);
       // the stage sticks at --stick-top while the runway — the wrapper's
       // height beyond the stage — scrolls under it. A centered stage stops
@@ -977,6 +1036,8 @@ function InfrastructureStage() {
       let tl3: gsap.core.Timeline | null = null;
       const ensureTl3 = () => {
         if (tl3) return tl3;
+        const C5 = md ? CUBE5_MD : CUBE5; // frame 5's pose for this layout
+        const S5 = md ? STACK5_MD : STACK5;
         const sq = (sel: string) => svg.querySelector(sel);
         const sqa = (sel: string) => svg.querySelectorAll(sel);
         const OPEN = { duration: 0.9, ease: "power2.inOut" } as const;
@@ -996,25 +1057,25 @@ function InfrastructureStage() {
         t.fromTo(sq("[data-legend-env]"), { opacity: 1 }, { opacity: 0, duration: 0.3 }, 0.05);
         t.fromTo(sq("[data-cube-mark]"), { opacity: 1 }, { opacity: 0, duration: 0.25 }, 0);
         // the cube opens and grows
-        t.fromTo(sq('[data-cube-face="lid"]'), { attr: { transform: CUBE.lid } }, { attr: { transform: CUBE5.lid }, ...OPEN }, 0.15);
-        t.fromTo(sqa('[data-cube-face="lid"] rect'), { attr: { width: F4.lid, height: F4.lid } }, { attr: { width: CUBE5.lidSize, height: CUBE5.lidSize }, ...OPEN }, 0.15);
-        t.fromTo(sq('[data-cube-face="left"]'), { attr: { transform: CUBE.left } }, { attr: { transform: CUBE5.left }, ...OPEN }, 0.15);
-        t.fromTo(sq('[data-cube-face="right"]'), { attr: { transform: CUBE.right } }, { attr: { transform: CUBE5.right }, ...OPEN }, 0.15);
-        t.fromTo(sqa('[data-cube-face="left"] rect, [data-cube-face="right"] rect'), { attr: F4.side }, { attr: { width: CUBE5.sideSize, height: CUBE5.sideSize }, ...OPEN }, 0.15);
+        t.fromTo(sq('[data-cube-face="lid"]'), { attr: { transform: CUBE.lid } }, { attr: { transform: C5.lid }, ...OPEN }, 0.15);
+        t.fromTo(sqa('[data-cube-face="lid"] rect'), { attr: { width: F4.lid, height: F4.lid } }, { attr: { width: C5.lidSize, height: C5.lidSize }, ...OPEN }, 0.15);
+        t.fromTo(sq('[data-cube-face="left"]'), { attr: { transform: CUBE.left } }, { attr: { transform: C5.left }, ...OPEN }, 0.15);
+        t.fromTo(sq('[data-cube-face="right"]'), { attr: { transform: CUBE.right } }, { attr: { transform: C5.right }, ...OPEN }, 0.15);
+        t.fromTo(sqa('[data-cube-face="left"] rect, [data-cube-face="right"] rect'), { attr: F4.side }, { attr: { width: C5.sideSize, height: C5.sideSize }, ...OPEN }, 0.15);
         t.fromTo(sq('[data-cube-face="right"] rect:first-child'), { fill: "#617CCE" }, { fill: "#617FDC", duration: 0.5 }, 0.3);
         t.fromTo(sq('[data-cube-face="right"] rect:nth-child(2)'), { fillOpacity: 0.03 }, { fillOpacity: 0.05, duration: 0.5 }, 0.3);
         // the stack shrinks a touch and re-seats...
         faces.forEach((f, i) => {
-          t.fromTo(f, { x: STACK.x, y: ENV_STACK_Y[i] }, { x: STACK5.x, y: STACK5.y[i], duration: 0.7, ease: "power2.inOut" }, 0.25);
+          t.fromTo(f, { x: STACK.x, y: ENV_STACK_Y[i] }, { x: S5.x, y: S5.y[i], duration: 0.7, ease: "power2.inOut" }, 0.25);
         });
-        t.fromTo(sqa("[data-face] rect"), { attr: { width: STACK.size, height: STACK.size } }, { attr: { width: STACK5.size, height: STACK5.size }, duration: 0.7, ease: "power2.inOut" }, 0.25);
+        t.fromTo(sqa("[data-face] rect"), { attr: { width: STACK.size, height: STACK.size } }, { attr: { width: S5.size, height: S5.size }, duration: 0.7, ease: "power2.inOut" }, 0.25);
         t.fromTo(sqa("[data-face] rect"), { attr: { stroke: F4.stroke } }, { attr: { stroke: "#A8A8A8" }, duration: 0.01 }, 0.5);
         // ...and three extra layers pop out upward, one after another
         svg.querySelectorAll("[data-face-x]").forEach((x, i) => {
           t.fromTo(
             x,
-            { y: STACK5.extraY[i] + 18, opacity: 0 },
-            { y: STACK5.extraY[i], opacity: 0.8, duration: 0.45, ease: "power2.out" },
+            { y: S5.extraY[i] + 18, opacity: 0 },
+            { y: S5.extraY[i], opacity: 0.8, duration: 0.45, ease: "power2.out" },
             0.6 + i * 0.09
           );
         });
@@ -2019,9 +2080,7 @@ function InfrastructureStage() {
                 two Figma fills — the 52% radial with the grain tiled over
                 it at LIGHTEN — live in an isolated group so the lighten
                 stays inside the paint stack, as in Figma. */}
-            {/* the ambient keeps its height on the tablet panel (the design
-                leaves it at cy 344.5 while the cube rises) — no lift */}
-            <g data-anchor="center">
+            <g data-anchor="center" data-md-lift>
             <g data-env-back style={{ opacity: 0 }}>
               {/* Ellipse 21888 — the ambient, layer-blurred 300; its grain
                   tile is 241.4px (sf 0.1178), two columns cover the box.
