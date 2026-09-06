@@ -7,7 +7,8 @@ import { HyperText } from "@/components/magicui/hyper-text";
 import { NotionLogo, OpenAILogo, RampLogo } from "./testimonial-logos";
 
 /* TESTIMONIAL (Figma yFciEPejue3E2xhstXF0Wu 16798:8090). A row of
-   386 x 481 cards, 20px apart, that slides one card per arrow press;
+   386 x 481 cards, 20px apart, that slides one card per arrow press
+   (prev / next; the design's reset arrow was dropped);
    three fit the 1200 container and the neighbours peek out at its
    sides (the section clips at the viewport). The design draws three
    cards — a photo quote (OpenAI), a case study (Ramp), a photo quote
@@ -17,10 +18,14 @@ import { NotionLogo, OpenAILogo, RampLogo } from "./testimonial-logos";
 const CARD_W = 386; // cards are 386 x 481
 const GAP = 20;
 
-/* the 0.7px gradient hairline every card wears, top colour to #636363 */
-const hairline = (top: string): CSSProperties => ({
+/* the 0.7px hairline every card wears, INSIDE its edge: a gradient from
+   the card's own light grey at the top-left corner to #636363 toward the
+   bottom-right, painted at 9% (Figma: strokeAlign INSIDE, paint opacity
+   0.09, gradientTransform corner to corner) */
+const hairline = (top: string, angle = "142deg", end = "100%"): CSSProperties => ({
   padding: "0.7px",
-  background: `linear-gradient(180deg, ${top}, #636363)`,
+  background: `linear-gradient(${angle}, ${top} 0%, #636363 ${end})`,
+  opacity: 0.09,
   maskImage: "linear-gradient(#fff 0 0), linear-gradient(#fff 0 0)",
   maskClip: "content-box, border-box",
   maskComposite: "exclude",
@@ -132,19 +137,19 @@ function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
         <p className="text-body-sm text-text-body">{card.kicker}</p>
         <p className="mt-1.5 text-[1.25rem] leading-[1.375] tracking-[-0.012em] text-white/90">{card.title}</p>
       </div>
-      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-md" style={hairline(card.top)} />
+      {/* this card's gradient runs steeper and settles by mid-card */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-md" style={hairline(card.top, "146deg", "55%")} />
     </article>
   );
 }
 
 /* ------------------------------------------------------------- controls */
 
-/* lucide arrow-left / arrow-right / rotate-ccw at 20px, the design's
-   #A1A1A1 60% hairline strokes (0.9px, round caps) */
+/* lucide arrow-left / arrow-right at 20px, the design's #A1A1A1 60%
+   hairline strokes (0.9px, round caps) */
 const ICON = {
   prev: ["M19 12H5", "m12 19-7-7 7-7"],
   next: ["M5 12h14", "m12 5 7 7-7 7"],
-  reset: ["M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5"],
 };
 
 function Control({
@@ -248,7 +253,6 @@ export default function Testimonial() {
           <div className="mt-5 flex shrink-0 items-center gap-3 self-end md:mt-0 md:self-auto">
             <Control icon="prev" label="Previous" disabled={at === 0} onClick={() => go(at - 1)} />
             <Control icon="next" label="Next" disabled={at === max} onClick={() => go(at + 1)} />
-            <Control icon="reset" label="Back to start" disabled={at === 0} onClick={() => go(0)} />
           </div>
         </div>
 
