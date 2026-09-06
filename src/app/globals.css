@@ -220,13 +220,19 @@ body {
 
 /* Security card: the light-green inner shadow breathes — slow, faint,
    there-and-not-there. Static under reduced motion. */
+/* the Security card's green edge breathes like a person, not a
+   metronome: a quicker inhale that settles at the top, a longer exhale,
+   then a rest at the bottom before the next breath — 4.6s a cycle */
 @keyframes security-breathe {
-  from { opacity: 0.25; }
-  to   { opacity: 1; }
+  0%   { opacity: 0.25; animation-timing-function: cubic-bezier(0.3, 0, 0.55, 1); }
+  38%  { opacity: 1;    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  46%  { opacity: 0.94; animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+  82%  { opacity: 0.27; animation-timing-function: linear; }
+  100% { opacity: 0.25; }
 }
 
 .security-breathe {
-  animation: security-breathe 3.6s ease-in-out infinite alternate;
+  animation: security-breathe 4.6s infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

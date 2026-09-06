@@ -223,18 +223,19 @@ export default function Pricing() {
             {/* its two (stacked: side) hairlines ride above the glow */}
             <div aria-hidden className="pointer-events-none absolute inset-0 z-10 md:hidden" style={{ boxShadow: HAIRLINE_SIDES }} />
             <div aria-hidden className="pointer-events-none absolute inset-0 z-10 hidden md:block" style={{ boxShadow: HAIRLINE_TOP_BOTTOM }} />
-            {/* the 1% white wash, and Ellipse 21887: a 348 x 249 ellipse
-                turned upright (249 wide, 348 tall) and centered in the card
-                (Jasper), radial #18365F -> #316FC5 at 43%, LAYER-BLURRED 300
-                (CSS blur 150), clipped by the card like the design's frame */}
+            {/* the 1% white wash and Ellipse 21887: a 348 x 249 radial
+                #18365F -> #316FC5 at 43%, blurred 300 — drawn as a radial
+                gradient twice its size, no filter. Jasper preferred this
+                first rendering over the faithful blurred ellipse. */}
             <div aria-hidden className="pointer-events-none absolute inset-0 bg-white/[0.01]" />
             <div
               aria-hidden
-              className="pointer-events-none absolute left-1/2 top-1/2 h-[348px] w-[249px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+              className="pointer-events-none absolute h-[498px] w-[696px]"
               style={{
-                opacity: 0.43,
-                background: "radial-gradient(closest-side, #18365F 0%, #316FC5 100%)",
-                filter: "blur(150px)",
+                left: 140,
+                top: -20,
+                background:
+                  "radial-gradient(closest-side, rgba(49,111,197,0.43), rgba(36,82,146,0.24) 45%, rgba(24,54,95,0) 100%)",
               }}
             />
             <div className="relative flex grow flex-col">
