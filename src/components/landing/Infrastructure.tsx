@@ -1930,7 +1930,7 @@ function InfrastructureStage() {
 
   return (
     <section ref={sectionRef} className="px-[23px] md:px-10 xl:px-0">
-      <div className="pt-[65px] md:pt-[110px] xl:pt-[120px]">
+      <div className="pt-[65px] md:pt-[110px] xl:pt-[160px]">
       {/* the runway: the stage below sticks (at --stick-top, see stickTop)
           while this box's height beyond it scrolls by, driving 3 -> 4
           and, on touch, the frames after. Both vars are measured by

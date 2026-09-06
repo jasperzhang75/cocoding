@@ -275,7 +275,7 @@ export default function Testimonial() {
   };
 
   return (
-    <section className="overflow-x-clip px-5 pt-24 pb-24 md:px-10 xl:pt-[120px] xl:pb-[120px]">
+    <section className="overflow-x-clip px-5 pt-24 md:px-10 xl:pt-[160px]">
       <div className="mx-auto w-full max-w-[1200px]">
         {/* the same one-shot scramble as the other eyebrows */}
         <HyperText

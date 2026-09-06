@@ -187,7 +187,7 @@ function Credits() {
 
 export default function Pricing() {
   return (
-    <section className="px-5 pt-24 md:px-10 xl:pt-[120px]">
+    <section className="px-5 pt-24 md:px-10 xl:pt-[160px]">
       <div className="mx-auto w-full max-w-[1200px]">
         <HyperText
           as="p"
@@ -223,13 +223,14 @@ export default function Pricing() {
             {/* its two (stacked: side) hairlines ride above the glow */}
             <div aria-hidden className="pointer-events-none absolute inset-0 z-10 md:hidden" style={{ boxShadow: HAIRLINE_SIDES }} />
             <div aria-hidden className="pointer-events-none absolute inset-0 z-10 hidden md:block" style={{ boxShadow: HAIRLINE_TOP_BOTTOM }} />
-            {/* the 1% white wash, and Ellipse 21887: a 348 x 249 ellipse at
-                314 / 104, radial #18365F -> #316FC5 at 43%, LAYER-BLURRED 300
+            {/* the 1% white wash, and Ellipse 21887: a 348 x 249 ellipse
+                turned upright (249 wide, 348 tall) and centered in the card
+                (Jasper), radial #18365F -> #316FC5 at 43%, LAYER-BLURRED 300
                 (CSS blur 150), clipped by the card like the design's frame */}
             <div aria-hidden className="pointer-events-none absolute inset-0 bg-white/[0.01]" />
             <div
               aria-hidden
-              className="pointer-events-none absolute left-[314px] top-[104px] h-[249px] w-[348px] rounded-full"
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[348px] w-[249px] -translate-x-1/2 -translate-y-1/2 rounded-full"
               style={{
                 opacity: 0.43,
                 background: "radial-gradient(closest-side, #18365F 0%, #316FC5 100%)",
