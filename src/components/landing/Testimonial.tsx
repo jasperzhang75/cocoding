@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { CSSProperties, ReactNode, TouchEvent } from "react";
 import Image from "next/image";
 import { HyperText } from "@/components/magicui/hyper-text";
@@ -8,7 +8,8 @@ import { NotionLogo, OpenAILogo, RampLogo } from "./testimonial-logos";
 
 /* TESTIMONIAL (Figma yFciEPejue3E2xhstXF0Wu 16798:8090). A row of
    386 x 481 cards, 20px apart, that slides one card per arrow press
-   (prev / next; the design's reset arrow was dropped);
+   (prev / next; the design's reset arrow was dropped) and loops without
+   end;
    three fit the 1200 container and the neighbours peek out at its
    sides (the section clips at the viewport). The design draws three
    cards — a photo quote (OpenAI), a case study (Ramp), a photo quote
@@ -194,32 +195,70 @@ function Control({
 
 /* -------------------------------------------------------------- section */
 
+/* THE LOOP. The six cards are laid out three times over — a copy on
+   each side of the real set — and the window stays over the middle
+   copy: after any slide that leaves it, the track jumps by exactly six
+   cards to the same picture in the middle copy with the transition off,
+   which no eye can see. So prev and next never run out. */
+const N = CARDS.length;
+const LOOP = [...CARDS, ...CARDS, ...CARDS];
+const SLIDE = "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)";
+const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 export default function Testimonial() {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const [index, setIndex] = useState(0);
-  // how many whole cards the container shows, and how wide a card is
-  // (386, or the column on a phone)
-  const [fit, setFit] = useState({ visible: 3, step: CARD_W + GAP });
+  const trackRef = useRef<HTMLDivElement>(null);
+  const pos = useRef(N); // the window's first card, as an index into LOOP
+  const step = useRef(CARD_W + GAP); // a card and its gap (the card is narrower on a phone)
+  const visible = useRef(3); // whole cards the container shows
   const touchX = useRef<number | null>(null);
 
-  useEffect(() => {
+  // put the track at pos, sliding there or not
+  const place = (slide: boolean) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    track.style.transition = slide && !reduced ? SLIDE : "none";
+    track.style.transform = `translateX(${-pos.current * step.current}px)`;
+  };
+  // back over the middle copy, unseen: the same cards six further along
+  const settle = () => {
+    if (pos.current >= N && pos.current < 2 * N) return;
+    pos.current += pos.current < N ? N : -N;
+    place(false);
+  };
+  const go = (dir: 1 | -1) => {
+    // a quick run of presses can reach the copies' ends: settle first
+    const next = pos.current + dir;
+    if (next < 1 || next > LOOP.length - visible.current - 1) settle();
+    pos.current += dir;
+    void trackRef.current?.offsetWidth; // the settled position must be seen before the slide
+    place(true);
+  };
+
+  useIsoLayoutEffect(() => {
     const viewport = viewportRef.current;
-    if (!viewport) return;
+    const track = trackRef.current;
+    if (!viewport || !track) return;
     const measure = () => {
-      const card = viewport.querySelector<HTMLElement>("article");
+      const card = track.querySelector<HTMLElement>("article");
       const w = card ? card.offsetWidth : CARD_W;
-      const visible = Math.max(1, Math.floor((viewport.clientWidth + GAP) / (w + GAP)));
-      setFit({ visible, step: w + GAP });
+      step.current = w + GAP;
+      visible.current = Math.max(1, Math.floor((viewport.clientWidth + GAP) / (w + GAP)));
+      place(false);
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(viewport);
-    return () => ro.disconnect();
+    const onEnd = (e: TransitionEvent) => {
+      if (e.target === track && e.propertyName === "transform") settle();
+    };
+    track.addEventListener("transitionend", onEnd);
+    return () => {
+      ro.disconnect();
+      track.removeEventListener("transitionend", onEnd);
+    };
   }, []);
-
-  const max = Math.max(0, CARDS.length - fit.visible);
-  const at = Math.min(index, max);
-  const go = (to: number) => setIndex(Math.min(Math.max(to, 0), max));
 
   const onTouchStart = (e: TouchEvent) => {
     touchX.current = e.touches[0].clientX;
@@ -228,7 +267,7 @@ export default function Testimonial() {
     if (touchX.current === null) return;
     const dx = e.changedTouches[0].clientX - touchX.current;
     touchX.current = null;
-    if (Math.abs(dx) > 40) go(at + (dx < 0 ? 1 : -1));
+    if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
   };
 
   return (
@@ -251,24 +290,20 @@ export default function Testimonial() {
         <div className="mt-3 flex flex-col md:flex-row md:items-end md:justify-between md:gap-6">
           <h2 className="text-heading-lg text-text-primary xl:text-display">Loved by builders. Trusted by pros.</h2>
           <div className="mt-5 flex shrink-0 items-center gap-3 self-end md:mt-0 md:self-auto">
-            <Control icon="prev" label="Previous" disabled={at === 0} onClick={() => go(at - 1)} />
-            <Control icon="next" label="Next" disabled={at === max} onClick={() => go(at + 1)} />
+            <Control icon="prev" label="Previous" onClick={() => go(-1)} />
+            <Control icon="next" label="Next" onClick={() => go(1)} />
           </div>
         </div>
 
         {/* the track: cards slide one step per press; the neighbours show
             past the container's sides, out to the viewport's edges */}
-        <div
-          ref={viewportRef}
-          className="mt-[60px]"
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-        >
+        <div ref={viewportRef} className="mt-[60px]" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
           <div
-            className="flex gap-5 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
-            style={{ transform: `translateX(${-at * fit.step}px)` }}
+            ref={trackRef}
+            className="flex gap-5"
+            style={{ transform: `translateX(${-N * (CARD_W + GAP)}px)` }}
           >
-            {CARDS.map((card, i) =>
+            {LOOP.map((card, i) =>
               card.kind === "quote" ? <QuoteCard key={i} card={card} /> : <StudyCard key={i} card={card} />
             )}
           </div>
