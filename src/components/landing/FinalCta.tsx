@@ -7,18 +7,19 @@
 export default function FinalCta() {
   return (
     <section className="relative overflow-hidden px-5 py-40 md:px-10 xl:py-[330px]">
-      {/* Ellipse 21888: 289 x 206 radial #18365F -> #245292 -> #316FC5 at
-          52%, layer-blurred 300, its center 93 right of the page's and
-          level with the heading — a radial gradient twice its size, no
-          filter */}
+      {/* Ellipse 21888: a 289 x 206 ellipse, radial #18365F -> #245292 ->
+          #316FC5 at 52%, LAYER-BLURRED 300 (CSS blur at half the radius),
+          its center 93.5 right of the page's and 31 above the section's
+          middle — level with the heading */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[412px] w-[578px] -translate-y-1/2"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[206px] w-[289px] rounded-full"
         style={{
-          marginLeft: 93 - 289,
-          marginTop: -31,
-          background:
-            "radial-gradient(closest-side, rgba(49,111,197,0.52), rgba(36,82,146,0.34) 50%, rgba(24,54,95,0) 100%)",
+          marginLeft: 93.5 - 144.5,
+          marginTop: -31 - 103,
+          opacity: 0.52,
+          background: "radial-gradient(closest-side, #18365F 0%, #245292 50%, #316FC5 100%)",
+          filter: "blur(150px)",
         }}
       />
       <div className="relative mx-auto flex w-full max-w-[1200px] flex-col items-center">
