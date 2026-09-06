@@ -110,27 +110,26 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
 function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
   return (
     <article className={`${CARD_CLASS} bg-[#090A0E]`}>
-      {/* Ellipse 21888 / 21891: two 289 x 206 blue glows, layer-blurred
-          300 in the design — drawn as radial gradients twice their size so
-          nothing needs a filter */}
+      {/* Ellipse 21888 / 21891: two 289 x 206 glows at 52%, LAYER-BLURRED
+          300 (CSS blur 150) — a radial one low right, a top-to-bottom
+          linear one off the left edge — clipped by the card as in the
+          design's frame */}
       <div
         aria-hidden
-        className="pointer-events-none absolute h-[412px] w-[578px]"
+        className="pointer-events-none absolute left-[200px] top-[250px] h-[206px] w-[289px] rounded-full"
         style={{
-          left: 55,
-          top: 147,
-          background:
-            "radial-gradient(closest-side, rgba(49,111,197,0.55), rgba(36,82,146,0.32) 45%, rgba(24,54,95,0) 100%)",
+          opacity: 0.52,
+          background: "radial-gradient(closest-side, #18365F 0%, #245292 50%, #316FC5 100%)",
+          filter: "blur(150px)",
         }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute h-[412px] w-[578px]"
+        className="pointer-events-none absolute left-[-131px] top-[62px] h-[206px] w-[289px] rounded-full"
         style={{
-          left: -276,
-          top: -41,
-          background:
-            "radial-gradient(closest-side, rgba(49,111,197,0.35), rgba(36,82,146,0.2) 45%, rgba(24,54,95,0) 100%)",
+          opacity: 0.52,
+          background: "linear-gradient(180deg, #18365F 0%, #245292 50%, #316FC5 100%)",
+          filter: "blur(150px)",
         }}
       />
       <div className="absolute left-9 top-9">{card.logo}</div>
