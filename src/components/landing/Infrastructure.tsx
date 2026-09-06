@@ -83,7 +83,7 @@ const ENV_STACK_Y = [351.7, 334.3, 311];
    re-centers; the cube frames and the ambient ride MD_LIFT higher so
    one callout — the lit face's — can sit centered beneath the cube
    (frame 5's opened cube has its own place, see MD5), the card rows
-   (Figma 1204:1333) and the scorecard (1204:1233) rise 24 and 37 — set
+   (Figma 1204:1333) and the scorecard (1204:1233) rise 16 and 36 — set
    against the left column's title lines, see their groups — the
    stage layers sit at their own frames' heights, and the stage labels
    gather under the layers, centered, without their hairlines. */
@@ -2481,8 +2481,8 @@ function InfrastructureStage() {
                 #EBEBEB with a 0.7 underline, the other at 20%. */}
             {/* rises toward the middle of the left column's title lines
                 (first title's top to last title's bottom): centered would be
-                32, Jasper settled on 8 lower */}
-            <g data-frame6 data-anchor="center" data-md-lift="24" style={{ opacity: 0, pointerEvents: "none" }}>
+                32, Jasper settled on 16 lower */}
+            <g data-frame6 data-anchor="center" data-md-lift="16" style={{ opacity: 0, pointerEvents: "none" }}>
               <g data-f6-tab>
                 {(["buildin", "connectors"] as RowKey[]).map((row) => {
                   const x = row === "buildin" ? 299 : 374;
@@ -2626,9 +2626,9 @@ function InfrastructureStage() {
             {/* frame 8: the Google Lighthouse scorecard. Static; its own
                 animation comes next. */}
             {/* rises so the header sits on the first title's line in the left
-                column: 39 puts the line boxes level, Jasper settled on 2 lower
+                column: 39 puts the line boxes level, Jasper settled on 3 lower
                 for the G mark's size */}
-            <g data-frame8 data-anchor="center" data-md-lift="37" style={{ opacity: 0, pointerEvents: "none" }}>
+            <g data-frame8 data-anchor="center" data-md-lift="36" style={{ opacity: 0, pointerEvents: "none" }}>
               <g data-f8-header opacity="0.8">
                 {/* mynaui:google-so, exported: a white 33% base with the
                     white -> #666 gradient at 83% over it */}
