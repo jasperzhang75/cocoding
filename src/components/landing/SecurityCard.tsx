@@ -163,22 +163,6 @@ export default function SecurityCard() {
           "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
       }}
     >
-      {/* breathing green inner shadow (ON state). The fade lives on this
-          wrapper — the inner CSS breathe animation owns its own opacity and
-          would override a fade applied to the same element, which is what
-          made the glow vanish in a snap. It fades by opacity only and keeps
-          its own compositor layer: toggling visibility tore the layer down
-          and made Chrome re-rasterize the blurred glows beneath at a
-          different scale — the blue field jumped the moment the toggle was
-          pressed. */}
-      <div ref={breatheRef} aria-hidden className="pointer-events-none absolute inset-0 will-change-[opacity]">
-        <div
-          data-loop
-          className="security-breathe absolute inset-0 rounded-md md:rounded-none md:rounded-bl-xl"
-          style={{ boxShadow: "inset 0 0 50px 4px rgba(58,255,77,0.29)" }}
-        />
-      </div>
-
       {/* the pair of blur-250 glows — the card's blue field. Card-level (not
           in the poster) so the mobile top-crop can't clip them: at base they
           cover the whole card; from md up they sit at the design geometry.
@@ -263,6 +247,24 @@ export default function SecurityCard() {
       </div>
 
       </PosterViewport>
+
+      {/* breathing green inner shadow (ON state). The fade lives on this
+          wrapper — the inner CSS breathe animation owns its own opacity and
+          would override a fade applied to the same element, which is what
+          made the glow vanish in a snap. It fades by opacity only and keeps
+          its own compositor layer: toggling visibility tore the layer down
+          and made Chrome re-rasterize the blurred glows at a different
+          scale — the blue field jumped the moment the toggle was pressed.
+          Drawn ABOVE the glows and the poster, as a Figma inner shadow
+          sits over its frame's children; underneath them the blue washed
+          it out to a fraction of the design's 29%. */}
+      <div ref={breatheRef} aria-hidden className="pointer-events-none absolute inset-0 will-change-[opacity]">
+        <div
+          data-loop
+          className="security-breathe absolute inset-0 rounded-md md:rounded-none md:rounded-bl-xl"
+          style={{ boxShadow: "inset 0 0 50px 4px rgba(58,255,77,0.29)" }}
+        />
+      </div>
 
       {/* security toggle — card-level: in the header row at every size
           (right-anchored at base, the design's absolute spot from md up) */}
