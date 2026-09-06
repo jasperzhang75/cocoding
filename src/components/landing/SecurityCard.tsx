@@ -156,7 +156,7 @@ export default function SecurityCard() {
   return (
     <div
       ref={rootRef}
-      className="order-4 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.08] md:grow md:rounded-none md:rounded-bl-xl xl:block xl:grow-0 xl:absolute xl:left-0 xl:top-[610px] xl:h-[464px] xl:w-[600px] xl:max-w-none"
+      className="order-4 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.06] md:grow md:rounded-none md:rounded-bl-xl xl:block xl:grow-0 xl:absolute xl:left-0 xl:top-[610px] xl:h-[464px] xl:w-[600px] xl:max-w-none"
       style={{
         background:
           "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",

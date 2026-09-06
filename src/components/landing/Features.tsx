@@ -103,7 +103,7 @@ function Bleed({
 
 function AgentsCard() {
   return (
-    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.08] bg-black md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
+    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.06] bg-black md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
       <CardHeader
         leftClass="xl:left-[35px]"
         title="Go faster with parallel agents"

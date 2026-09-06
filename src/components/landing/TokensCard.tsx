@@ -147,7 +147,7 @@ export default function TokensCard() {
   return (
     <div
       ref={cardRef}
-      className="order-2 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.08] bg-black md:rounded-none md:rounded-tr-xl md:border-b-0 md:border-l-0 xl:absolute xl:left-[600px] xl:top-0 xl:h-[462px] xl:w-[600px] xl:max-w-none"
+      className="order-2 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.06] bg-black md:rounded-none md:rounded-tr-xl md:border-b-0 md:border-l-0 xl:absolute xl:left-[600px] xl:top-0 xl:h-[462px] xl:w-[600px] xl:max-w-none"
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="text-body-md text-text-primary xl:text-heading-sm">Less tokens, more builds</p>

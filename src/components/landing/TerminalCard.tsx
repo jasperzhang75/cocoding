@@ -274,7 +274,7 @@ export default function TerminalCard() {
   return (
     <div
       ref={rootRef}
-      className="order-3 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.08] bg-black md:grow md:rounded-none md:rounded-br-xl md:border-l-0 xl:block xl:grow-0 xl:absolute xl:left-[600px] xl:top-[462px] xl:h-[611px] xl:w-[600px] xl:max-w-none"
+      className="order-3 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.06] bg-black md:grow md:rounded-none md:rounded-br-xl md:border-l-0 xl:block xl:grow-0 xl:absolute xl:left-[600px] xl:top-[462px] xl:h-[611px] xl:w-[600px] xl:max-w-none"
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="text-body-md text-text-primary xl:text-heading-sm">Error auto-fix as you move forward</p>
