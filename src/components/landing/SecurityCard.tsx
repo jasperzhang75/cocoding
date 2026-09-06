@@ -9,8 +9,9 @@ import { setLoopPlayState } from "@/lib/use-in-view";
 /* Card 4 — built-in security, now interactive. Two states, both read from
    Figma (ON: 16629:18699, OFF: 17175:8667):
 
-   ON  — green-gradient shield; a light-green inner shadow
-         (inset 0 0 30px 3px #7BFFD3/25) breathes slowly at the card edge.
+   ON  — green-gradient shield; a green inner shadow (the revised
+         design's inset 0 0 50px 4px #3AFF4D/29) breathes slowly at the
+         card edge.
    OFF — the toggle knob slides left and the pill grays out (#B5B5B5/50);
          the shield fades to #65686D/82 (same silhouette, recolored through
          a mask); the breathing glow drains away; and behind the shield a
@@ -107,10 +108,12 @@ export default function SecurityCard() {
     if (!breathe || !matrix || !maskEl) return;
 
     /* the code field reveals by GROWING its soft mask from the center and
-       hides by shrinking it back — the radii scale with k in [0,1] */
+       hides by shrinking it back — the radii scale with k in [0,1]. Full
+       size follows the design's OFF render: the codes run nearly the
+       card's width and eight rows show, the ninth fading out. */
     const applyMask = () => {
       const { k } = maskProg.current;
-      const img = `radial-gradient(ellipse ${250 * k}px ${138 * k}px at 296px 279px, black 58%, transparent 96%)`;
+      const img = `radial-gradient(ellipse ${330 * k}px ${175 * k}px at 296px 279px, black 58%, transparent 96%)`;
       maskEl.style.maskImage = img;
       maskEl.style.webkitMaskImage = img;
     };
@@ -170,7 +173,7 @@ export default function SecurityCard() {
         <div
           data-loop
           className="security-breathe absolute inset-0 rounded-md md:rounded-none md:rounded-bl-xl"
-          style={{ boxShadow: "inset 0 0 30px 3px rgba(123,255,211,0.45)" }}
+          style={{ boxShadow: "inset 0 0 50px 4px rgba(58,255,77,0.29)" }}
         />
       </div>
 
@@ -197,6 +200,21 @@ export default function SecurityCard() {
       </div>
 
       <PosterViewport designHeight={464} crop={130} className="md:mt-auto xl:mt-0 xl:absolute xl:inset-0">
+      {/* the deep-blue core behind the codes and the shield: the design's
+          454 x 205 blob at 69.5 / 159.5, #1C21C2 at 94%, layer-blurred 75
+          (CSS 37.5). Both states have it. */}
+      <svg
+        aria-hidden
+        viewBox="0 0 454 205"
+        className="pointer-events-none absolute left-[69.5px] top-[159.5px] h-[205px] w-[454px]"
+        style={{ filter: "blur(37.5px)", opacity: 0.94 }}
+      >
+        <path
+          fill="#1C21C2"
+          fillRule="evenodd"
+          d="M154.5 22C207.5 20.3 280.7 -12.8 341.5 5.5C406 67 430.5 76 454 105C445.3 132.6 411.7 173.4 375.5 185.6C341.4 197 186.6 198.2 171 199.5C155.4 200.9 94.3 210.7 69 199.5C42.3 187.7 9.7 198.2 0 177C32 137.3 18.1 62.2 20.7 40.5C79.5 17.1 101.5 23.8 154.5 22Z"
+        />
+      </svg>
       {/* scrambling pass-codes, clipped to the design's soft blob (OFF).
           Outer div = show/hide (animated); inner keeps the design's 80%. */}
       <div ref={matrixRef} aria-hidden className="pointer-events-none absolute inset-0">
