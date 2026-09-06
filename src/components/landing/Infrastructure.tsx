@@ -521,8 +521,10 @@ function InfrastructureStage() {
   const tabRef = useRef<RowKey>("buildin");
   const switchTabRef = useRef<(to: RowKey) => void>(() => {});
   /* while the rows are animating (entrance, tab switch) cards sweep under
-     the pointer and would fire mouseenter — hover is ignored until done */
+     the pointer and would fire mouseenter — hover is ignored until done…
+     unless the pointer is clearly trying to play (see abortRows) */
   const rowsBusyRef = useRef(false);
+  const rowsAnimRef = useRef<gsap.core.Timeline | null>(null); // the accordion in flight
 
   const lightCard = (row: RowKey, key: string) => {
     const svg = svgRef.current;
@@ -579,6 +581,23 @@ function InfrastructureStage() {
 
   /* Put one row back to its rest instantly: cards on their spots, the
      first one lit and raised, only its legend showing. */
+  /* A pointer waggling left-right over the cards while the accordion is
+     still playing is a user trying to hover them: land the accordion at
+     once and light whatever the pointer is on. */
+  const abortRows = (x: number, y: number) => {
+    const t = rowsAnimRef.current;
+    if (!t) return;
+    t.progress(1);
+    t.pause();
+    rowsAnimRef.current = null;
+    rowsBusyRef.current = false;
+    const key = document.elementFromPoint(x, y)?.closest("[data-card]")?.getAttribute("data-card");
+    if (key) {
+      const [row, k] = key.split(":");
+      lightCard(row as RowKey, k);
+    }
+  };
+
   const restRow = (row: RowKey) => {
     const svg = svgRef.current;
     if (!svg) return;
@@ -588,7 +607,7 @@ function InfrastructureStage() {
       const el = svg.querySelector(`[data-card="${row}:${c.key}"]`);
       if (!el) return;
       const lit = i === 0;
-      gsap.set(el, { x: c.x, y: c.y - (lit ? raise : 0), opacity: 1 });
+      gsap.set(el, { x: cardX(row, c.key), y: c.y - (lit ? raise : 0), opacity: 1 });
       gsap.set(el.querySelector("[data-cface]"), { attr: { transform: face } });
       const set = (sel: string, o: number) => {
         const p = el.querySelector(sel);
@@ -929,6 +948,71 @@ function InfrastructureStage() {
       relayout();
     };
     layoutPanel();
+
+    /* THE WAGGLE. While frame 6's accordion plays (the entrance, a tab
+       swap) a pointer going left AND right over the card band — a leg of
+       24px+ one way, then 24px+ straight back — is a user trying to hover
+       the cards: the accordion lands at once and the card under the
+       pointer lights. A one-way sweep never counts (that is the pointer
+       arriving from the column), nor does a waggle over the header or
+       legends. A click on the band does the same. */
+    const LEG = 24;
+    let legDir = 0; // the current leg's direction, ±1
+    let legLen = 0; // its length so far
+    let legs = 0; // full legs completed before it
+    let lastX = NaN;
+    const resetWaggle = () => {
+      legDir = 0;
+      legLen = 0;
+      legs = 0;
+      lastX = NaN;
+    };
+    const rowsPlaying = () => rowsBusyRef.current && frameRef.current === 6;
+    /* the band the cards move in: the panel's width, the cards' height
+       (both rows, at rest and raised) with 24px to spare */
+    const overRows = (x: number, y: number) => {
+      const p = panel.getBoundingClientRect();
+      if (x < p.left || x > p.right) return false;
+      let top = Infinity;
+      let bottom = -Infinity;
+      svg.querySelectorAll("[data-card]").forEach((el) => {
+        const r = el.getBoundingClientRect();
+        top = Math.min(top, r.top);
+        bottom = Math.max(bottom, r.bottom);
+      });
+      return y >= top - 24 && y <= bottom + 24;
+    };
+    const onPanelMove = (e: MouseEvent) => {
+      if (!rowsPlaying() || !overRows(e.clientX, e.clientY)) {
+        resetWaggle();
+        return;
+      }
+      if (Number.isNaN(lastX)) {
+        lastX = e.clientX;
+        return;
+      }
+      const dx = e.clientX - lastX;
+      lastX = e.clientX;
+      if (!dx) return;
+      const dir = Math.sign(dx);
+      if (dir !== legDir) {
+        if (legDir && Math.abs(dx) <= 2) return; // a jitter, not a turn
+        legs = legLen >= LEG ? legs + 1 : 0; // a short leg breaks the rhythm
+        legDir = dir;
+        legLen = 0;
+      }
+      legLen += Math.abs(dx);
+      if (legs >= 1 && legLen >= LEG) {
+        abortRows(e.clientX, e.clientY);
+        resetWaggle();
+      }
+    };
+    const onPanelClick = (e: MouseEvent) => {
+      if (rowsPlaying() && overRows(e.clientX, e.clientY)) abortRows(e.clientX, e.clientY);
+    };
+    panel.addEventListener("mousemove", onPanelMove);
+    panel.addEventListener("click", onPanelClick);
+
     const layoutRo = new ResizeObserver(layoutPanel);
     layoutRo.observe(panel);
     layoutRo.observe(stage);
@@ -1345,10 +1429,16 @@ function InfrastructureStage() {
           paused: true,
           onComplete: () => {
             rowsBusyRef.current = false;
+            rowsAnimRef.current = null;
           },
         });
         fadeOutFrame(t, from, instant);
-        appendEntrance6(t);
+        // the accordion rides in its own timeline so a waggling pointer can
+        // land it alone while the fade and the column swap play on
+        const ent = gsap.timeline();
+        appendEntrance6(ent);
+        t.add(ent, 0);
+        rowsAnimRef.current = ent;
         appendItemSwap(t, ITEM_OF[from], "integrations");
         run(t);
       };
@@ -1383,8 +1473,10 @@ function InfrastructureStage() {
         const t = gsap.timeline({
           onComplete: () => {
             rowsBusyRef.current = false;
+            rowsAnimRef.current = null;
           },
         });
+        rowsAnimRef.current = t;
         if (reduced) t.timeScale(100);
         // tab header + the leaving row's legend
         t.to(sq(`[data-tab-text="${from}"]`), { opacity: 0.2, duration: 0.4 }, 0);
@@ -1924,6 +2016,8 @@ function InfrastructureStage() {
     return () => {
       layoutRo.disconnect();
       window.removeEventListener("resize", layoutPanel);
+      panel.removeEventListener("mousemove", onPanelMove);
+      panel.removeEventListener("click", onPanelClick);
       ctx.revert();
     };
   }, []);
