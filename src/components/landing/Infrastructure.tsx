@@ -1573,9 +1573,26 @@ function InfrastructureStage() {
         flickerMark();
         ensureTl3();
       };
+      /* frame 4 is being left upward by the scrub. Anything still
+         bringing frame 4 IN — the morph back from 5 (1.65s), a crossfade
+         from 6 or 8, the side tweens — would otherwise finish after the
+         scrub has passed its tweens and leave frame 4's furniture (the
+         callouts, most visibly) painted over stage 1. Finish them now and
+         re-render the scrub so it owns every part again. */
       const unland = () => {
         landed = false;
         flickerRef.current?.kill();
+        if (running) {
+          running.progress(1);
+          running.kill();
+          running = null;
+        }
+        if (tl3?.isActive()) {
+          tl3.pause();
+          tl3.progress(0);
+        }
+        killSide();
+        tl2.render(tl2.time(), false, true);
       };
 
       /* ONE STEP PER GESTURE. A gesture is one continuous stream of wheel
