@@ -6,8 +6,9 @@ import FooterWordmark from "./FooterWordmark";
    left with the copyright under it, five link columns on the right, and
    37 under those the giant "cocoding" — Montserrat Black 250px, blue
    fading toward white — cut off by the page's end so only its top 179px
-   show (the footer's overflow clip does the cutting; the wordmark can
-   be pulled up out of it, see FooterWordmark). Placeholder links. */
+   show (the footer clips it: overflow-clip). A hard pull at the end
+   lifts the whole footer and the hidden half rises from under the page
+   (FooterWordmark). Placeholder links. */
 
 const COLUMNS: { title: string; width: string; links: string[] }[] = [
   { title: "Product", width: "xl:w-[70px]", links: ["Features", "Pricing", "Live demo", "Templates", "Changelog"] },

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 
 /* THE WORDMARK at the page's end (Figma 16555:16756): "cocoding" in
    Montserrat Black, 250px at the design's width, blue fading to white,
@@ -12,15 +13,23 @@ import { useEffect, useRef } from "react";
       the share of its window the viewport has uncovered, eased by a
       0.9s transition so a flick still reads as a gradual glow.
    2. At the page's end a hard pull (wheel down with nothing left to
-      scroll) drags the word up out of its slot, showing the cut lower
-      half — up to where the dot of the i would touch the link columns —
-      and it snaps back when the pull lets go. Rubber band: the push
-      decays while the wheel keeps coming (TAU), its reach saturates (K),
-      a lightly damped spring follows; 90ms without a real wheel event
-      (a trackpad's dwindling momentum tail counts as none) is the let-go
-      and the spring settles in about half a second, dipping a little
-      under the cut on the way. Wheel only; touch keeps the platform's
-      own bounce. */
+      scroll) lifts the WHOLE footer — columns and word together, their
+      spacing untouched — and the word's cut lower half rises from under
+      the page's end. Nothing in flow can paint below the page's end
+      without lengthening it (overflow-clip-margin does, clip-path does),
+      so the hidden half is a second copy of the word in a FIXED strip at
+      the viewport's bottom, the footer's width and type, its line box
+      pulled up by the 0.716em window: the strip's top rides on the
+      footer's bottom edge, so the copy's letters sit exactly under the
+      real ones, and at rest the strip is wholly below the viewport. It
+      is portaled to <body>: inside the footer, the footer's transform
+      would become its containing block and move it twice.
+      Rubber band: the push decays while the wheel keeps coming (TAU),
+      its reach saturates (K) at the hidden half, a lightly damped spring
+      follows; 90ms without a real wheel event (a trackpad's dwindling
+      momentum tail counts as none) is the let-go and the spring settles
+      in about half a second, dipping a little under the rest on the
+      way. Wheel only; touch keeps the platform's own bounce. */
 
 const TAU = 320; // ms — how long a push is remembered while the wheel keeps turning
 const K = 300; // px of push for 63% of the reach
@@ -28,46 +37,49 @@ const MIN_STEP = 4; // smaller wheel deltas are a momentum tail, not a pull
 const LET_GO = 90; // ms without a pull
 const STIFFNESS = 260; // the spring toward the target, 1/s² (ω ≈ 16)
 const DAMPING = 19; // ζ ≈ 0.6: a 10% overshoot
+const subscribeNothing = () => () => {};
 
 export default function FooterWordmark() {
   const boxRef = useRef<HTMLDivElement>(null);
   const wordRef = useRef<HTMLSpanElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
+  // false in the server render, true on the client: the portal needs document
+  const mounted = useSyncExternalStore(subscribeNothing, () => true, () => false);
 
   useEffect(() => {
     const box = boxRef.current;
     const word = wordRef.current;
-    if (!box || !word) return;
+    const strip = stripRef.current;
+    const footer = box?.closest("footer");
+    if (!box || !word || !strip || !footer) return;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
       word.style.opacity = "1";
       return;
     }
 
     /* 1. dark -> bright with the reveal */
-    let reach = 0; // how far the word may be pulled up (px)
+    let reach = 0; // the hidden half: how far the footer may be pulled up (px)
     const light = () => {
       const r = box.getBoundingClientRect();
       // +1: the footer's half-pixel border leaves its end 0.5px under the viewport's
       const t = Math.min(1, Math.max(0, (innerHeight - r.top + 1) / r.height));
       word.style.opacity = String(t);
-      // the hidden part is 0.504em (1.22 line box - 0.716 window); the
-      // highest ink — the dot of the i — starts 0.147em under the line
-      // box's top (the d's ascender 0.226em) and the window sits 37px
-      // under the columns: stop 4px short of them. 70px at the design's
-      // 250: the o's bottoms clear the cut, the g's tail stays in it.
-      const fs = parseFloat(getComputedStyle(box).fontSize);
-      reach = Math.min(0.504 * fs, 0.147 * fs + 33);
+      // 0.504em: the 1.22 line box less the 0.716 window (126 at 250; the
+      // g's tail ends 12 above the line box's bottom)
+      reach = 0.504 * parseFloat(getComputedStyle(box).fontSize);
     };
     light();
     addEventListener("scroll", light, { passive: true });
     addEventListener("resize", light);
 
-    /* 2. the pull at the page's end */
+    /* 2. the pull at the page's end — the footer moves, the word with it */
     let push = 0; // accumulated wheel travel, decaying
     let pushedAt = 0; // when the wheel last pulled
     let pull = 0; // the spring's position (px up)
     let vel = 0;
     let last = 0;
     let raf = 0;
+    let seam = 0; // translate that puts the strip's top on the footer's resting bottom edge
     const atEnd = () => {
       const d = document.scrollingElement ?? document.documentElement;
       return d.scrollTop + innerHeight >= d.scrollHeight - 1;
@@ -82,12 +94,13 @@ export default function FooterWordmark() {
       pull += vel * dt;
       if (!push && Math.abs(pull) < 0.2 && Math.abs(vel) < 2) {
         pull = vel = 0;
-        word.style.transform = "";
+        footer.style.transform = "";
+        strip.style.transform = "translateY(100%)";
         raf = 0;
         return;
       }
-      // the band has a stop at the columns; below the cut nothing shows anyway
-      word.style.transform = `translateY(${-Math.min(pull, reach)}px)`;
+      footer.style.transform = `translateY(${-pull}px)`;
+      strip.style.transform = `translateY(${seam - pull}px)`;
       raf = requestAnimationFrame(tick);
     };
     const onWheel = (e: WheelEvent) => {
@@ -97,6 +110,10 @@ export default function FooterWordmark() {
         pushedAt = performance.now();
         if (!raf) {
           last = pushedAt;
+          // the strip's box rests at the viewport's bottom (bottom: 0), its
+          // top one strip-height up; move it down so its top is the edge
+          const r = strip.getBoundingClientRect();
+          seam = footer.getBoundingClientRect().bottom - innerHeight + r.height;
           raf = requestAnimationFrame(tick);
         }
       } else if (dy < 0) {
@@ -110,27 +127,44 @@ export default function FooterWordmark() {
       removeEventListener("resize", light);
       removeEventListener("wheel", onWheel);
       if (raf) cancelAnimationFrame(raf);
+      footer.style.transform = "";
     };
-  }, []);
+  }, [mounted]);
 
+  const type = "text-center text-[min(250px,20.8vw)] leading-[1.22] font-black tracking-[-0.04em] select-none";
+  const gradient = "linear-gradient(180deg, rgba(13,56,177,0.75) 0%, #FFFFFF 79%)";
   return (
-    <div
-      ref={boxRef}
-      aria-hidden
-      className="mt-[37px] h-[0.716em] text-center text-[min(250px,20.8vw)] leading-[1.22] font-black tracking-[-0.04em] select-none"
-      style={{ fontFamily: "var(--font-montserrat), sans-serif" }}
-    >
-      <span
-        ref={wordRef}
-        data-wordmark
-        className="inline-block bg-clip-text text-transparent will-change-[transform,opacity]"
-        style={{
-          backgroundImage: "linear-gradient(180deg, rgba(13,56,177,0.75) 0%, #FFFFFF 79%)",
-          transition: "opacity 0.9s cubic-bezier(0.25, 0.1, 0.25, 1)",
-        }}
-      >
-        cocoding
-      </span>
-    </div>
+    <>
+      <div ref={boxRef} aria-hidden className={`mt-[37px] h-[0.716em] ${type}`} style={{ fontFamily: "var(--font-montserrat), sans-serif" }}>
+        <span
+          ref={wordRef}
+          data-wordmark
+          className="inline-block bg-clip-text text-transparent will-change-[opacity]"
+          style={{ backgroundImage: gradient, transition: "opacity 0.9s cubic-bezier(0.25, 0.1, 0.25, 1)" }}
+        >
+          cocoding
+        </span>
+      </div>
+      {/* the hidden half: a fixed strip 0.504em tall at the viewport's bottom,
+          the footer's paddings and container so the copy lands under the
+          original; off-screen (translateY 100%) until a pull rides it up.
+          In <body>, not the footer (see above). */}
+      {mounted &&
+        createPortal(
+          <div
+            ref={stripRef}
+            aria-hidden
+            className={`pointer-events-none fixed inset-x-0 bottom-0 h-[0.504em] overflow-hidden px-5 md:px-10 ${type}`}
+            style={{ fontFamily: "var(--font-montserrat), sans-serif", transform: "translateY(100%)" }}
+          >
+            <div className="mx-auto -mt-[0.716em] w-full max-w-[1200px]">
+              <span data-wordmark-under className="inline-block bg-clip-text text-transparent" style={{ backgroundImage: gradient }}>
+                cocoding
+              </span>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 }
