@@ -1535,6 +1535,7 @@ function InfrastructureStage() {
       let captured = false;
       let landed = false; // frame 4 formed (tl2 at 1)
       let lastOvershoot = NaN; // where the page stood against the runway's end last time
+      let capturedAt = 0; // when the hold began
       let arriving: (() => void) | null = null; // runs when a programmatic scroll lands
       let arriveTimer = 0;
 
@@ -1631,6 +1632,7 @@ function InfrastructureStage() {
       const capture = (overshoot = 0) => {
         if (captured) return;
         captured = true;
+        capturedAt = performance.now();
         acc = 0;
         gestureUsed = true; // the gesture that brought us here is spent
         touchGesture();
@@ -1807,8 +1809,17 @@ function InfrastructureStage() {
         if (arriving && Math.abs(g.travel - arriveAt) <= 2) arrived();
         if (bandsOn()) return bands(g.travel);
         if (captured) {
-          // the scrollbar can still drag the page away: let it go (the next
-          // crossing of the end captures again)
+          // The wheel events already dispatched when the hold began keep
+          // the browser's smooth scroll rolling for a moment — with more
+          // page below, that alone used to drift past the 40px quit and
+          // undo the hold. So for the first 600ms every drift is pulled
+          // back to the end; after that the scrollbar can still drag the
+          // page away, and it is let go (the next crossing captures again).
+          if (performance.now() - capturedAt < 600) {
+            if (Math.abs(g.overshoot) > 0.5) window.scrollBy({ top: -g.overshoot, behavior: "instant" });
+            lastOvershoot = 0;
+            return;
+          }
           if (Math.abs(g.overshoot) > 40) release();
           lastOvershoot = g.overshoot;
           return;
