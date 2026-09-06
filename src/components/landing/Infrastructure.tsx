@@ -401,13 +401,14 @@ function makeNoiseTexture(): string {
   return cv.toDataURL("image/png");
 }
 
-/* The stage is built for one layout — the tablet panel (md) or the
-   1200px design — and its timelines hold that layout's numbers, so
-   crossing 1280 remounts it rather than re-deriving them mid-flight. */
+/* The stage is built for one layout — the narrow panel (phone and
+   tablet) or the 1200px design — and its timelines hold that layout's
+   numbers, so crossing 1280 remounts it rather than re-deriving them
+   mid-flight. */
 export default function Infrastructure() {
   const [layout, setLayout] = useState(0);
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px) and (max-width: 1279px)");
+    const mq = window.matchMedia("(min-width: 1280px)");
     const bump = () => setLayout((v) => v + 1);
     mq.addEventListener("change", bump);
     return () => mq.removeEventListener("change", bump);
@@ -744,32 +745,30 @@ function InfrastructureStage() {
       im.setAttribute("href", noiseUrl);
     });
 
-    /* PANEL LAYOUT. The art is authored in a 751x679 space. At md the
-       panel is narrower (344 at 768, the design's 751 from ~1176) but
-       keeps the design's height, so the space is re-anchored rather than
-       scaled: the SVG's viewBox takes the panel's width, everything
-       centered (stack, cube, glows, the card rows, the scorecard) shifts
-       to stay centered and the cube frames ride MD_LIFT higher; the
-       labels are re-placed for the tablet composition (see the MD
-       constants) and the card rows close up (layoutCards). Below md the
-       panel keeps the design's proportions and simply scales. */
+    /* PANEL LAYOUT. The art is authored in a 751x679 space. Below xl the
+       panel is narrower (344 on a 390 phone and at 768, the design's 751
+       from ~1176) but keeps the design's height, so the space is
+       re-anchored rather than scaled: the SVG's viewBox takes the panel's
+       width, everything centered (stack, cube, glows, the card rows, the
+       scorecard) shifts to stay centered and the cube frames ride
+       MD_LIFT higher; the labels are re-placed for the narrow
+       composition (see the MD constants) and the card rows close up
+       (layoutCards). */
     const stage = runway.firstElementChild as HTMLElement;
-    const fluidMq = window.matchMedia("(min-width: 768px) and (max-width: 1279px)");
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    /* INPUT MODES. From md up the stage sticks while a runway scrolls
-       under it. A hovering pointer is CAPTURED at the runway's end and
+    /* INPUT MODES. The stage sticks while a runway scrolls under it, at
+       every width. A hovering pointer is CAPTURED at the runway's end and
        steps frames by gesture (see the navigation block); touch reads the
-       frames off scroll BANDS instead. Below md there is no runway. */
-    const mdMq = window.matchMedia("(min-width: 768px)");
+       frames off scroll BANDS instead. */
     const xlMq = window.matchMedia("(min-width: 1280px)");
     const hoverMq = window.matchMedia("(hover: hover)");
-    const runwayOn = () => mdMq.matches;
-    const captureOn = () => runwayOn() && hoverMq.matches && !reduced;
-    const bandsOn = () => runwayOn() && !hoverMq.matches && !reduced;
+    const captureOn = () => hoverMq.matches && !reduced;
+    const bandsOn = () => !hoverMq.matches && !reduced;
     /* where the stage sticks (its `top`): xl centers the panel; the
-       stacked layout centers the whole stage when it fits the viewport,
-       otherwise rests the panel's bottom on the viewport's bottom and the
-       text above runs off the top */
+       narrow layouts center the whole stage when it fits the viewport,
+       otherwise rest the panel's bottom on the viewport's bottom and the
+       text above runs off the top (a phone shows the current item's
+       title over the panel that way) */
     const stickTop = () => {
       const vh = window.innerHeight;
       if (xlMq.matches) return vh / 2 - (panel.offsetTop + panel.offsetHeight / 2);
@@ -836,14 +835,14 @@ function InfrastructureStage() {
       }
     };
     const layoutPanel = () => {
-      const md = fluidMq.matches;
-      const W = md ? Math.round(panel.clientWidth) : 751;
+      const narrow = !xlMq.matches; // the phone/tablet panel: as wide as its column, the art re-placed
+      const W = narrow ? Math.round(panel.clientWidth) : 751;
       const dxC = (W - 751) / 2; // centered things
       const cx = W / 2;
       svg.setAttribute("viewBox", `0 0 ${W} 679`);
       svg.querySelectorAll<SVGElement>('[data-anchor="center"]').forEach((g) => {
         const lift = g.getAttribute("data-md-lift"); // how far the group rises at md
-        const dy = md && lift !== null ? -Number(lift) : 0;
+        const dy = narrow && lift !== null ? -Number(lift) : 0;
         g.setAttribute("transform", dxC || dy ? `translate(${dxC} ${dy})` : "");
       });
       const show = (sel: string, on: boolean) =>
@@ -852,52 +851,52 @@ function InfrastructureStage() {
         });
       // the stage labels: under their hairlines, right-aligned, at xl; at
       // md the hairlines go and the labels gather centered under the layers
-      show("[data-line]", !md);
+      show("[data-line]", !narrow);
       svg.querySelectorAll<SVGElement>("[data-label], [data-build]").forEach((t) => {
-        t.setAttribute("x", String(md ? cx : 715));
-        t.setAttribute("text-anchor", md ? "middle" : "end");
+        t.setAttribute("x", String(narrow ? cx : 715));
+        t.setAttribute("text-anchor", narrow ? "middle" : "end");
       });
       svg.querySelectorAll<SVGElement>('[data-label="mid"], [data-build]').forEach((t) => {
-        t.setAttribute("y", String(md ? LABEL_Y_MD.mid : LABEL_Y.mid));
+        t.setAttribute("y", String(narrow ? LABEL_Y_MD.mid : LABEL_Y.mid));
       });
       // the cube frames' callouts: three around the cube at xl; at md one
       // centered block beneath it — the lit face's label and description
       // (the resting gray labels and the hairlines are not drawn)
       const place = (p: "data-co" | "data-co5", list: typeof ENV_CALLOUTS | typeof ENV5_CALLOUTS) => {
         const m = CO_MD[p === "data-co5" ? 5 : 4];
-        show(`[${p}-line], [${p}-base]`, !md);
+        show(`[${p}-line], [${p}-base]`, !narrow);
         for (const c of list) {
           const lx = c.anchor === "end" ? c.x2 : c.x1;
-          const x = md ? cx : lx;
-          const anchor = md ? "middle" : c.anchor;
+          const x = narrow ? cx : lx;
+          const anchor = narrow ? "middle" : c.anchor;
           svg.querySelectorAll(`[${p}-active="${c.key}"], [${p}-base="${c.key}"]`).forEach((t) => {
             t.setAttribute("x", String(x));
-            t.setAttribute("y", String(md ? m.label : c.y + 24.5));
+            t.setAttribute("y", String(narrow ? m.label : c.y + 24.5));
             t.setAttribute("text-anchor", anchor);
-            t.setAttribute("font-size", md ? "12" : "13");
+            t.setAttribute("font-size", narrow ? "12" : "13");
           });
           const d = svg.querySelector(`[${p}-desc="${c.key}"]`);
           if (d) {
             d.setAttribute("text-anchor", anchor);
-            d.setAttribute("font-size", md ? "12" : "13");
+            d.setAttribute("font-size", narrow ? "12" : "13");
             d.querySelectorAll("tspan").forEach((t, i) => {
               t.setAttribute("x", String(x));
-              t.setAttribute("y", String(md ? m.desc + i * 18 : c.y + 49.1 + i * 19.5));
+              t.setAttribute("y", String(narrow ? m.desc + i * 18 : c.y + 49.1 + i * 19.5));
             });
           }
           const hit = svg.querySelector(`[${p}-hit="${c.key}"]`);
           if (hit) {
-            hit.setAttribute("x", String(md ? cx - 100 : c.x1));
-            hit.setAttribute("y", String(md ? m.hitTop : c.y - 10));
-            hit.setAttribute("width", String(md ? 200 : c.x2 - c.x1));
-            hit.setAttribute("height", String(md ? 94 : 44));
+            hit.setAttribute("x", String(narrow ? cx - 100 : c.x1));
+            hit.setAttribute("y", String(narrow ? m.hitTop : c.y - 10));
+            hit.setAttribute("width", String(narrow ? 200 : c.x2 - c.x1));
+            hit.setAttribute("height", String(narrow ? 94 : 44));
           }
         }
       };
       place("data-co", ENV_CALLOUTS);
       place("data-co5", ENV5_CALLOUTS);
       // the legend's boxes and rows
-      const L = md ? LEGEND_MD : LEGEND_XL;
+      const L = narrow ? LEGEND_MD : LEGEND_XL;
       svg.querySelectorAll("[data-env-legend] rect").forEach((rc, i) => {
         rc.setAttribute("width", String(L.box));
         rc.setAttribute("height", String(L.box));
@@ -909,15 +908,15 @@ function InfrastructureStage() {
       });
       // frame 5's parts that are placed, not tweened, into its tablet pose
       // (the tweened ones take CUBE5_MD / STACK5_MD in the morph)
-      const C5 = md ? CUBE5_MD : CUBE5;
+      const C5 = narrow ? CUBE5_MD : CUBE5;
       svg.querySelector("[data-mark5]")?.setAttribute("transform", C5.icon);
       for (const side of ["left5", "right5"] as const) {
         const [mx, my] = FACE_MARKS[side].translate.split(" ").map(Number);
         svg
           .querySelector(`[data-mark-side="${side}"]`)
-          ?.setAttribute("transform", `translate(${mx + (md ? MD5.dx : 0)} ${my + (md ? MD5.dy : 0)})`);
+          ?.setAttribute("transform", `translate(${mx + (narrow ? MD5.dx : 0)} ${my + (narrow ? MD5.dy : 0)})`);
       }
-      gsap.set(svg.querySelectorAll("[data-face-x]"), { x: (md ? STACK5_MD : STACK5).x });
+      gsap.set(svg.querySelectorAll("[data-face-x]"), { x: (narrow ? STACK5_MD : STACK5).x });
       layoutCards(W);
       // the stage sticks at --stick-top while the runway — the wrapper's
       // height beyond the stage — scrolls under it. A centered stage stops
@@ -933,7 +932,6 @@ function InfrastructureStage() {
     const layoutRo = new ResizeObserver(layoutPanel);
     layoutRo.observe(panel);
     layoutRo.observe(stage);
-    fluidMq.addEventListener("change", layoutPanel);
     window.addEventListener("resize", layoutPanel);
 
     // the light starts on the lid with frame 4's mark — stated outright so
@@ -955,11 +953,11 @@ function InfrastructureStage() {
       const label = (k: string) => svg.querySelector(`[data-label="${k}"]`);
 
       // the stage geometry for this layout (see the MD constants)
-      const md = fluidMq.matches;
-      const SY = md ? SPREAD_Y_MD : SPREAD_Y;
-      const STY = md ? STACK_Y_MD : STACK.y;
-      const LY = md ? LABEL_Y_MD : LABEL_Y;
-      gsap.set(faces, { y: md ? FACE_Y0_MD : FACE_Y0 });
+      const narrow = !xlMq.matches;
+      const SY = narrow ? SPREAD_Y_MD : SPREAD_Y;
+      const STY = narrow ? STACK_Y_MD : STACK.y;
+      const LY = narrow ? LABEL_Y_MD : LABEL_Y;
+      gsap.set(faces, { y: narrow ? FACE_Y0_MD : FACE_Y0 });
 
       const tl = gsap.timeline({ paused: true, defaults: { ease: "none" } });
 
@@ -1040,8 +1038,8 @@ function InfrastructureStage() {
       let tl3: gsap.core.Timeline | null = null;
       const ensureTl3 = () => {
         if (tl3) return tl3;
-        const C5 = md ? CUBE5_MD : CUBE5; // frame 5's pose for this layout
-        const S5 = md ? STACK5_MD : STACK5;
+        const C5 = narrow ? CUBE5_MD : CUBE5; // frame 5's pose for this layout
+        const S5 = narrow ? STACK5_MD : STACK5;
         const sq = (sel: string) => svg.querySelector(sel);
         const sqa = (sel: string) => svg.querySelectorAll(sel);
         const OPEN = { duration: 0.9, ease: "power2.inOut" } as const;
@@ -1145,11 +1143,18 @@ function InfrastructureStage() {
       const appendItemSwap = (t: gsap.core.Timeline, _foldKey: string, openKey: string) => {
         const descs = Array.from(section.querySelectorAll<HTMLElement>("[data-item-desc]"));
         const open = descs.find((el) => el.dataset.itemDesc === openKey)!;
-        // measure the target at full size, then put back exactly what it had
+        // a phone shows only the open item: its wrapper's data-open switches it
+        const wrap = (k: string) => section.querySelector<HTMLElement>(`[data-item="${k}"]`);
+        // measure the target at full size (its wrapper shown), then put
+        // back exactly what it had
         const style = open.getAttribute("style") ?? "";
+        const w = wrap(openKey);
+        const wasOpen = w?.dataset.open;
+        if (w) w.dataset.open = "true";
         gsap.set(open, { display: "block", height: "auto" });
         const openH = open.offsetHeight;
         open.setAttribute("style", style);
+        if (w && wasOpen !== undefined) w.dataset.open = wasOpen;
         const closed = getComputedStyle(open).display === "none";
         if (closed) gsap.set(open, { height: 0, opacity: 0, marginTop: 0 });
         for (const el of descs) {
@@ -1157,11 +1162,13 @@ function InfrastructureStage() {
           if (k === openKey) continue;
           // every other title dims (one may be part-lit from an interrupted swap)
           t.to(section.querySelector(`[data-item-title="${k}"]`), { opacity: 0.2, duration: 0.4 }, 0.1);
+          t.set(wrap(k), { attr: { "data-open": "false" } }, 0.56);
           if (getComputedStyle(el).display === "none") continue;
           t.to(el, { height: 0, opacity: 0, marginTop: 0, duration: 0.45, ease: "power2.inOut" }, 0.1);
           t.set(el, { display: "none" }, 0.56);
         }
         t.to(section.querySelector(`[data-item-title="${openKey}"]`), { opacity: 1, duration: 0.4 }, 0.45);
+        t.set(wrap(openKey), { attr: { "data-open": "true" } }, 0.5);
         t.set(open, { display: "block" }, 0.5);
         t.to(open, { height: openH, opacity: 1, marginTop: 12, duration: 0.5, ease: "power2.inOut" }, 0.5);
       };
@@ -1521,9 +1528,8 @@ function InfrastructureStage() {
          runway's end (the scrub completing on the way) — so the exits are
          still 4-up and 8-down. Dragging the scrollbar away releases, and
          the next crossing of the end captures again. Hovering pointers
-         only (md up); touch reads BANDS instead (below); reduced motion
-         never captures; below md there is no runway and 3 -> 4 plays
-         timed on the first title click. */
+         only; touch reads BANDS instead (below); reduced motion never
+         captures. */
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
       let captured = false;
@@ -1542,9 +1548,8 @@ function InfrastructureStage() {
         const maxScroll =
           document.documentElement.scrollHeight - vh - window.scrollY;
         const minTop = r.top - Math.max(0, maxScroll); // panel.top at page bottom
-        // the panel's top once the stage sticks (centered on a phone, which has no runway)
-        const rest = runwayOn() ? stickTop() + panel.offsetTop : vh / 2 - 340 * k;
-        return { r, r0: vh - 460 * k, r1: Math.max(rest, minTop) };
+        // the panel's top once the stage sticks
+        return { r, r0: vh - 460 * k, r1: Math.max(stickTop() + panel.offsetTop, minTop) };
       };
       /* the runway: how far the stuck stage has travelled into it and how
          much of it the page can reach today — the section is the page's
@@ -1792,7 +1797,6 @@ function InfrastructureStage() {
         const { r, r1, r0 } = pinTarget();
         const base4 = frameRef.current === 4;
         if (base4) tl.progress(clamp01((r0 - r.top) / Math.max(r0 - r1, 1)));
-        if (!runwayOn()) return; // no runway below md: frames by click only
         const g = geometry();
         if (base4) {
           const p = clamp01(g.travel / g.scrub);
@@ -1823,18 +1827,6 @@ function InfrastructureStage() {
         if (tl2.isActive() || target === frameRef.current) return;
         const instant = interrupt();
         if (reduced) return goTo(target, instant);
-        if (!runwayOn()) {
-          // no runway: the 3 -> 4 leg plays timed, then the target
-          if (tl2.progress() < 1) {
-            tl2.eventCallback("onComplete", () => {
-              tl2.eventCallback("onComplete", null);
-              land();
-              if (target !== 4) goTo(target);
-            });
-            tl2.play();
-          } else goTo(target, instant);
-          return;
-        }
         if (bandsOn()) {
           // switch now — or, before frame 4 has formed, when the glide
           // lands (the scrub forms it on the way) — and glide to the
@@ -1903,30 +1895,30 @@ function InfrastructureStage() {
 
     return () => {
       layoutRo.disconnect();
-      fluidMq.removeEventListener("change", layoutPanel);
       window.removeEventListener("resize", layoutPanel);
       ctx.revert();
     };
   }, []);
 
   return (
-    <section ref={sectionRef} className="px-5 md:px-10 xl:px-0">
-      <div className="pt-24 md:pt-[110px] xl:pt-[120px]">
-      {/* the runway: from md the stage below sticks (at --stick-top, see
-          stickTop) while this box's height beyond it scrolls by, driving
-          3 -> 4 and, on touch, the frames after. Both vars are measured
-          by layoutPanel; until then the box is just the stage's height. */}
+    <section ref={sectionRef} className="px-[23px] md:px-10 xl:px-0">
+      <div className="pt-[65px] md:pt-[110px] xl:pt-[120px]">
+      {/* the runway: the stage below sticks (at --stick-top, see stickTop)
+          while this box's height beyond it scrolls by, driving 3 -> 4
+          and, on touch, the frames after. Both vars are measured by
+          layoutPanel; until then the box is just the stage's height. */}
       <div
         ref={runwayRef}
-        className="md:h-[calc(var(--stage-full)+var(--runway))]"
+        className="h-[calc(var(--stage-full)+var(--runway))]"
         style={{ "--runway": `${RUNWAY}px` } as CSSProperties}
       >
-      {/* the stage. Three layouts: below md the text stacks over a
-          panel of the design's proportions; md two columns, 41px apart —
-          the panel 344 wide at 768 and growing to the design's 751, the
-          text taking the rest (its art re-anchors, see layoutPanel); xl
-          the 1200px design. */}
-      <div className="relative mx-auto max-w-[600px] md:sticky md:top-[var(--stick-top)] md:flex md:max-w-none md:items-start md:gap-[41px] xl:block xl:h-[686px] xl:w-[1200px]">
+      {/* the stage. Three layouts: a phone (Figma bHyNfFfV0ocgVPCHtOyYBp
+          1159:676) stacks the heading, the CURRENT item's title and
+          description, and the panel as wide as the column, 679 tall; md
+          two columns, 41px apart — the panel 344 wide at 768 and growing
+          to the design's 751, the text taking the rest; xl the 1200px
+          design. The narrow panels' art re-anchors, see layoutPanel. */}
+      <div className="sticky top-[var(--stick-top)] mx-auto max-w-[600px] md:flex md:max-w-none md:items-start md:gap-[41px] xl:block xl:h-[686px] xl:w-[1200px]">
         {/* left column */}
         <div className="md:min-w-0 md:flex-1 xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
           {/* same one-shot scramble as the FEATURES eyebrow */}
@@ -1948,19 +1940,26 @@ function InfrastructureStage() {
 
           {/* the items: a list — at the Features cards' 16 / 14 type
               below xl, the design's 20 / 16 at xl — 26px around each
-              hairline, 12px between a title and its description */}
-          <div className="mt-[72px] md:mt-[60px] xl:mt-[72px] xl:w-[350px]">
+              hairline, 12px between a title and its description. A phone
+              shows only the open item (data-open, kept by the swap) in a
+              block of the design's 91px, so the panel below never moves. */}
+          <div className="mt-7 min-h-[91px] md:mt-[60px] md:min-h-0 xl:mt-[72px] xl:w-[350px]">
             {ITEMS.map((item, i) => (
-              <div key={item.key}>
+              <div
+                key={item.key}
+                data-item={item.key}
+                data-open={item.open ? "true" : "false"}
+                className="max-md:data-[open=false]:hidden"
+              >
                 {i > 0 && (
-                  <div className="mt-[26px] h-px bg-white/[0.06] opacity-70" />
+                  <div className="mt-[26px] hidden h-px bg-white/[0.06] opacity-70 md:block" />
                 )}
                 <p
                   data-item-title={item.key}
                   className={
                     (item.open
                       ? "text-body-md text-text-primary xl:text-heading-sm"
-                      : "mt-[26px] text-body-md text-text-primary opacity-20 xl:text-heading-sm") +
+                      : "text-body-md text-text-primary opacity-20 md:mt-[26px] xl:text-heading-sm") +
                     " cursor-pointer"
                   }
                   onClick={() =>
@@ -1988,7 +1987,7 @@ function InfrastructureStage() {
         {/* stage panel — bottom edge runs off the section (no border there) */}
         <div
           ref={panelRef}
-          className="relative mt-12 aspect-[751/679] w-full overflow-hidden rounded-t-lg md:mt-0 md:aspect-auto md:h-[679px] md:w-[min(751px,calc(100%-344px))] md:shrink-0 xl:absolute xl:left-[449px] xl:top-[7px] xl:h-[679px] xl:w-[751px]"
+          className="relative mt-10 h-[679px] w-full overflow-hidden rounded-t-lg md:mt-0 md:w-[min(751px,calc(100%-344px))] md:shrink-0 xl:absolute xl:left-[449px] xl:top-[7px] xl:w-[751px]"
           style={{
             background:
               "linear-gradient(0deg, rgba(55,80,200,0.02), rgba(55,80,200,0.02)), #000",
