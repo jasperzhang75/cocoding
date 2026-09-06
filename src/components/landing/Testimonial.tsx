@@ -77,12 +77,15 @@ const CARDS: Card[] = [openai, ramp, notion, openai, ramp, notion];
 
 /* ---------------------------------------------------------------- cards */
 
+/* 386 x 481 at xl. A tablet shows two whole cards: from 768 the width
+   is what two of them and a gap need, until 386 fits twice (792); a
+   phone gets the column. The height never changes. */
+const CARD_CLASS =
+  "relative h-[481px] w-[min(386px,100%)] shrink-0 overflow-hidden rounded-md md:w-[min(386px,calc((100%-20px)/2))] xl:w-[386px]";
+
 function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
   return (
-    <article
-      className="relative h-[481px] w-[min(386px,100%)] shrink-0 overflow-hidden rounded-md"
-      style={{ background: card.fill }}
-    >
+    <article className={CARD_CLASS} style={{ background: card.fill }}>
       <Image
         src={card.photo}
         alt=""
@@ -92,8 +95,10 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
         style={{ maskImage: PHOTO_MASK, WebkitMaskImage: PHOTO_MASK }}
       />
       <div className="absolute left-9 top-9">{card.logo}</div>
-      {/* Frame 2609435: 36 / 364, 308 wide, 6 between the lines */}
-      <div className="absolute left-9 top-[364px] w-[calc(100%-72px)] max-w-[308px]">
+      {/* Frame 2609435: 36 from the left, 308 wide, its bottom 36 above
+          the card's — anchored there so a narrower card's extra line
+          grows upward */}
+      <div className="absolute bottom-9 left-9 w-[calc(100%-72px)] max-w-[308px]">
         <p className="text-body-sm text-text-body">{card.name}</p>
         <p className="mt-1.5 text-[1.25rem] leading-[1.375] tracking-[-0.012em] text-text-primary">{card.text}</p>
       </div>
@@ -104,7 +109,7 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
 
 function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
   return (
-    <article className="relative h-[481px] w-[min(386px,100%)] shrink-0 overflow-hidden rounded-md bg-[#090A0E]">
+    <article className={`${CARD_CLASS} bg-[#090A0E]`}>
       {/* Ellipse 21888 / 21891: two 289 x 206 blue glows, layer-blurred
           300 in the design — drawn as radial gradients twice their size so
           nothing needs a filter */}
@@ -134,7 +139,7 @@ function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
         <p className="text-display text-white/90">{card.stat}</p>
         <p className="mt-1.5 text-body-md text-[#868686]">{card.statLabel}</p>
       </div>
-      <div className="absolute left-9 top-[366px] w-[calc(100%-72px)] max-w-[268px]">
+      <div className="absolute bottom-[34px] left-9 w-[calc(100%-72px)] max-w-[268px]">
         <p className="text-body-sm text-text-body">{card.kicker}</p>
         <p className="mt-1.5 text-[1.25rem] leading-[1.375] tracking-[-0.012em] text-white/90">{card.title}</p>
       </div>
