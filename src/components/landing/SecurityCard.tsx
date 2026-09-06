@@ -124,7 +124,7 @@ export default function SecurityCard() {
     };
 
     if (on) {
-      gsap.to(breathe, { autoAlpha: 1, duration: dur ?? 0.6 });
+      gsap.to(breathe, { opacity: 1, duration: dur ?? 0.6 });
       gsap.to(grayShieldRef.current, { opacity: 0, duration: dur ?? 0.8 });
       gsap.to(greenShieldRef.current, { opacity: 1, duration: dur ?? 0.8 });
       // keep scrambling while the mask swallows the codes; stop only once
@@ -137,7 +137,7 @@ export default function SecurityCard() {
       gsap.to(knobRef.current, { x: 0, duration: dur ?? 0.25, ease: "power2.out" });
       gsap.to(pillRef.current, { backgroundColor: "#489C32", duration: dur ?? 0.25 });
     } else {
-      gsap.to(breathe, { autoAlpha: 0, duration: dur ?? 1.1, ease: "power1.out" });
+      gsap.to(breathe, { opacity: 0, duration: dur ?? 1.1, ease: "power1.out" });
       gsap.to(grayShieldRef.current, { opacity: 1, duration: dur ?? 0.8 });
       gsap.to(greenShieldRef.current, { opacity: 0, duration: dur ?? 0.8 });
       gsap.to(maskProg.current, {
@@ -163,11 +163,15 @@ export default function SecurityCard() {
           "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
       }}
     >
-      {/* breathing light-green inner shadow (ON state). The fade lives on
-          this wrapper — the inner CSS breathe animation owns its own
-          opacity and would override a fade applied to the same element,
-          which is what made the glow vanish in a snap. */}
-      <div ref={breatheRef} aria-hidden className="pointer-events-none absolute inset-0">
+      {/* breathing green inner shadow (ON state). The fade lives on this
+          wrapper — the inner CSS breathe animation owns its own opacity and
+          would override a fade applied to the same element, which is what
+          made the glow vanish in a snap. It fades by opacity only and keeps
+          its own compositor layer: toggling visibility tore the layer down
+          and made Chrome re-rasterize the blurred glows beneath at a
+          different scale — the blue field jumped the moment the toggle was
+          pressed. */}
+      <div ref={breatheRef} aria-hidden className="pointer-events-none absolute inset-0 will-change-[opacity]">
         <div
           data-loop
           className="security-breathe absolute inset-0 rounded-md md:rounded-none md:rounded-bl-xl"
@@ -177,8 +181,10 @@ export default function SecurityCard() {
 
       {/* the pair of blur-250 glows — the card's blue field. Card-level (not
           in the poster) so the mobile top-crop can't clip them: at base they
-          cover the whole card; from md up they sit at the design geometry. */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-md md:rounded-none md:rounded-bl-xl xl:overflow-visible">
+          cover the whole card; from md up they sit at the design geometry.
+          Pinned to its own compositor layer so the blurred SVGs rasterize
+          once and stay put while the states animate. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-md will-change-transform md:rounded-none md:rounded-bl-xl xl:overflow-visible">
         <div className="absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 xl:left-[-99px] xl:top-[77px] xl:h-[523px] xl:w-[789px] xl:translate-x-0 xl:translate-y-0">
           {(["/features/f4-glow-a.svg", "/features/f4-glow-b.svg"] as const).map((src) => (
             <div key={src} className="absolute inset-0">
@@ -200,7 +206,7 @@ export default function SecurityCard() {
       <PosterViewport designHeight={464} crop={130} className="md:mt-auto xl:mt-0 xl:absolute xl:inset-0">
       {/* scrambling pass-codes, clipped to the design's soft blob (OFF).
           Outer div = show/hide (animated); inner keeps the design's 80%. */}
-      <div ref={matrixRef} aria-hidden className="pointer-events-none absolute inset-0">
+      <div ref={matrixRef} aria-hidden className="pointer-events-none absolute inset-0 will-change-transform">
         <div
           ref={maskRef}
           className="absolute inset-0 opacity-80"
