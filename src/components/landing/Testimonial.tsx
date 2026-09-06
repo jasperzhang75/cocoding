@@ -81,7 +81,7 @@ const CARDS: Card[] = [openai, ramp, notion, openai, ramp, notion];
    is what two of them and a gap need, until 386 fits twice (792); a
    phone gets the column. The height never changes. */
 const CARD_CLASS =
-  "relative h-[481px] w-[min(386px,100%)] shrink-0 overflow-hidden rounded-md md:w-[min(386px,calc((100%-20px)/2))] xl:w-[386px]";
+  "relative h-[481px] w-[min(386px,100%)] shrink-0 overflow-hidden rounded-sm md:w-[min(386px,calc((100%-20px)/2))] xl:w-[386px]";
 
 function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
   return (
@@ -102,7 +102,7 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
         <p className="text-body-sm text-text-body">{card.name}</p>
         <p className="mt-1.5 text-[1.25rem] leading-[1.375] tracking-[-0.012em] text-text-primary">{card.text}</p>
       </div>
-      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-md" style={hairline(card.top)} />
+      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-sm" style={hairline(card.top)} />
     </article>
   );
 }
@@ -144,7 +144,7 @@ function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
         <p className="mt-1.5 text-[1.25rem] leading-[1.375] tracking-[-0.012em] text-white/90">{card.title}</p>
       </div>
       {/* this card's gradient runs steeper and settles by mid-card */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-md" style={hairline(card.top, "146deg", "55%")} />
+      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-sm" style={hairline(card.top, "146deg", "55%")} />
     </article>
   );
 }
