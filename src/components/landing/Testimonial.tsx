@@ -49,7 +49,7 @@ type Card =
 const openai: Card = {
   kind: "quote",
   logo: <OpenAILogo />,
-  photo: "/testimonials/quote-openai.png",
+  photo: "/testimonials/quote-openai-hd.png",
   name: "Gabriel Peal, Frontend Developer",
   text: "“ It's the first AI tool that doesn't feel like a toy. ”",
   top: "#BEBEBE",
@@ -67,7 +67,7 @@ const ramp: Card = {
 const notion: Card = {
   kind: "quote",
   logo: <NotionLogo />,
-  photo: "/testimonials/quote-notion.png",
+  photo: "/testimonials/quote-notion-hd.png",
   name: "Gabriel Peal, Backend Developer",
   text: "“ Cocoding built a dashboard that actually looks good.”",
   top: "#A6A6A6",

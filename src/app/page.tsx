@@ -7,6 +7,7 @@ import Infrastructure from "@/components/landing/Infrastructure";
 import Pricing from "@/components/landing/Pricing";
 import Testimonial from "@/components/landing/Testimonial";
 import FinalCta from "@/components/landing/FinalCta";
+import Footer from "@/components/landing/Footer";
 
 export default function Home() {
   return (
@@ -36,6 +37,7 @@ export default function Home() {
       <Testimonial />
       <Pricing />
       <FinalCta />
+      <Footer />
     </>
   );
 }
