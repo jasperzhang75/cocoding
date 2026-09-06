@@ -1,4 +1,5 @@
 import Navbar from "@/components/landing/Navbar";
+import HeroBackground from "@/components/landing/HeroBackground";
 import Hero from "@/components/landing/Hero";
 import TrendingProjects from "@/components/landing/TrendingProjects";
 import LogoMarquee from "@/components/landing/LogoMarquee";
@@ -17,12 +18,7 @@ export default function Home() {
           mouse-interactive: the content layer above is pointer-events-none and
           individual controls opt back in with pointer-events-auto. */}
       <div className="relative min-h-screen overflow-hidden">
-        <iframe
-          src="https://www.unicorn.studio/embed/hjz7dlZ2jZHar7bHXhfg"
-          title="Background animation"
-          aria-hidden
-          className="absolute inset-0 size-full border-0"
-        />
+        <HeroBackground />
 
         <div className="pointer-events-none relative z-10">
           <Navbar />

@@ -24,19 +24,29 @@ import { createPortal } from "react-dom";
       real ones, and at rest the strip is wholly below the viewport. It
       is portaled to <body>: inside the footer, the footer's transform
       would become its containing block and move it twice.
-      Rubber band: the push decays while the wheel keeps coming (TAU),
-      its reach saturates (K) at the hidden half, a lightly damped spring
-      follows; 90ms without a real wheel event (a trackpad's dwindling
-      momentum tail counts as none) is the let-go and the spring settles
-      in about half a second, dipping a little under the rest on the
-      way. Wheel only; touch keeps the platform's own bounce. */
+      Rubber band as an IMPULSE, like the platform's own: the wheel travel
+      of the first 200ms after the page's end is hit (IMPULSE) is the
+      push, saturating (K) at the hidden half; what follows in the same
+      stream — a trackpad's momentum tail runs for a second or two — is
+      ignored, so 90ms after the window closes the pull lets go and a
+      lightly damped spring brings the footer back in ~0.4s. A fresh
+      flick inside the tail (a delta at least twice the last, 10px+) or a
+      stream after 90ms of quiet is a new impulse; a stream that begins
+      before the end starts its window at its first event AT the end.
+      Without this the lift rode the whole tail and the footer hung open
+      for seconds after a fast flick. The lift never goes under the rest:
+      a footer pushed down by even a few px extends the page's scroll
+      height (transforms count), the end is no longer the end, and the
+      tail re-armed itself. Wheel only; touch keeps the platform's own
+      bounce. */
 
-const TAU = 320; // ms — how long a push is remembered while the wheel keeps turning
+const IMPULSE = 200; // ms of wheel travel that count as the push
+const TAU = 320; // ms — the push's decay while it is still being fed
 const K = 300; // px of push for 63% of the reach
-const MIN_STEP = 4; // smaller wheel deltas are a momentum tail, not a pull
-const LET_GO = 90; // ms without a pull
-const STIFFNESS = 260; // the spring toward the target, 1/s² (ω ≈ 16)
-const DAMPING = 19; // ζ ≈ 0.6: a 10% overshoot
+const MIN_STEP = 4; // smaller wheel deltas are momentum crumbs, not a pull
+const LET_GO = 90; // ms without a counted push
+const STIFFNESS = 360; // the spring toward the target, 1/s² (ω ≈ 19)
+const DAMPING = 23; // ζ ≈ 0.6: a 10% overshoot (clamped at the rest), settled in ~0.4s
 const subscribeNothing = () => () => {};
 
 export default function FooterWordmark() {
@@ -75,6 +85,9 @@ export default function FooterWordmark() {
     /* 2. the pull at the page's end — the footer moves, the word with it */
     let push = 0; // accumulated wheel travel, decaying
     let pushedAt = 0; // when the wheel last pulled
+    let streamAt = 0; // when this impulse began
+    let lastAt = 0; // the last wheel event of any size that counts as the stream
+    let lastDy = 0; // its delta, for the fresh-flick test
     let pull = 0; // the spring's position (px up)
     let vel = 0;
     let last = 0;
@@ -99,25 +112,38 @@ export default function FooterWordmark() {
         raf = 0;
         return;
       }
-      footer.style.transform = `translateY(${-pull}px)`;
-      strip.style.transform = `translateY(${seam - pull}px)`;
+      const lift = Math.max(pull, 0); // never under the rest (see above)
+      footer.style.transform = `translateY(${-lift}px)`;
+      strip.style.transform = `translateY(${seam - lift}px)`;
       raf = requestAnimationFrame(tick);
     };
     const onWheel = (e: WheelEvent) => {
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1);
-      if (dy >= MIN_STEP && atEnd()) {
-        push += dy;
-        pushedAt = performance.now();
-        if (!raf) {
-          last = pushedAt;
-          // the strip's box rests at the viewport's bottom (bottom: 0), its
-          // top one strip-height up; move it down so its top is the edge
-          const r = strip.getBoundingClientRect();
-          seam = footer.getBoundingClientRect().bottom - innerHeight + r.height;
-          raf = requestAnimationFrame(tick);
-        }
-      } else if (dy < 0) {
+      if (dy < 0) {
         push = 0; // scrolling away lets go
+        streamAt = 0;
+        return;
+      }
+      if (dy < MIN_STEP) return; // a crumb: not part of any stream
+      const t = performance.now();
+      // the stream is timed from every event, at the end or not; quiet or a
+      // fresh flick starts a new one, whose impulse begins at its first
+      // event AT the end
+      if (t - lastAt > LET_GO || dy >= Math.max(10, 2 * lastDy)) streamAt = 0;
+      lastAt = t;
+      lastDy = dy;
+      if (!atEnd()) return;
+      if (!streamAt) streamAt = t;
+      if (t - streamAt > IMPULSE) return; // the tail: ignored
+      push += dy;
+      pushedAt = t;
+      if (!raf) {
+        last = pushedAt;
+        // the strip's box rests at the viewport's bottom (bottom: 0), its
+        // top one strip-height up; move it down so its top is the edge
+        const r = strip.getBoundingClientRect();
+        seam = footer.getBoundingClientRect().bottom - innerHeight + r.height;
+        raf = requestAnimationFrame(tick);
       }
     };
     addEventListener("wheel", onWheel, { passive: true });
