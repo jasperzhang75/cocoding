@@ -82,9 +82,10 @@ const ENV_STACK_Y = [351.7, 334.3, 311];
    at 768 and growing to the design's 751. The art keeps its size and
    re-centers; the cube frames and the ambient ride MD_LIFT higher so
    one callout — the lit face's — can sit centered beneath the cube
-   (frame 5's opened cube has its own place, see MD5), the stage layers
-   sit at their own frames' heights, and the stage labels gather under
-   the layers, centered, without their hairlines. */
+   (frame 5's opened cube has its own place, see MD5), the card rows
+   (Figma 1204:1333) and the scorecard (1204:1233) rise 29 and 38, the
+   stage layers sit at their own frames' heights, and the stage labels
+   gather under the layers, centered, without their hairlines. */
 const MD_LIFT = 77; // frame 4's lid: 246.16 -> 169.17
 const SPREAD_Y_MD = SPREAD_Y.map((v) => v + 6); // the layers spread 71 higher, not 77
 const STACK_Y_MD = STACK.y.map((v) => v + 10.3); // the stack settles 66.7 higher
@@ -794,11 +795,12 @@ function InfrastructureStage() {
        (the cards stand in front of each other; at 44 every icon still
        shows whole), and only when even that overflows do the cards
        shrink to fit at the whole-icon pitch for their size. The legends
-       hanging under them keep their type size. 12px clear of the panel's
-       sides. Positions land in cardXRef for the entrance and tab swap. */
+       hanging under them keep their type size. 16px clear of the panel's
+       sides (a touch tighter than the 12 first tried, as Jasper asked).
+       Positions land in cardXRef for the entrance and tab swap. */
     const CARD_W = 67.2; // a card's projected width
     const PITCH_MIN = 44;
-    const CARD_MARGIN = 12;
+    const CARD_MARGIN = 16;
     const layoutCards = (W: number) => {
       for (const row of ["buildin", "connectors"] as RowKey[]) {
         const { cards, lineDx } = ROWS[row];
@@ -839,7 +841,8 @@ function InfrastructureStage() {
       const cx = W / 2;
       svg.setAttribute("viewBox", `0 0 ${W} 679`);
       svg.querySelectorAll<SVGElement>('[data-anchor="center"]').forEach((g) => {
-        const dy = md && g.hasAttribute("data-md-lift") ? -MD_LIFT : 0;
+        const lift = g.getAttribute("data-md-lift"); // how far the group rises at md
+        const dy = md && lift !== null ? -Number(lift) : 0;
         g.setAttribute("transform", dxC || dy ? `translate(${dxC} ${dy})` : "");
       });
       const show = (sel: string, on: boolean) =>
@@ -2080,7 +2083,7 @@ function InfrastructureStage() {
                 two Figma fills — the 52% radial with the grain tiled over
                 it at LIGHTEN — live in an isolated group so the lighten
                 stays inside the paint stack, as in Figma. */}
-            <g data-anchor="center" data-md-lift>
+            <g data-anchor="center" data-md-lift={MD_LIFT}>
             <g data-env-back style={{ opacity: 0 }}>
               {/* Ellipse 21888 — the ambient, layer-blurred 300; its grain
                   tile is 241.4px (sf 0.1178), two columns cover the box.
@@ -2154,7 +2157,7 @@ function InfrastructureStage() {
             />
 
             {/* the three layers, authored coincident (stage 1) */}
-            <g data-cube data-anchor="center" data-md-lift opacity="0.9" style={{ mixBlendMode: "plus-lighter" }}>
+            <g data-cube data-anchor="center" data-md-lift={MD_LIFT} opacity="0.9" style={{ mixBlendMode: "plus-lighter" }}>
               {SPREAD_Y.map((y) => (
                 <g key={y} data-face transform="translate(375.5 294.6)">
                   <rect
@@ -2202,7 +2205,7 @@ function InfrastructureStage() {
                 AVAILABILITY. Each carries its dim skin (the translucent
                 pair) with a lit overlay (the lid's gradient in its own
                 local space) crossfaded by the swap. */}
-            <g data-env-cube data-anchor="center" data-md-lift style={{ opacity: 0, pointerEvents: "none" }}>
+            <g data-env-cube data-anchor="center" data-md-lift={MD_LIFT} style={{ opacity: 0, pointerEvents: "none" }}>
               <g
                 data-cube-face="lid"
                 transform={CUBE.lid}
@@ -2475,7 +2478,7 @@ function InfrastructureStage() {
                 CONNECTORS tab header. The header per Figma: a 0.9 white
                 30% baseline under the whole row, the active label at full
                 #EBEBEB with a 0.7 underline, the other at 20%. */}
-            <g data-frame6 data-anchor="center" style={{ opacity: 0, pointerEvents: "none" }}>
+            <g data-frame6 data-anchor="center" data-md-lift="29" style={{ opacity: 0, pointerEvents: "none" }}>
               <g data-f6-tab>
                 {(["buildin", "connectors"] as RowKey[]).map((row) => {
                   const x = row === "buildin" ? 299 : 374;
@@ -2618,7 +2621,7 @@ function InfrastructureStage() {
 
             {/* frame 8: the Google Lighthouse scorecard. Static; its own
                 animation comes next. */}
-            <g data-frame8 data-anchor="center" style={{ opacity: 0, pointerEvents: "none" }}>
+            <g data-frame8 data-anchor="center" data-md-lift="38" style={{ opacity: 0, pointerEvents: "none" }}>
               <g data-f8-header opacity="0.8">
                 {/* mynaui:google-so, exported: a white 33% base with the
                     white -> #666 gradient at 83% over it */}
