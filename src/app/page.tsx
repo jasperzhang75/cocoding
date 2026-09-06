@@ -6,6 +6,7 @@ import Features from "@/components/landing/Features";
 import Infrastructure from "@/components/landing/Infrastructure";
 import Pricing from "@/components/landing/Pricing";
 import Testimonial from "@/components/landing/Testimonial";
+import FinalCta from "@/components/landing/FinalCta";
 
 export default function Home() {
   return (
@@ -32,8 +33,9 @@ export default function Home() {
       <LogoMarquee />
       <Features />
       <Infrastructure />
-      <Pricing />
       <Testimonial />
+      <Pricing />
+      <FinalCta />
     </>
   );
 }
