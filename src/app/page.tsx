@@ -4,6 +4,7 @@ import TrendingProjects from "@/components/landing/TrendingProjects";
 import LogoMarquee from "@/components/landing/LogoMarquee";
 import Features from "@/components/landing/Features";
 import Infrastructure from "@/components/landing/Infrastructure";
+import Testimonial from "@/components/landing/Testimonial";
 
 export default function Home() {
   return (
@@ -30,6 +31,7 @@ export default function Home() {
       <LogoMarquee />
       <Features />
       <Infrastructure />
+      <Testimonial />
     </>
   );
 }
