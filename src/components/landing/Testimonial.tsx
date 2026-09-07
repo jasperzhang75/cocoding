@@ -44,13 +44,16 @@ const hairline = (top: string, angle = "142deg", end = "100%"): CSSProperties =>
 const PHOTO_MASK =
   "radial-gradient(farthest-corner at 58% 46%, rgba(0,0,0,0.46) 0%, rgba(0,0,0,0.33) 35%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0.1) 100%)";
 
+/* logoW: the logo's design width over the card's 386, in cqw — so it
+   scales with the card (111 / 96 / 82 wide at 386) */
 type Card =
-  | { kind: "quote"; logo: ReactNode; photo: string; name: string; text: string; top: string; fill: string }
-  | { kind: "study"; logo: ReactNode; stat: string; statLabel: string; kicker: string; title: string; top: string };
+  | { kind: "quote"; logo: ReactNode; logoW: string; photo: string; name: string; text: string; top: string; fill: string }
+  | { kind: "study"; logo: ReactNode; logoW: string; stat: string; statLabel: string; kicker: string; title: string; top: string };
 
 const openai: Card = {
   kind: "quote",
   logo: <OpenAILogo />,
+  logoW: "28.76cqw",
   photo: "/testimonials/quote-openai-hd.png",
   name: "Gabriel Peal, Frontend Developer",
   text: "“ It's the first AI tool that doesn't feel like a toy. ”",
@@ -60,6 +63,7 @@ const openai: Card = {
 const ramp: Card = {
   kind: "study",
   logo: <RampLogo />,
+  logoW: "24.87cqw",
   stat: "90%",
   statLabel: "Learner satisfaction",
   kicker: "Case study",
@@ -69,6 +73,7 @@ const ramp: Card = {
 const notion: Card = {
   kind: "quote",
   logo: <NotionLogo />,
+  logoW: "21.24cqw",
   photo: "/testimonials/quote-notion-hd.png",
   name: "Gabriel Peal, Backend Developer",
   text: "“ Cocoding built a dashboard that actually looks good.”",
@@ -79,11 +84,21 @@ const CARDS: Card[] = [openai, ramp, notion, openai, ramp, notion];
 
 /* ---------------------------------------------------------------- cards */
 
-/* 386 x 481 at xl. A tablet shows two whole cards: from 768 the width
-   is what two of them and a gap need, until 386 fits twice (792); a
-   phone gets the column. The height never changes. */
+/* 386 x 481 at xl; a tablet shows three whole cards like the desktop,
+   each a third of the container less the gaps (293 at 1000, 216 at
+   768); a phone gets the column. Below xl the card SCALES (Jasper
+   2026-09-07): its aspect holds, and everything inside is measured in
+   cqw — hundredths of the card's width, so the design's px over 386 —
+   except the type, which steps down one size: name / kicker body-xs
+   (13), quote / title body-md (16), the stat's label body-sm. At xl a
+   cqw is 3.86px and every value is the design's. */
 const CARD_CLASS =
-  "relative h-[481px] w-[min(386px,100%)] shrink-0 overflow-hidden rounded-sm md:w-[min(386px,calc((100%-20px)/2))] xl:w-[386px]";
+  "@container relative aspect-[386/481] w-[min(386px,100%)] shrink-0 overflow-hidden rounded-sm md:w-[calc((100%-40px)/3)] xl:w-[386px]";
+const PAD = "9.33cqw"; // the design's 36
+/* the text block: 36 from the left, its bottom 36 (quote) / 34 (study)
+   above the card's, 308 / 268 wide at most */
+const NAME = "text-body-xs text-text-body xl:text-body-sm";
+const QUOTE = "mt-1.5 text-body-md xl:text-[1.25rem] xl:leading-[1.375] xl:tracking-[-0.012em]";
 
 function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
   return (
@@ -92,17 +107,19 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
         src={card.photo}
         alt=""
         fill
-        sizes="386px"
+        sizes="(min-width: 1280px) 386px, (min-width: 768px) 33vw, 100vw"
         className="object-cover"
         style={{ maskImage: PHOTO_MASK, WebkitMaskImage: PHOTO_MASK }}
       />
-      <div className="absolute left-9 top-9">{card.logo}</div>
+      <div className="absolute [&>svg]:h-auto [&>svg]:w-full" style={{ left: PAD, top: PAD, width: card.logoW }}>
+        {card.logo}
+      </div>
       {/* Frame 2609435: 36 from the left, 308 wide, its bottom 36 above
           the card's — anchored there so a narrower card's extra line
           grows upward */}
-      <div className="absolute bottom-9 left-9 w-[calc(100%-72px)] max-w-[308px]">
-        <p className="text-body-sm text-text-body">{card.name}</p>
-        <p className="mt-1.5 text-[1.25rem] leading-[1.375] tracking-[-0.012em] text-text-primary">{card.text}</p>
+      <div className="absolute w-[calc(100%-18.65cqw)] max-w-[79.8cqw]" style={{ left: PAD, bottom: PAD }}>
+        <p className={NAME}>{card.name}</p>
+        <p className={`${QUOTE} text-text-primary`}>{card.text}</p>
       </div>
       <div aria-hidden className="pointer-events-none absolute inset-0 rounded-sm" style={hairline(card.top)} />
     </article>
@@ -116,35 +133,35 @@ function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
           300 in the design — drawn as radial gradients twice their size,
           no filter. Jasper preferred this first rendering over the
           faithful blurred ellipses, so it stays. */}
+      {/* 578 x 412 at 55 / 147 and -276 / -41 over the 386 card, in cqw */}
       <div
         aria-hidden
-        className="pointer-events-none absolute h-[412px] w-[578px]"
+        className="pointer-events-none absolute h-[106.74cqw] w-[149.74cqw] left-[14.25cqw] top-[38.08cqw]"
         style={{
-          left: 55,
-          top: 147,
           background:
             "radial-gradient(closest-side, rgba(49,111,197,0.55), rgba(36,82,146,0.32) 45%, rgba(24,54,95,0) 100%)",
         }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute h-[412px] w-[578px]"
+        className="pointer-events-none absolute h-[106.74cqw] w-[149.74cqw] left-[-71.5cqw] top-[-10.62cqw]"
         style={{
-          left: -276,
-          top: -41,
           background:
             "radial-gradient(closest-side, rgba(49,111,197,0.35), rgba(36,82,146,0.2) 45%, rgba(24,54,95,0) 100%)",
         }}
       />
-      <div className="absolute left-9 top-9">{card.logo}</div>
-      {/* Frame 2609437 at 36 / 134: the figure and its label */}
-      <div className="absolute left-9 top-[134px]">
-        <p className="text-display text-white/90">{card.stat}</p>
-        <p className="mt-1.5 text-body-md text-[#868686]">{card.statLabel}</p>
+      <div className="absolute [&>svg]:h-auto [&>svg]:w-full" style={{ left: PAD, top: PAD, width: card.logoW }}>
+        {card.logo}
       </div>
-      <div className="absolute bottom-[34px] left-9 w-[calc(100%-72px)] max-w-[268px]">
-        <p className="text-body-sm text-text-body">{card.kicker}</p>
-        <p className="mt-1.5 text-[1.25rem] leading-[1.375] tracking-[-0.012em] text-white/90">{card.title}</p>
+      {/* Frame 2609437 at 36 / 134: the figure (the display size, 48 at
+          386, scaling with the card) and its label */}
+      <div className="absolute top-[34.72cqw]" style={{ left: PAD }}>
+        <p className="text-[12.44cqw] leading-none tracking-[-0.05em] text-white/90">{card.stat}</p>
+        <p className="mt-1.5 text-body-sm text-[#868686] xl:text-body-md">{card.statLabel}</p>
+      </div>
+      <div className="absolute bottom-[8.81cqw] w-[calc(100%-18.65cqw)] max-w-[69.43cqw]" style={{ left: PAD }}>
+        <p className={NAME}>{card.kicker}</p>
+        <p className={`${QUOTE} text-white/90`}>{card.title}</p>
       </div>
       {/* this card's gradient runs steeper and settles by mid-card */}
       <div aria-hidden className="pointer-events-none absolute inset-0 rounded-sm" style={hairline(card.top, "146deg", "55%")} />
