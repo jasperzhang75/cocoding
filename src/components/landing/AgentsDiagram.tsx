@@ -247,16 +247,12 @@ export default function AgentsDiagram() {
       <BleedImg src="/features/f1-conn-3.svg" inset="-0.14% -0.84% 0 -0.86%" cls="absolute left-[214px] top-[135px] h-[70px] w-[52px]" />
       <BleedImg src="/features/f1-conn-4.svg" inset="-0.14% -0.84% 0 -0.86%" cls="absolute left-[274px] top-[135px] h-[70px] w-[52px] -scale-x-100" />
       <BleedImg src="/features/f1-conn-1.svg" inset="-0.15% -0.31% -0.24% -0.29%" cls="absolute left-[286px] top-[135px] h-[70px] w-[142px] -scale-x-100" />
-      {[
-        { x: 111, src: "/features/f1-line-a.svg" },
-        { x: 213, src: "/features/f1-line-b.svg" },
-        { x: 325, src: "/features/f1-line-c.svg" },
-        { x: 428, src: "/features/f1-line-b.svg" },
-      ].map(({ x, src }) => (
-        <div key={x} className="absolute top-[239px] h-[59px] w-px" style={{ left: x }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src} alt="" className="absolute inset-0 size-full max-w-none object-fill" />
-        </div>
+      {/* the resting verticals: white 17% hairlines, 239 -> 298. They were
+          <img>s of Figma's exports — 59 x 0.9 SVGs stretched into a 1 x 59
+          box — which Safari does not paint (an intrinsic height under 1px
+          rounds to nothing there); a background does the same job. */}
+      {VERTICAL_X.map((x) => (
+        <div key={x} className="absolute top-[239px] h-[59px] w-px bg-white/[0.17]" style={{ left: x }} />
       ))}
 
       {/* animation overlay: travelling lights + closing agent strokes */}

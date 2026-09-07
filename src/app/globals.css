@@ -72,6 +72,13 @@
   --container-page: 1200px;         /* header/content width from design */
 }
 
+/* the Infrastructure hold sets overflow: hidden on the root; a classic
+   scrollbar (Windows) would otherwise vanish and reflow the page — keep
+   its gutter. No effect with overlay scrollbars. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-text-primary);

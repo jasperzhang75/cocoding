@@ -1751,6 +1751,18 @@ function InfrastructureStage() {
         touchGesture();
         // align exactly on the runway's end, whichever side we came from
         if (Math.abs(overshoot) > 0.5) window.scrollBy({ top: -overshoot, behavior: "instant" });
+        /* The hold itself: the page stops scrolling by overflow: hidden on
+           the root, not only by preventDefault. WebKit honours
+           preventDefault on a wheel gesture only if its FIRST event was
+           cancelled — ours begins mid-gesture, at the crossing — so in
+           Safari the rest of that gesture kept scrolling, the grace below
+           kept snapping it back, and the frames stepped on the churn
+           (Jasper, 2026-09-07). With the root unscrollable the wheel still
+           fires (that is how the steps are read) but moves nothing;
+           programmatic scrolling still works. scrollbar-gutter: stable on
+           html (globals.css) keeps a classic scrollbar's gutter so nothing
+           reflows. */
+        document.documentElement.style.overflow = "hidden";
         window.addEventListener("wheel", onWheel, { passive: false });
         window.addEventListener("touchmove", onTouchMove, { passive: false });
         window.addEventListener("keydown", onKey);
@@ -1760,6 +1772,7 @@ function InfrastructureStage() {
       const release = (nudge = 0) => {
         if (!captured) return;
         captured = false;
+        document.documentElement.style.overflow = "";
         window.removeEventListener("wheel", onWheel);
         window.removeEventListener("touchmove", onTouchMove);
         window.removeEventListener("keydown", onKey);
