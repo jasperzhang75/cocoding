@@ -1686,20 +1686,33 @@ function InfrastructureStage() {
          scrub has passed its tweens and leave frame 4's furniture (the
          callouts, most visibly) painted over stage 1. Finish them now and
          re-render the scrub so it owns every part again. */
-      const unland = () => {
-        landed = false;
+      /* Everything that writes frame 4's furniture outside the scrub is
+         stopped and the scrub made to own every part again: the morph is
+         parked at 0 whatever it was doing (a reverse still running would
+         land on frame 4's pose — callouts up — after the scrub had moved
+         on, which is the "callouts over stage 2" picture; events suppressed
+         so it does not restart the mark flicker), the crossfade in flight
+         is finished, the side tweens killed, and the scrub swept end to
+         current so every tween between is re-rendered at its start. */
+      const reown = () => {
         flickerRef.current?.kill();
         if (running) {
           running.progress(1);
           running.kill();
           running = null;
         }
-        if (tl3?.isActive()) {
+        if (tl3) {
           tl3.pause();
-          tl3.progress(0);
+          tl3.progress(0, true);
         }
         killSide();
-        tl2.render(tl2.time(), false, true);
+        const t = tl2.time();
+        tl2.progress(1, true);
+        tl2.time(t, true);
+      };
+      const unland = () => {
+        landed = false;
+        reown();
       };
 
       /* ONE STEP PER GESTURE. A gesture is one continuous stream of wheel
@@ -2000,6 +2013,10 @@ function InfrastructureStage() {
           } else {
             tl2.progress(p);
             if (landed) unland();
+            // a morph still running under a scrub that has moved on (frame 4
+            // reached by stepping back while never landed here) would repaint
+            // frame 4 over the stages when it finishes: park it now
+            else if (tl3 && (tl3.isActive() || (tl3.progress() > 0 && tl3.progress() < 1))) reown();
           }
         }
         if (arriving && Math.abs(g.travel - arriveAt) <= 2) arrived();
