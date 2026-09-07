@@ -15,7 +15,15 @@ import { HyperText } from "@/components/magicui/hyper-text";
    plan name 14 / 137.5% (was 16 / 100% / -1%), price 24 / 100% / -3%
    (the heading-md token; was 36 / 137.5% / -4%, and "/mo" 16 for 24),
    blurb 14 / 137.5% (was 16), list items 13 / 137.5% (was 14). Buttons,
-   the credits picker (14) and the Annual label (12) stay. */
+   the credits picker (14) and the Annual label (12) stay.
+
+   Heights follow the content: the Pro card — the tallest, with its
+   credits picker — sets the row, and the other two, stretched to it,
+   drop their buttons to the bottom (mt-auto), so the three buttons stay
+   level as in the design. The gap from a list to what follows is the
+   design's 60 at xl (Pro's list ends at 397, the picker starts at 457;
+   the card comes out at the design's 607) and 40 below xl, where Jasper
+   wanted the lists closer to the buttons (2026-09-07). */
 
 type Plan = {
   name: string;
@@ -152,11 +160,15 @@ function Cta({ label, accent }: { label: string; accent?: boolean }) {
 
 /* the Annual switch: 30 x 18, accent 75% with a 12px white knob on the
    right when on (the design's state); off it dims and the knob slides
-   left. Placeholder — nothing is priced differently yet. */
+   left. Its bottom sits on the price's baseline: 48 under the header's
+   top at xl (the design; the 36px price's baseline is at 66), 33.75
+   below xl (the 14px name's 19.25 line, 12, then the 24px price's
+   baseline 20.5 down its 24px line, less the switch's 18) — Jasper
+   2026-09-07. Placeholder — nothing is priced differently yet. */
 function AnnualSwitch() {
   const [on, setOn] = useState(true);
   return (
-    <label className="absolute right-0 top-[48px] flex cursor-pointer items-center gap-2 select-none">
+    <label className="absolute right-0 top-[33.75px] flex cursor-pointer items-center gap-2 select-none xl:top-[48px]">
       <span className="text-[0.75rem] leading-[1.375] text-text-body">Annual</span>
       <button
         type="button"
@@ -212,21 +224,21 @@ export default function Pricing() {
             INSIDE (inset shadows, so the 36 padding stays exact), the
             outer corners rounded 8, the middle card keeping only its top
             and bottom edges (stacked below md: left and right instead).
-            Each card: 36 padding, 56 under the button, the design's 607
-            when the content is the design's. */}
+            Each card: 36 padding, 56 under the button; the height is the
+            content's (606.5 at xl, so a 607 floor there keeps the design's). */}
         <div className="mt-[60px] grid grid-cols-1 md:grid-cols-3">
           <article
-            className="flex min-h-[607px] flex-col rounded-t-[8px] p-9 pb-14 md:rounded-l-[8px] md:rounded-tr-none"
+            className="flex flex-col rounded-t-[8px] p-9 pb-14 md:rounded-l-[8px] md:rounded-tr-none xl:min-h-[607px]"
             style={{ boxShadow: HAIRLINE_ALL }}
           >
             <Header plan={STARTER} />
             <Features items={STARTER.items} />
-            <div className="mt-auto pt-[37px]">
+            <div className="mt-auto pt-10 xl:pt-[60px]">
               <Cta label={STARTER.cta} />
             </div>
           </article>
 
-          <article className="relative flex min-h-[607px] flex-col overflow-hidden bg-[#07080C] p-9 pb-14">
+          <article className="relative flex flex-col overflow-hidden bg-[#07080C] p-9 pb-14 xl:min-h-[607px]">
             {/* its two (stacked: side) hairlines ride above the glow */}
             <div aria-hidden className="pointer-events-none absolute inset-0 z-10 md:hidden" style={{ boxShadow: HAIRLINE_SIDES }} />
             <div aria-hidden className="pointer-events-none absolute inset-0 z-10 hidden md:block" style={{ boxShadow: HAIRLINE_TOP_BOTTOM }} />
@@ -248,7 +260,7 @@ export default function Pricing() {
             <div className="relative flex grow flex-col">
               <Header plan={PRO} aside={<AnnualSwitch />} />
               <Features items={PRO.items} />
-              <div className="mt-auto pt-[37px]">
+              <div className="mt-auto pt-10 xl:pt-[60px]">
                 <Credits />
                 <div className="mt-[14px]">
                   <Cta label={PRO.cta} accent />
@@ -258,12 +270,12 @@ export default function Pricing() {
           </article>
 
           <article
-            className="flex min-h-[607px] flex-col rounded-b-[8px] p-9 pb-14 md:rounded-r-[8px] md:rounded-bl-none"
+            className="flex flex-col rounded-b-[8px] p-9 pb-14 md:rounded-r-[8px] md:rounded-bl-none xl:min-h-[607px]"
             style={{ boxShadow: HAIRLINE_ALL }}
           >
             <Header plan={ENTERPRISE} />
             <Features items={ENTERPRISE.items} />
-            <div className="mt-auto pt-[37px]">
+            <div className="mt-auto pt-10 xl:pt-[60px]">
               <Cta label={ENTERPRISE.cta} />
             </div>
           </article>
