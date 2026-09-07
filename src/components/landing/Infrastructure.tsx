@@ -853,7 +853,16 @@ function InfrastructureStage() {
         });
       }
     };
+    let laidOutFor = ""; // the inputs of the last layout: same inputs, nothing to do
     const layoutPanel = () => {
+      /* Re-placing the art sets dozens of transforms; done for no reason in
+         the middle of a frame's animation it reads as a jump. Safari with a
+         classic scrollbar (a mouse plugged in) fires resize when the hold
+         toggles the root's overflow, so: only when something that feeds
+         the layout has changed. */
+      const key = `${xlMq.matches}|${hoverMq.matches}|${panel.clientWidth}|${window.innerHeight}|${stage.offsetHeight}`;
+      if (key === laidOutFor) return;
+      laidOutFor = key;
       const narrow = !xlMq.matches; // the phone/tablet panel: as wide as its column, the art re-placed
       const W = narrow ? Math.round(panel.clientWidth) : 751;
       const dxC = (W - 751) / 2; // centered things
@@ -1801,7 +1810,15 @@ function InfrastructureStage() {
            programmatic scrolling still works. scrollbar-gutter: stable on
            html (globals.css) keeps a classic scrollbar's gutter so nothing
            reflows. */
-        document.documentElement.style.overflow = "hidden";
+        const root = document.documentElement;
+        const widthBefore = root.clientWidth;
+        root.style.overflow = "hidden";
+        // a classic scrollbar (Safari with a mouse; scrollbar-gutter: stable
+        // is not honoured there) vanishes with the overflow and the page
+        // reflows 15px wider — the art re-centres mid-animation (Jasper saw
+        // frame 8 jump on the way out). Hold the width with padding instead.
+        const grew = root.clientWidth - widthBefore;
+        if (grew > 0) root.style.paddingRight = `${grew}px`;
         window.addEventListener("wheel", onWheel, { passive: false });
         window.addEventListener("touchmove", onTouchMove, { passive: false });
         window.addEventListener("keydown", onKey);
@@ -1814,6 +1831,7 @@ function InfrastructureStage() {
         glide?.kill();
         glide = null;
         document.documentElement.style.overflow = "";
+        document.documentElement.style.paddingRight = "";
         window.removeEventListener("wheel", onWheel);
         window.removeEventListener("touchmove", onTouchMove);
         window.removeEventListener("keydown", onKey);
