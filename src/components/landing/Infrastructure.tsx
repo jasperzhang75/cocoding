@@ -1742,6 +1742,38 @@ function InfrastructureStage() {
         gestureTimer = window.setTimeout(resetGesture, 90);
       };
 
+      /* Coming to rest on the runway's end. A fast pass is well beyond it
+         by the time the crossing is seen — the browser scrolls ahead of
+         its scroll events, Safari's arrive sparser still — and pulling
+         the page back in one instant scrollBy read as a shudder (Jasper,
+         Safari, 2026-09-07). So beyond a couple of dozen pixels the page
+         GLIDES back over 0.25-0.4s on a GSAP tween (the ticker, not rAF,
+         so it can be driven in tests); apply() leaves the page alone
+         while the glide runs and starts its grace when it lands. */
+      let glide: gsap.core.Tween | null = null;
+      const settleAtEnd = (overshoot: number) => {
+        glide?.kill();
+        glide = null;
+        if (Math.abs(overshoot) <= 0.5) return;
+        const from = window.scrollY;
+        const to = from - overshoot;
+        if (Math.abs(overshoot) < 24) {
+          window.scrollTo({ top: to, behavior: "instant" });
+          return;
+        }
+        const pos = { y: from };
+        glide = gsap.to(pos, {
+          y: to,
+          duration: Math.min(0.4, 0.15 + Math.abs(overshoot) * 0.0004),
+          ease: "power2.out",
+          onUpdate: () => window.scrollTo({ top: pos.y, behavior: "instant" }),
+          onComplete: () => {
+            glide = null;
+            capturedAt = performance.now(); // the grace starts once the page has landed
+          },
+        });
+      };
+
       const capture = (overshoot = 0) => {
         if (captured) return;
         captured = true;
@@ -1749,8 +1781,8 @@ function InfrastructureStage() {
         acc = 0;
         gestureUsed = true; // the gesture that brought us here is spent
         touchGesture();
-        // align exactly on the runway's end, whichever side we came from
-        if (Math.abs(overshoot) > 0.5) window.scrollBy({ top: -overshoot, behavior: "instant" });
+        // come to rest exactly on the runway's end, whichever side we came from
+        settleAtEnd(overshoot);
         /* The hold itself: the page stops scrolling by overflow: hidden on
            the root, not only by preventDefault. WebKit honours
            preventDefault on a wheel gesture only if its FIRST event was
@@ -1772,6 +1804,8 @@ function InfrastructureStage() {
       const release = (nudge = 0) => {
         if (!captured) return;
         captured = false;
+        glide?.kill();
+        glide = null;
         document.documentElement.style.overflow = "";
         window.removeEventListener("wheel", onWheel);
         window.removeEventListener("touchmove", onTouchMove);
@@ -1946,12 +1980,13 @@ function InfrastructureStage() {
         if (arriving && Math.abs(g.travel - arriveAt) <= 2) arrived();
         if (bandsOn()) return bands(g.travel);
         if (captured) {
+          if (glide) return; // our own glide to the end is what is moving the page
           // The wheel events already dispatched when the hold began keep
           // the browser's smooth scroll rolling for a moment — with more
           // page below, that alone used to drift past the 40px quit and
           // undo the hold. So for the first 600ms every drift is pulled
-          // back to the end; after that the scrollbar can still drag the
-          // page away, and it is let go (the next crossing captures again).
+          // back to the end; after that anything that still drags the
+          // page away lets it go (the next crossing captures again).
           if (performance.now() - capturedAt < 600) {
             if (Math.abs(g.overshoot) > 0.5) window.scrollBy({ top: -g.overshoot, behavior: "instant" });
             lastOvershoot = 0;
