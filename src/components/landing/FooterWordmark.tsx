@@ -25,7 +25,9 @@ import { useEffect, useRef } from "react";
       parent is what works.
       Rubber band, like the platform's own (Jasper 2026-09-07: "正常惯性的
       拉上去然后又松开恢复正常"): while the wheel keeps pushing at the end
-      the footer follows it — the push (decaying over TAU while fed)
+      the footer follows it — the push (decaying only slowly, over TAU,
+      while fed, so for the first half second it is simply the finger's
+      travel; a 320ms memory made the lift ramp for 0.4s and feel draggy)
       saturates into the lift (K), so it gets harder the further it is —
       and it lets go the moment the stream turns into momentum: a
       trackpad's tail is a run of strictly decreasing deltas (MOMENTUM_RUN
@@ -36,25 +38,26 @@ import { useEffect, useRef } from "react";
       before it turns — the impulse's own amplitude, then the return —
       and the rest of the tail is ignored until a fresh flick (a delta at
       least twice the last, 10px+) or 90ms of quiet; 90ms with no push at
-      all also lets go, the same way. The spring
-      is lively on the way up (ζ 0.5, so it overshoots a touch into the
-      clipper's headroom) and near-critically damped on the way back
-      (ζ 0.9: a soft landing at the rest, never under it — a footer pushed
-      down even a few px extends the page's scroll height, transforms
-      count, and the end stops being the end). The reach is a little past
+      all also lets go, the same way. The spring is stiff (ω ≈ 35: on
+      the finger within a tenth of a second — Jasper found the ω 22 /
+      ζ 0.5 version draggy and slow to follow), damped 0.7 on the way up
+      (a hair of overshoot into the clipper's headroom) and 0.9 on the
+      way back (a soft landing at the rest, never under it — a footer
+      pushed down even a few px extends the page's scroll height,
+      transforms count, and the end stops being the end). The reach is a little past
       the hidden half, so a hard pull shows a sliver of dark under the
       word. Wheel only; touch keeps the platform's own bounce. */
 
 const REACH_EM = 0.654; // how far the footer may be pulled: the hidden 0.504em and 0.15em of dark
 const HEADROOM_EM = 0.72; // the clipper's headroom (Footer): the reach and the spring's overshoot
-const TAU = 320; // ms — the push's decay while it is still being fed
-const TAU_RELEASE = 90; // ms — its fade once let go
-const K = 230; // px of push for 63% of the reach
+const TAU = 800; // ms — the push's decay while it is still being fed: long, so the first half second reads as finger travel
+const TAU_RELEASE = 40; // ms — its fade once let go (the spring is fast enough now to finish a flick's rise first)
+const K = 200; // px of push for 63% of the reach
 const MIN_STEP = 4; // smaller wheel deltas are momentum crumbs, not a pull
 const MOMENTUM_RUN = 5; // strictly decreasing deltas in a row at the end = momentum: let go
 const LET_GO = 90; // ms without a push
-const STIFFNESS = 480; // the spring toward the target, 1/s² (ω ≈ 22)
-const ZETA_UP = 0.5; // damping ratio rising: lively, a small overshoot
+const STIFFNESS = 1200; // the spring toward the target, 1/s² (ω ≈ 35: on the finger within ~0.1s)
+const ZETA_UP = 0.7; // damping ratio rising: quick, a hair of overshoot
 const ZETA_DOWN = 0.9; // damping ratio returning: a soft landing
 
 export default function FooterWordmark() {
@@ -113,8 +116,13 @@ export default function FooterWordmark() {
       if (push < 1) push = 0;
       const target = reach * (1 - Math.exp(-push / K));
       const damping = 2 * (target > pull ? ZETA_UP : ZETA_DOWN) * Math.sqrt(STIFFNESS);
-      vel += (STIFFNESS * (target - pull) - damping * vel) * dt;
-      pull += vel * dt;
+      // a stiff spring wants small steps: integrate in ≤ 8ms substeps
+      const n = Math.ceil(dt / 0.008);
+      const h = dt / n;
+      for (let i = 0; i < n; i++) {
+        vel += (STIFFNESS * (target - pull) - damping * vel) * h;
+        pull += vel * h;
+      }
       if (!push && Math.abs(pull) < 0.2 && Math.abs(vel) < 2) {
         pull = vel = 0;
         footer.style.transform = "";
