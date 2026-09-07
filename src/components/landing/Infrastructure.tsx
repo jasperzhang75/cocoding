@@ -1597,7 +1597,7 @@ function InfrastructureStage() {
       const goTo = (target: number, instant = false) => {
         const cur = frameRef.current;
         if (target === cur) return;
-        if (cur === 4 && tl2.progress() < 1) return; // frame 4 not landed
+        if (cur === 4 && !landed) return; // frame 4 not formed yet (see apply's tolerance)
         if (cur === 4 && target === 5) return stepTo5();
         if (cur === 5 && target === 4) return stepBack4();
         if (target === 6) return stepTo6(cur as 4 | 5 | 8, instant);
@@ -1927,10 +1927,21 @@ function InfrastructureStage() {
         if (base4) tl.progress(clamp01((r0 - r.top) / Math.max(r0 - r1, 1)));
         const g = geometry();
         if (base4) {
+          /* the last two pixels of the scrub count as its end. Browsers
+             that round scroll offsets (Safari) can leave the hold half a
+             pixel short of the runway's end: the scrub then read 0.999,
+             frame 4 was "unformed" while looking formed, and goTo refused
+             every step and click — the page stuck in the section
+             (Jasper, Safari, 2026-09-07). Within the tolerance the scrub
+             snaps to 1 so the frame is exactly whole. */
           const p = clamp01(g.travel / g.scrub);
-          tl2.progress(p);
-          if (p >= 1 && !landed) land();
-          else if (p < 1 && landed) unland();
+          if (p >= 1 - 2 / g.scrub) {
+            if (tl2.progress() !== 1) tl2.progress(1);
+            if (!landed) land();
+          } else {
+            tl2.progress(p);
+            if (landed) unland();
+          }
         }
         if (arriving && Math.abs(g.travel - arriveAt) <= 2) arrived();
         if (bandsOn()) return bands(g.travel);
