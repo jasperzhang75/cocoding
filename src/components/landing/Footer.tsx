@@ -60,16 +60,21 @@ const COLUMNS: { title: string; width: string; links: string[] }[] = [
   },
 ];
 
-/* the wordmark's hidden half: its 1.22 line box less the 0.716 window,
-   at min(250px, 20.8vw) — 126px at the design's width; and the headroom
-   the footer may rise into — 180px there */
-const HIDDEN = "0.504 * min(250px, 20.8vw)";
-const HEADROOM = "0.72 * min(250px, 20.8vw)";
+/* the wordmark's size lives in --wordmark-size (globals.css,
+   .footer-wordmark-size): 20.8% of its container — the viewport less the
+   footer's side padding, 1200 at most — so 250px at the design's width
+   and the word always 98% of the container, 1% clear each side (sized by
+   the viewport it overflowed the tablet's narrower container and lost
+   its right margin). The hidden half is 0.504 of it (its 1.22 line box
+   less the 0.716 window; 126px at the design's width), the headroom the
+   footer may rise into 0.72 (180px there). */
+const HIDDEN = "0.504 * var(--wordmark-size)";
+const HEADROOM = "0.72 * var(--wordmark-size)";
 
 export default function Footer() {
   return (
     <div
-      className="pointer-events-none overflow-clip"
+      className="footer-wordmark-size pointer-events-none overflow-clip"
       style={{
         marginTop: `calc(-1 * (${HEADROOM}))`,
         paddingTop: `calc(${HEADROOM})`,

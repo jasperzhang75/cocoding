@@ -3,7 +3,8 @@
 import { useEffect, useRef } from "react";
 
 /* THE WORDMARK at the page's end (Figma 16555:16756): "cocoding" in
-   Montserrat Black, 250px at the design's width, blue fading to white,
+   Montserrat Black, 250px at the design's width (--wordmark-size, set on
+   the clipper in Footer: 20.8% of the container), blue fading to white,
    whole in the footer's flow — the page ends 0.716em into its 1.22em
    line box, across the middle of the letters (the clipper around the
    footer does the cutting, see Footer).
@@ -180,7 +181,7 @@ export default function FooterWordmark() {
     <div
       ref={boxRef}
       aria-hidden
-      className="mt-[37px] text-center text-[min(250px,20.8vw)] leading-[1.22] font-black tracking-[-0.04em] select-none"
+      className="mt-[37px] text-center text-(length:--wordmark-size) leading-[1.22] font-black tracking-[-0.04em] select-none"
       style={{ fontFamily: "var(--font-montserrat), sans-serif" }}
     >
       <span

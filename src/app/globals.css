@@ -220,6 +220,19 @@ body {
 
 /* Security card: the light-green inner shadow breathes — slow, faint,
    there-and-not-there. Static under reduced motion. */
+/* the footer wordmark's size: 20.8% of its container — the viewport less
+   the footer's side padding (px-5 below md, px-10 from md), 1200 at most
+   — 250px at the design's width. The clipper, the footer and the word
+   all read it. */
+.footer-wordmark-size {
+  --wordmark-size: min(250px, calc(0.208 * (100vw - 40px)));
+}
+@media (min-width: 48rem) {
+  .footer-wordmark-size {
+    --wordmark-size: min(250px, calc(0.208 * (100vw - 80px)));
+  }
+}
+
 /* the Security card's green edge breathes like a person, not a
    metronome: an inhale, a held crest that eases off a little, a quick
    exhale, then a long rest at the bottom before the next breath.
