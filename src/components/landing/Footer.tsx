@@ -10,10 +10,13 @@ import FooterWordmark from "./FooterWordmark";
    does the cutting: the footer's negative bottom margin (the hidden
    0.504em) folds the word's lower half under the clipper's end, which is
    the page's end, and overflow-clip keeps that fold from lengthening the
-   page. The clipper also begins the same 0.504em ABOVE the footer, so a
+   page. The clipper also begins 0.72em ABOVE the footer (headroom), so a
    hard pull at the page's end can lift the whole footer that far inside
-   it — the lower half rising from under the page — without the footer's
-   top being cut (FooterWordmark drives the lift). Placeholder links. */
+   it — the lower half rising from under the page, then a little dark
+   beneath it — without the footer's top being cut (FooterWordmark drives
+   the lift; its reach is 0.654em, the rest is for the spring's
+   overshoot). The clipper takes no pointer events: its headroom overlaps
+   the section above. Placeholder links. */
 
 const COLUMNS: { title: string; width: string; links: string[] }[] = [
   {
@@ -58,20 +61,22 @@ const COLUMNS: { title: string; width: string; links: string[] }[] = [
 ];
 
 /* the wordmark's hidden half: its 1.22 line box less the 0.716 window,
-   at min(250px, 20.8vw) — 126px at the design's width */
+   at min(250px, 20.8vw) — 126px at the design's width; and the headroom
+   the footer may rise into — 180px there */
 const HIDDEN = "0.504 * min(250px, 20.8vw)";
+const HEADROOM = "0.72 * min(250px, 20.8vw)";
 
 export default function Footer() {
   return (
     <div
-      className="overflow-clip"
+      className="pointer-events-none overflow-clip"
       style={{
-        marginTop: `calc(-1 * (${HIDDEN}))`,
-        paddingTop: `calc(${HIDDEN})`,
+        marginTop: `calc(-1 * (${HEADROOM}))`,
+        paddingTop: `calc(${HEADROOM})`,
       }}
     >
       <footer
-        className="border-t-[0.5px] border-white/[0.12] px-5 md:px-10"
+        className="pointer-events-auto border-t-[0.5px] border-white/[0.12] px-5 md:px-10"
         style={{ marginBottom: `calc(-1 * (${HIDDEN}))` }}
       >
         <div className="mx-auto w-full max-w-[1200px] pt-[72px]">
