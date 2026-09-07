@@ -177,11 +177,14 @@ export default function FooterWordmark() {
   }, []);
 
   return (
-    /* the whole 1.22em line box; the clipper around the footer shows its top 0.716em */
+    /* the whole 1.22em line box; the clipper around the footer shows its top
+       0.716em. Left-aligned: the design sets the word's box on the
+       container's left edge, in line with the mark and the copyright
+       (Jasper 2026-09-07 — it had been centered) */
     <div
       ref={boxRef}
       aria-hidden
-      className="mt-[37px] text-center text-(length:--wordmark-size) leading-[1.22] font-black tracking-[-0.04em] select-none"
+      className="mt-[37px] text-left text-(length:--wordmark-size) leading-[1.22] font-black tracking-[-0.04em] select-none"
       style={{ fontFamily: "var(--font-montserrat), sans-serif" }}
     >
       <span
