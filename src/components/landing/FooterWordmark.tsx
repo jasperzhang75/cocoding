@@ -54,6 +54,7 @@ const TAU = 800; // ms — the push's decay while it is still being fed: long, s
 const TAU_RELEASE = 40; // ms — its fade once let go (the spring is fast enough now to finish a flick's rise first)
 const K = 200; // px of push for 63% of the reach
 const MIN_STEP = 4; // smaller wheel deltas are momentum crumbs, not a pull
+const MAX_STEP = 78; // one event counts at most this much: a mouse notch (100) lifts ~48px, not 58 (Jasper)
 const MOMENTUM_RUN = 5; // strictly decreasing deltas in a row at the end = momentum: let go
 const LET_GO = 90; // ms without a push
 const STIFFNESS = 1200; // the spring toward the target, 1/s² (ω ≈ 35: on the finger within ~0.1s)
@@ -166,7 +167,7 @@ export default function FooterWordmark() {
         released = true; // momentum: let go (the push fades in tick)
         return;
       }
-      push += dy;
+      push += Math.min(dy, MAX_STEP);
       pushedAt = t;
       if (!raf) {
         last = pushedAt;

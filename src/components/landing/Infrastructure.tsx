@@ -1631,6 +1631,8 @@ function InfrastructureStage() {
       let captured = false;
       let landed = false; // frame 4 formed (tl2 at 1)
       let lastOvershoot = NaN; // where the page stood against the runway's end last time
+      let lastTravel = NaN; // and its travel, with the time, for the speed of approach
+      let lastAt = 0;
       let capturedAt = 0; // when the hold began
       let arriving: (() => void) | null = null; // runs when a programmatic scroll lands
       let arriveTimer = 0;
@@ -1757,7 +1759,12 @@ function InfrastructureStage() {
         if (Math.abs(overshoot) <= 0.5) return;
         const from = window.scrollY;
         const to = from - overshoot;
-        if (Math.abs(overshoot) < 24) {
+        // a few px: just align. More than half a screen — the page got
+        // away while the main thread was busy (Safari, a fast flick through
+        // heavy sections) — is snapped too: gliding back from another
+        // section reads as "jumped to Testimonial and came back" (Jasper),
+        // one frame there does not.
+        if (Math.abs(overshoot) < 24 || Math.abs(overshoot) > 0.6 * window.innerHeight) {
           window.scrollTo({ top: to, behavior: "instant" });
           return;
         }
@@ -1996,11 +2003,30 @@ function InfrastructureStage() {
           lastOvershoot = g.overshoot;
           return;
         }
-        // the runway's end captures whenever the page crosses it, from either side
+        // the runway's end captures whenever the page crosses it, from either
+        // side — or is ABOUT to: a fast pass is far beyond the end by the
+        // time the next scroll event arrives (the browser scrolls ahead of
+        // its events; Safari's come sparser still), so when the approach
+        // speed says the next event would land past the end, the hold takes
+        // the page here and glides it the rest of the way — the scrub
+        // completing on the glide — instead of hauling it back from a
+        // section away (Jasper, Safari, 2026-09-07).
+        const now = performance.now();
+        let willCross = false;
+        if (captureOn() && Number.isFinite(lastTravel) && now - lastAt < 300) {
+          const dt = Math.max(8, now - lastAt);
+          const v = (g.travel - lastTravel) / dt; // px per ms
+          if (Math.abs(v) >= 1.5) {
+            const predicted = g.overshoot + v * Math.min(150, dt);
+            willCross = (g.overshoot < 0 && predicted >= 0) || (g.overshoot > 0 && predicted <= 0);
+          }
+        }
+        lastTravel = g.travel;
+        lastAt = now;
         const crossedDown = lastOvershoot < 0 && g.overshoot >= 0;
         const crossedUp = lastOvershoot > 0 && g.overshoot <= 0;
         lastOvershoot = g.overshoot;
-        if (captureOn() && (crossedDown || crossedUp)) capture(g.overshoot);
+        if (captureOn() && (crossedDown || crossedUp || willCross)) capture(g.overshoot);
       };
 
       /* Title clicks switch the frame and keep the page held. The stage
