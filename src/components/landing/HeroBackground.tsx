@@ -17,7 +17,13 @@ import { preconnect, preload } from "react-dom";
       true, so the JSON comes from Unicorn's CDN and caches.
    2. A CSS stand-in paints from the first frame: the scene's settled look
       sampled from a headless render — black, a white-blue line along the
-      bottom edge fading up into navy, a wider bloom at bottom center.
+      bottom edge fading up into navy, a wider bloom at bottom center —
+      under a film of grain: the navy-to-black run spans some 300px on a
+      dozen 8-bit levels, and Chrome draws such a gradient as 20px bands
+      (Jasper saw the stripes); a faint SVG fractal-noise tile blended
+      in screen mode adds ±2 levels of dither in the dark — a fixed
+      amplitude, unlike overlay's tone-proportional grain, which came
+      out ±12 levels in the navy — and nothing in the light.
    3. The live canvas sits above it at opacity 0 and fades in over 1.2s
       once the scene reports it has drawn (initialized + rendering); if
       that signal never comes but a canvas exists, it fades in after 6s;
@@ -35,10 +41,29 @@ const PROJECT = "hjz7dlZ2jZHar7bHXhfg";
    99: 37,41,72 · 159: 17,19,34 · 249: 8,9,16 · then black — with the edges
    at half the center's brightness 30px up, so a uniform line plus a
    center-weighted bloom */
-const STAND_IN = [
+const GRADIENTS = [
   "radial-gradient(ellipse 100% 30% at 50% 100%, rgba(120,134,220,0.5) 0%, rgba(90,102,180,0.32) 35%, rgba(40,46,90,0.18) 65%, rgba(0,0,0,0) 100%)",
   "linear-gradient(to top, rgb(228,236,252) 0px, rgb(196,207,246) 12px, rgb(86,96,156) 29px, rgb(48,54,92) 50px, rgb(26,30,53) 79px, rgb(12,14,26) 130px, rgb(4,5,9) 200px, rgb(0,0,0) 300px)",
-].join(", ");
+];
+/* a 240px tile of very dark fractal noise, opaque, 0-10 levels centred on
+   2.5: screened onto the gradients it lifts the dark by ~2.5 levels and
+   scatters ±2 around that, which is what breaks the bands */
+const GRAIN =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'>" +
+      "<filter id='g' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>" +
+      "<feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' seed='11'/>" +
+      "<feColorMatrix values='0.06 0 0 0 -0.02  0.06 0 0 0 -0.02  0.06 0 0 0 -0.02  0 0 0 0 1'/>" +
+      "</filter><rect width='240' height='240' filter='url(#g)'/></svg>"
+  );
+const STAND_IN: React.CSSProperties = {
+  backgroundImage: [`url("${GRAIN}")`, ...GRADIENTS].join(", "),
+  backgroundBlendMode: "screen, normal, normal",
+  backgroundSize: "240px 240px, auto, auto",
+  backgroundRepeat: "repeat, no-repeat, no-repeat",
+  backgroundColor: "#000",
+};
 
 type Scene = { initialized?: boolean; rendering?: boolean; fallbackOnly?: boolean; destroy?: () => void };
 type UnicornStudio = { addScene: (options: Record<string, unknown>) => Promise<Scene> };
@@ -124,7 +149,7 @@ export default function HeroBackground() {
 
   return (
     <div aria-hidden className="absolute inset-0">
-      <div className="absolute inset-0" style={{ background: STAND_IN }} />
+      <div data-stand-in className="absolute inset-0" style={STAND_IN} />
       <div ref={hostRef} data-unicorn className="absolute inset-0 opacity-0 transition-opacity duration-[1200ms] ease-out" />
     </div>
   );
