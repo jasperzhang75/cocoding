@@ -221,22 +221,21 @@ body {
 /* Security card: the light-green inner shadow breathes — slow, faint,
    there-and-not-there. Static under reduced motion. */
 /* the Security card's green edge breathes like a person, not a
-   metronome: a quick inhale that settles at the top, a slightly longer
-   exhale, then a long rest at the bottom before the next breath. Jasper
-   (2026-09-07): a faster breath, a longer gap — 5.4s a cycle: in 0.85s,
-   crest 0.23s, out 1.05s, then 3s of rest (was in 1.75 / out 1.66 /
-   rest 0.83 over 4.6s) */
+   metronome: a quick inhale, a held crest that eases off a little, a
+   quick exhale, then a long rest at the bottom before the next breath.
+   Jasper (2026-09-07): 4.85s a cycle — in 0.85s, hold 0.65s, out 0.85s,
+   rest 2.5s */
 @keyframes security-breathe {
-  0%    { opacity: 0.25; animation-timing-function: cubic-bezier(0.35, 0, 0.5, 1); }
-  15.7% { opacity: 1;    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
-  20%   { opacity: 0.94; animation-timing-function: cubic-bezier(0.4, 0.05, 0.55, 0.95); }
-  39.5% { opacity: 0.27; animation-timing-function: linear; }
-  44%   { opacity: 0.25; }
-  100%  { opacity: 0.25; }
+  0%     { opacity: 0.25; animation-timing-function: cubic-bezier(0.35, 0, 0.5, 1); }
+  17.53% { opacity: 1;    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  30.93% { opacity: 0.94; animation-timing-function: cubic-bezier(0.4, 0.05, 0.55, 0.95); }
+  48.45% { opacity: 0.27; animation-timing-function: linear; }
+  51.55% { opacity: 0.25; }
+  100%   { opacity: 0.25; }
 }
 
 .security-breathe {
-  animation: security-breathe 5.4s infinite;
+  animation: security-breathe 4.85s infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
