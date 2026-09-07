@@ -1642,6 +1642,7 @@ function InfrastructureStage() {
       let lastOvershoot = NaN; // where the page stood against the runway's end last time
       let lastTravel = NaN; // and its travel, with the time, for the speed of approach
       let lastAt = 0;
+      let armed = true; // may the runway's end capture? false from a release until the page is 40px clear of it
       let capturedAt = 0; // when the hold began
       let arriving: (() => void) | null = null; // runs when a programmatic scroll lands
       let arriveTimer = 0;
@@ -1852,6 +1853,7 @@ function InfrastructureStage() {
         // crosses.
         lastOvershoot = NaN;
         lastTravel = NaN;
+        armed = false;
         document.documentElement.style.overflow = "";
         document.documentElement.style.paddingRight = "";
         window.removeEventListener("wheel", onWheel);
@@ -2056,6 +2058,22 @@ function InfrastructureStage() {
         // completing on the glide — instead of hauling it back from a
         // section away (Jasper, Safari, 2026-09-07).
         const now = performance.now();
+        /* Just released, the page is still on the end: a scroll event that
+           has not moved it yet (Safari fires one as the overflow comes back
+           and as the smooth nudge starts) would record "before the end" and
+           the next one a crossing — the page caught again at once, and a
+           hard flick from frame 8 never reached Testimonial (Jasper,
+           Safari, 2026-09-07). Nothing captures until the page is 40px
+           clear; a real return crosses from there as before. */
+        if (!armed) {
+          if (Math.abs(g.overshoot) >= 40) armed = true;
+          else {
+            lastOvershoot = g.overshoot;
+            lastTravel = g.travel;
+            lastAt = now;
+            return;
+          }
+        }
         let willCross = false;
         if (captureOn() && Number.isFinite(lastTravel) && now - lastAt < 300) {
           const dt = Math.max(8, now - lastAt);
