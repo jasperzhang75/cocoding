@@ -937,11 +937,15 @@ function InfrastructureStage() {
       }
       gsap.set(svg.querySelectorAll("[data-face-x]"), { x: (narrow ? STACK5_MD : STACK5).x });
       layoutCards(W);
-      // the stage sticks at --stick-top while the runway — the wrapper's
-      // height beyond the stage — scrolls under it. A centered stage stops
-      // the page's end short of the runway's end by its offset: bands add
-      // it (capture clamps to what is reachable instead, see geometry)
-      runway.style.setProperty("--stage-full", `${stage.offsetHeight}px`);
+      // the stage sticks at --stick-top while the runway — the spacer
+      // after it — scrolls under it. A centered stage stops the page's end
+      // short of the runway's end by its offset: bands add it (capture
+      // clamps to what is reachable instead, see geometry). Both values
+      // have CSS defaults (.infra-runway in globals.css) built from the
+      // same formulas, so the page is the same length before this runs:
+      // it used to be up to 2.8k px shorter until hydration, and a fast
+      // scroll right after load was thrown back into the section when
+      // the page grew above it.
       const top = stickTop();
       runway.style.setProperty("--stick-top", `${top}px`);
       runway.style.setProperty("--runway", `${runwayLen() + (bandsOn() ? Math.max(0, top) : 0)}px`);
@@ -2026,14 +2030,10 @@ function InfrastructureStage() {
     <section ref={sectionRef} className="px-[23px] md:px-10 xl:px-0">
       <div className="pt-[65px] md:pt-[110px] xl:pt-[160px]">
       {/* the runway: the stage below sticks (at --stick-top, see stickTop)
-          while this box's height beyond it scrolls by, driving 3 -> 4
-          and, on touch, the frames after. Both vars are measured by
-          layoutPanel; until then the box is just the stage's height. */}
-      <div
-        ref={runwayRef}
-        className="h-[calc(var(--stage-full)+var(--runway))]"
-        style={{ "--runway": `${RUNWAY}px` } as CSSProperties}
-      >
+          while the spacer after it scrolls by, driving 3 -> 4 and, on
+          touch, the frames after. Both vars have CSS defaults
+          (.infra-runway) and are re-measured by layoutPanel. */}
+      <div ref={runwayRef} className="infra-runway">
       {/* the stage. Three layouts: a phone (Figma bHyNfFfV0ocgVPCHtOyYBp
           1159:676) stacks the heading, the CURRENT item's title and
           description, and the panel as wide as the column, 679 tall; md
@@ -2990,6 +2990,8 @@ function InfrastructureStage() {
           </svg>
         </div>
       </div>
+      {/* the runway itself: the stage stays stuck while this much scrolls under it */}
+      <div aria-hidden className="h-(--runway)" />
       </div>
       </div>
     </section>

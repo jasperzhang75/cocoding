@@ -220,16 +220,38 @@ body {
 
 /* Security card: the light-green inner shadow breathes — slow, faint,
    there-and-not-there. Static under reduced motion. */
-/* the footer wordmark's size: 20.8% of its container — the viewport less
-   the footer's side padding (px-5 below md, px-10 from md), 1200 at most
-   — 250px at the design's width. The clipper, the footer and the word
-   all read it. */
+/* the Infrastructure runway, before its effect measures anything: the
+   same numbers the JS sets (layoutPanel), so the page is the same length
+   from the first paint. --runway: the 500px scrub, plus on touch four
+   bands of clamp(320, 70svh, 700) and the stage's centering offset (the
+   stage is 679 tall from md; a phone's is taller, hence the max(0)).
+   --stick-top: the stage centered when it fits, else its bottom on the
+   viewport's; at xl the 679 panel, 7 down in the 686 stage, centered. */
+.infra-runway {
+  --runway: 500px;
+  --stick-top: min(100svh - 679px, (100svh - 679px) / 2);
+}
+@media (min-width: 80rem) {
+  .infra-runway {
+    --stick-top: calc(50svh - 346.5px);
+  }
+}
+@media (hover: none) and (prefers-reduced-motion: no-preference) {
+  .infra-runway {
+    --runway: calc(500px + 4 * clamp(320px, 70svh, 700px) + max(0px, min(100svh - 679px, (100svh - 679px) / 2)));
+  }
+}
+
+/* the footer wordmark's size: 250/1200 of its container — the viewport
+   less the footer's side padding (px-5 below md, px-10 from md), 1200 at
+   most — 250px at the design's width. The clipper, the footer and the
+   word all read it. */
 .footer-wordmark-size {
-  --wordmark-size: min(250px, calc(0.208 * (100vw - 40px)));
+  --wordmark-size: min(250px, calc(0.2083 * (100vw - 40px)));
 }
 @media (min-width: 48rem) {
   .footer-wordmark-size {
-    --wordmark-size: min(250px, calc(0.208 * (100vw - 80px)));
+    --wordmark-size: min(250px, calc(0.2083 * (100vw - 80px)));
   }
 }
 
