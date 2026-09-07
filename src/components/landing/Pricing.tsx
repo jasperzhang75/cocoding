@@ -8,7 +8,14 @@ import { HyperText } from "@/components/magicui/hyper-text";
    hairline box: Starter | Pro | Enterprise. Pro is the dark one with the
    blue glow, the Annual switch, a credits picker and the accent button.
    Placeholder content: the switch only flips, the credits picker only
-   looks like one. */
+   looks like one.
+
+   Below xl the cards keep their layout but the type steps down, per the
+   Starter card Jasper set in the iPad frame (17474:8038, 2026-09-07):
+   plan name 14 / 137.5% (was 16 / 100% / -1%), price 24 / 100% / -3%
+   (the heading-md token; was 36 / 137.5% / -4%, and "/mo" 16 for 24),
+   blurb 14 / 137.5% (was 16), list items 13 / 137.5% (was 14). Buttons,
+   the credits picker (14) and the Annual label (12) stay. */
 
 type Plan = {
   name: string;
@@ -35,11 +42,11 @@ const STARTER: Plan = {
 };
 const PRO: Plan = {
   name: "Pro",
-  // "$18" at 36 / -4%, "/mo" at 24 / -3%, one 137.5% line
+  // "$18" at 36 / -4%, "/mo" at 24 / -3%, one 137.5% line; below xl 24 and 16
   price: (
     <>
       $18
-      <span className="text-[1.5rem] tracking-[-0.03em]">/mo</span>
+      <span className="text-[1rem] tracking-[-0.03em] xl:text-[1.5rem]">/mo</span>
     </>
   ),
   blurb: "For commercial and professional builds",
@@ -108,7 +115,7 @@ function Features({ items }: { items: Plan["items"] }) {
   return (
     <ul className="mt-[37px] flex flex-col gap-3">
       {items.map((it) => (
-        <li key={it.text} className="flex items-start gap-3 text-body-sm text-text-primary">
+        <li key={it.text} className="flex items-start gap-3 text-body-xs text-text-primary xl:text-body-sm">
           {it.plus ? <Plus /> : <Check />}
           <span>{it.text}</span>
         </li>
@@ -120,9 +127,9 @@ function Features({ items }: { items: Plan["items"] }) {
 function Header({ plan, aside }: { plan: Plan; aside?: React.ReactNode }) {
   return (
     <div className="relative">
-      <p className="text-[1rem] leading-none tracking-[-0.01em] text-text-primary">{plan.name}</p>
-      <p className="mt-3 text-[2.25rem] leading-[1.375] tracking-[-0.04em] text-text-primary">{plan.price}</p>
-      <p className="mt-3 text-body-md text-text-body">{plan.blurb}</p>
+      <p className="text-body-sm text-text-primary xl:text-[1rem] xl:leading-none xl:tracking-[-0.01em]">{plan.name}</p>
+      <p className="mt-3 text-heading-md text-text-primary xl:text-[2.25rem] xl:leading-[1.375] xl:tracking-[-0.04em]">{plan.price}</p>
+      <p className="mt-3 text-body-sm text-text-body xl:text-body-md">{plan.blurb}</p>
       {aside}
     </div>
   );
