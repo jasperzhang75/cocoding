@@ -15,15 +15,19 @@ import { preconnect, preload } from "react-dom";
    1. The SDK runs in our page (one document less; the script is preloaded
       from the HTML head, the two hosts preconnected) with production:
       true, so the JSON comes from Unicorn's CDN and caches.
-   2. A CSS stand-in paints from the first frame: the scene's settled look
-      sampled from a headless render — black, a white-blue line along the
-      bottom edge fading up into navy, a wider bloom at bottom center —
-      under a film of grain: the navy-to-black run spans some 300px on a
-      dozen 8-bit levels, and Chrome draws such a gradient as 20px bands
-      (Jasper saw the stripes); a faint SVG fractal-noise tile blended
-      in screen mode adds ±2 levels of dither in the dark — a fixed
-      amplitude, unlike overlay's tone-proportional grain, which came
-      out ±12 levels in the navy — and nothing in the light.
+   2. A stand-in paints from the first frame: Jasper's own still of the
+      scene, exported from Unicorn Studio (assets/hero/stand-in-source.png,
+      5760 x 3600, kept out of the served folder and out of git), cut to
+      2x and 1x as AVIF 6KB / 3KB and WebP 23KB / 7KB in public/hero —
+      a <picture> picks by pixel density, the 2x AVIF is preloaded from
+      the head. It sits bottom-anchored under object-fit cover, the way
+      the scene keeps its beam on the bottom edge whatever the aspect.
+      A CSS gradient was the first stand-in; its navy-to-black run showed
+      as 20px bands (a dozen 8-bit levels over 300px). A faint SVG
+      fractal-noise tile stays above the still, screen-blended: +2 ±2
+      levels in the dark, nothing in the light — the compression smooths
+      the still's own noise away (row-to-row variation 0.45 -> 0.08
+      levels), and this keeps its flats from banding.
    3. The live canvas sits above it at opacity 0 and fades in over 1.2s
       once the scene reports it has drawn (initialized + rendering); if
       that signal never comes but a canvas exists, it fades in after 6s;
@@ -35,19 +39,13 @@ import { preconnect, preload } from "react-dom";
 
 const SDK = "https://www.unicorn.studio/unicornStudio.umd.js";
 const PROJECT = "hjz7dlZ2jZHar7bHXhfg";
+const STILL = "/hero/stand-in";
+const AVIF_SET = `${STILL}-1440.avif 1x, ${STILL}-2880.avif 2x`;
+const WEBP_SET = `${STILL}-1440.webp 1x, ${STILL}-2880.webp 2x`;
 
-/* the stand-in, from the render's center column (px above the bottom edge:
-   rgb) 0: 245,247,249 · 11: 217,226,248 · 29: 148,161,217 · 59: 76,85,137 ·
-   99: 37,41,72 · 159: 17,19,34 · 249: 8,9,16 · then black — with the edges
-   at half the center's brightness 30px up, so a uniform line plus a
-   center-weighted bloom */
-const GRADIENTS = [
-  "radial-gradient(ellipse 100% 30% at 50% 100%, rgba(120,134,220,0.5) 0%, rgba(90,102,180,0.32) 35%, rgba(40,46,90,0.18) 65%, rgba(0,0,0,0) 100%)",
-  "linear-gradient(to top, rgb(228,236,252) 0px, rgb(196,207,246) 12px, rgb(86,96,156) 29px, rgb(48,54,92) 50px, rgb(26,30,53) 79px, rgb(12,14,26) 130px, rgb(4,5,9) 200px, rgb(0,0,0) 300px)",
-];
 /* a 240px tile of very dark fractal noise, opaque, 0-10 levels centred on
-   2.5: screened onto the gradients it lifts the dark by ~2.5 levels and
-   scatters ±2 around that, which is what breaks the bands */
+   2.5: screened onto the still it lifts the dark by ~2.5 levels and
+   scatters ±2 around that, which is what keeps flats from banding */
 const GRAIN =
   "data:image/svg+xml," +
   encodeURIComponent(
@@ -57,13 +55,6 @@ const GRAIN =
       "<feColorMatrix values='0.06 0 0 0 -0.02  0.06 0 0 0 -0.02  0.06 0 0 0 -0.02  0 0 0 0 1'/>" +
       "</filter><rect width='240' height='240' filter='url(#g)'/></svg>"
   );
-const STAND_IN: React.CSSProperties = {
-  backgroundImage: [`url("${GRAIN}")`, ...GRADIENTS].join(", "),
-  backgroundBlendMode: "screen, normal, normal",
-  backgroundSize: "240px 240px, auto, auto",
-  backgroundRepeat: "repeat, no-repeat, no-repeat",
-  backgroundColor: "#000",
-};
 
 type Scene = { initialized?: boolean; rendering?: boolean; fallbackOnly?: boolean; destroy?: () => void };
 type UnicornStudio = { addScene: (options: Record<string, unknown>) => Promise<Scene> };
@@ -91,6 +82,7 @@ export default function HeroBackground() {
   preconnect("https://www.unicorn.studio");
   preconnect("https://assets.unicorn.studio");
   preload(SDK, { as: "script" });
+  preload(`${STILL}-2880.avif`, { as: "image", type: "image/avif", imageSrcSet: AVIF_SET, fetchPriority: "high" });
 
   const hostRef = useRef<HTMLDivElement>(null);
 
@@ -149,7 +141,26 @@ export default function HeroBackground() {
 
   return (
     <div aria-hidden className="absolute inset-0">
-      <div data-stand-in className="absolute inset-0" style={STAND_IN} />
+      {/* the still, then the grain screened onto it (isolate: the blend stays inside) */}
+      <div data-stand-in className="absolute inset-0 isolate bg-black">
+        <picture>
+          <source type="image/avif" srcSet={AVIF_SET} />
+          {/* a plain img: the assets are pre-cut, next/image would only re-encode them */}
+          <img
+            src={`${STILL}-1440.webp`}
+            srcSet={WEBP_SET}
+            alt=""
+            fetchPriority="high"
+            decoding="async"
+            className="absolute inset-0 size-full object-cover object-bottom"
+          />
+        </picture>
+        <div
+          data-grain
+          className="absolute inset-0 mix-blend-screen"
+          style={{ backgroundImage: `url("${GRAIN}")`, backgroundSize: "240px 240px" }}
+        />
+      </div>
       <div ref={hostRef} data-unicorn className="absolute inset-0 opacity-0 transition-opacity duration-[1200ms] ease-out" />
     </div>
   );
