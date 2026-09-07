@@ -14,7 +14,9 @@ import { NotionLogo, OpenAILogo, RampLogo } from "./testimonial-logos";
    sides (the section clips at the viewport). The design draws three
    cards — a photo quote (OpenAI), a case study (Ramp), a photo quote
    (Notion) — and Jasper asked for six to have something to slide, so
-   the three repeat. Placeholder content for now. */
+   the three repeat. Placeholder content for now. Besides the arrows: a
+   touch swipe, and (Jasper 2026-09-07) a horizontal wheel gesture — a
+   trackpad's two-finger left/right — anywhere over the section. */
 
 const CARD_W = 386; // cards are 386 x 481
 const GAP = 20;
@@ -212,6 +214,7 @@ const SLIDE = "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)";
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export default function Testimonial() {
+  const sectionRef = useRef<HTMLElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const pos = useRef(N); // the window's first card, as an index into LOOP
@@ -260,9 +263,46 @@ export default function Testimonial() {
       if (e.target === track && e.propertyName === "transform") settle();
     };
     track.addEventListener("transitionend", onEnd);
+
+    /* HORIZONTAL WHEEL over the section: one card per gesture. A gesture
+       is one continuous stream of horizontal-dominant wheel events; it
+       ends after 120ms of quiet, and a fresh flick inside its momentum
+       tail (a delta at least twice the last, 10px+) is a new one — the
+       Infrastructure's rules, so a trackpad's tail never slides a second
+       card. 30px of travel is a step; deltaX > 0 (fingers moving left)
+       is the next card, as with horizontal scrolling. Vertical scrolling
+       passes through untouched; the horizontal events are prevented so
+       Chrome's swipe-to-go-back never fires. Native listener: React's
+       onWheel is passive and could not prevent it. */
+    const section = sectionRef.current;
+    let acc = 0;
+    let lastAt = 0;
+    let lastAx = 0;
+    let stepped = false;
+    const onWheel = (e: WheelEvent) => {
+      const ax = Math.abs(e.deltaX);
+      const ay = Math.abs(e.deltaY);
+      if (ax < 2 || ax <= ay) return;
+      e.preventDefault();
+      const t = performance.now();
+      if (t - lastAt > 120 || (stepped && ax >= Math.max(10, 2 * lastAx))) {
+        acc = 0;
+        stepped = false;
+      }
+      lastAt = t;
+      lastAx = ax;
+      if (stepped) return;
+      acc += e.deltaX;
+      if (Math.abs(acc) >= 30) {
+        go(acc > 0 ? 1 : -1);
+        stepped = true;
+      }
+    };
+    section?.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       ro.disconnect();
       track.removeEventListener("transitionend", onEnd);
+      section?.removeEventListener("wheel", onWheel);
     };
   }, []);
 
@@ -277,7 +317,7 @@ export default function Testimonial() {
   };
 
   return (
-    <section className="overflow-x-clip px-5 pt-24 md:px-10 xl:pt-[120px]">
+    <section ref={sectionRef} className="overflow-x-clip px-5 pt-24 md:px-10 xl:pt-[120px]">
       <div className="mx-auto w-full max-w-[1200px]">
         {/* the same one-shot scramble as the other eyebrows */}
         <HyperText
