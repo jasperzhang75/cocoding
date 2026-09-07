@@ -1843,6 +1843,15 @@ function InfrastructureStage() {
         captured = false;
         glide?.kill();
         glide = null;
+        // the hold's record of where the page stood is sub-pixel noise now
+        // (Safari parks it half a pixel short of the end): read as "just
+        // before the end", the first scroll away read as a fresh crossing
+        // and the page was caught again at once — 8-down never reached
+        // Testimonial (Jasper, Safari, 2026-09-07). Forget it; the next
+        // scroll event records a side afresh, and a real return still
+        // crosses.
+        lastOvershoot = NaN;
+        lastTravel = NaN;
         document.documentElement.style.overflow = "";
         document.documentElement.style.paddingRight = "";
         window.removeEventListener("wheel", onWheel);
