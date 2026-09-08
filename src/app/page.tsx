@@ -16,8 +16,12 @@ export default function Home() {
       {/* The Unicorn Studio scene backs the first screen only, so it is scoped
           to this wrapper rather than the whole (now much taller) page. It stays
           mouse-interactive: the content layer above is pointer-events-none and
-          individual controls opt back in with pointer-events-auto. */}
-      <div className="relative min-h-screen overflow-hidden">
+          individual controls opt back in with pointer-events-auto.
+          The first screen is the SMALL viewport (svh): on a phone 100vh is
+          the height with the browser's bars collapsed, so the bottom of the
+          scene — its glow — sat under Safari's toolbar (Jasper, iPhone,
+          2026-09-08). */}
+      <div className="relative min-h-svh overflow-hidden">
         <HeroBackground />
 
         <div className="pointer-events-none relative z-10">

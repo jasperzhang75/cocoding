@@ -179,10 +179,14 @@ export default function Hero() {
       <div className="flex w-full max-w-[660px] flex-col items-center gap-9">
         <div className="flex flex-col items-center gap-6">
           <AnnouncementBadge />
-          <h1 className="text-center text-heading-lg leading-[1.1] text-text-primary md:whitespace-nowrap md:text-display md:leading-none">
+          {/* on a phone both wrap; balanced, so the lines break evenly
+              ("What do you want / to build?", "... websites / that work
+              from day one.") instead of leaving one word alone on the
+              second line (Jasper, iPhone, 2026-09-08) */}
+          <h1 className="text-center text-balance text-heading-lg leading-[1.1] text-text-primary md:whitespace-nowrap md:text-display md:leading-none">
             What do you want to build?
           </h1>
-          <p className="text-center text-body-md text-text-body/60 md:leading-none">
+          <p className="text-center text-balance text-body-md text-text-body/60 md:leading-none">
             Create secure apps and websites that work from day one.
           </p>
         </div>
