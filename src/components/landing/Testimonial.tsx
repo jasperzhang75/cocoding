@@ -86,14 +86,16 @@ const CARDS: Card[] = [openai, ramp, notion, openai, ramp, notion];
 
 /* 386 x 481 at xl; a tablet shows three whole cards like the desktop,
    each a third of the container less the gaps (293 at 1000, 216 at
-   768); a phone gets the column. Below xl the card SCALES (Jasper
+   768); a phone gets one card at 84% of the container, the next
+   peeking past it (294 x 366 at 390 — Jasper 2026-09-08: the
+   column-wide card was too big). Below xl the card SCALES (Jasper
    2026-09-07): its aspect holds, and everything inside is measured in
    cqw — hundredths of the card's width, so the design's px over 386 —
    except the type, which steps down one size: name / kicker body-xs
    (13), quote / title body-md (16), the stat's label body-sm. At xl a
    cqw is 3.86px and every value is the design's. */
 const CARD_CLASS =
-  "@container relative aspect-[386/481] w-[min(386px,100%)] shrink-0 overflow-hidden rounded-sm md:w-[calc((100%-40px)/3)] xl:w-[386px]";
+  "@container relative aspect-[386/481] w-[min(386px,84%)] shrink-0 overflow-hidden rounded-sm md:w-[calc((100%-40px)/3)] xl:w-[386px]";
 const PAD = "9.33cqw"; // the design's 36
 /* the text block: 36 from the left, its bottom 36 (quote) / 34 (study)
    above the card's, 308 / 268 wide at most */
@@ -107,7 +109,7 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
         src={card.photo}
         alt=""
         fill
-        sizes="(min-width: 1280px) 386px, (min-width: 768px) 33vw, 100vw"
+        sizes="(min-width: 1280px) 386px, (min-width: 768px) 33vw, 84vw"
         className="object-cover"
         style={{ maskImage: PHOTO_MASK, WebkitMaskImage: PHOTO_MASK }}
       />
