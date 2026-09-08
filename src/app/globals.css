@@ -286,3 +286,21 @@ body {
     opacity: 0.6;
   }
 }
+
+/* a glow that comes up once its part of the page has scrolled in — the
+   closing call's, the Testimonial study cards' (Jasper 2026-09-08):
+   dark until the ancestor onArrival (landing/on-arrival.ts) watches is
+   marked data-arrived, a share of it on screen, then 1.6s to --lit (1
+   unless the element sets it) */
+.rise-on-arrival {
+  opacity: 0;
+  transition: opacity 1.6s ease;
+}
+[data-arrived] .rise-on-arrival {
+  opacity: var(--lit, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise-on-arrival {
+    transition: none;
+  }
+}

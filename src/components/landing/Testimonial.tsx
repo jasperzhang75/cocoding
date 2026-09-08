@@ -5,6 +5,7 @@ import type { CSSProperties, ReactNode, TouchEvent } from "react";
 import Image from "next/image";
 import { HyperText } from "@/components/magicui/hyper-text";
 import { NotionLogo, OpenAILogo, RampLogo } from "./testimonial-logos";
+import { onArrival } from "./on-arrival";
 
 /* TESTIMONIAL (Figma yFciEPejue3E2xhstXF0Wu 16798:8090). A row of
    386 x 481 cards, 20px apart, that slides one card per arrow press
@@ -134,11 +135,13 @@ function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
       {/* Ellipse 21888 / 21891: two 289 x 206 blue glows, layer-blurred
           300 in the design — drawn as radial gradients twice their size,
           no filter. Jasper preferred this first rendering over the
-          faithful blurred ellipses, so it stays. */}
+          faithful blurred ellipses, so it stays. They come up as the
+          cards scroll into view (Jasper 2026-09-08): rise-on-arrival,
+          the row marked by onArrival in the section below. */}
       {/* 578 x 412 at 55 / 147 and -276 / -41 over the 386 card, in cqw */}
       <div
         aria-hidden
-        className="pointer-events-none absolute h-[106.74cqw] w-[149.74cqw] left-[14.25cqw] top-[38.08cqw]"
+        className="rise-on-arrival pointer-events-none absolute h-[106.74cqw] w-[149.74cqw] left-[14.25cqw] top-[38.08cqw]"
         style={{
           background:
             "radial-gradient(closest-side, rgba(49,111,197,0.55), rgba(36,82,146,0.32) 45%, rgba(24,54,95,0) 100%)",
@@ -146,7 +149,7 @@ function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute h-[106.74cqw] w-[149.74cqw] left-[-71.5cqw] top-[-10.62cqw]"
+        className="rise-on-arrival pointer-events-none absolute h-[106.74cqw] w-[149.74cqw] left-[-71.5cqw] top-[-10.62cqw]"
         style={{
           background:
             "radial-gradient(closest-side, rgba(49,111,197,0.35), rgba(36,82,146,0.2) 45%, rgba(24,54,95,0) 100%)",
@@ -323,6 +326,12 @@ export default function Testimonial() {
       track.removeEventListener("transitionend", onEnd);
       section?.removeEventListener("wheel", onWheel);
     };
+  }, []);
+
+  // the study cards' glows come up once 30% of the row is on screen
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    return viewport ? onArrival(viewport) : undefined;
   }, []);
 
   const onTouchStart = (e: TouchEvent) => {
