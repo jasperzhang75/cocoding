@@ -242,19 +242,27 @@ export default function Pricing() {
             {/* its two (stacked: side) hairlines ride above the glow */}
             <div aria-hidden className="pointer-events-none absolute inset-0 z-10 md:hidden" style={{ boxShadow: HAIRLINE_SIDES }} />
             <div aria-hidden className="pointer-events-none absolute inset-0 z-10 hidden md:block" style={{ boxShadow: HAIRLINE_TOP_BOTTOM }} />
-            {/* the 1% white wash and Ellipse 21887: a 348 x 249 radial
-                #18365F -> #316FC5 at 43%, blurred 300 — drawn as a radial
-                gradient twice its size, no filter. Jasper preferred this
-                first rendering over the faithful blurred ellipse. */}
+            {/* the 1% white wash, and Ellipse 21887 as the design draws it
+                (node 17050:8036, read 2026-09-08): a 348 x 249 ellipse turned
+                -90°, so a 249 x 348 box at 65 / 104 in the 400 x 607 card —
+                its center 10.5 left of and 25.5 above the card's, which is
+                how it is placed here, so narrower cards below xl keep it
+                near their middle — radial #18365F -> #316FC5 at 43%,
+                LAYER-BLURRED 300 (CSS blur 150), clipped by the card like
+                the design's frame. Jasper had preferred a wider gradient
+                stand-in (2026-09-06) and went back to the design
+                (2026-09-08: "pricing 的光晕还是按照原 figma design 的来").
+                The design's layer order puts the ellipse above the texts;
+                it stays under them here — a glow is a background. */}
             <div aria-hidden className="pointer-events-none absolute inset-0 bg-white/[0.01]" />
             <div
               aria-hidden
-              className="pointer-events-none absolute h-[498px] w-[696px]"
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[348px] w-[249px] rounded-full"
               style={{
-                left: 140,
-                top: -20,
-                background:
-                  "radial-gradient(closest-side, rgba(49,111,197,0.43), rgba(36,82,146,0.24) 45%, rgba(24,54,95,0) 100%)",
+                transform: "translate(calc(-50% - 10.5px), calc(-50% - 25.5px))",
+                opacity: 0.43,
+                background: "radial-gradient(closest-side, #18365F 0%, #316FC5 100%)",
+                filter: "blur(150px)",
               }}
             />
             <div className="relative flex grow flex-col">
