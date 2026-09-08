@@ -46,13 +46,23 @@ import { useEffect, useRef } from "react";
       pushed down even a few px extends the page's scroll height,
       transforms count, and the end stops being the end). The reach is a little past
       the hidden half, so a hard pull shows a sliver of dark under the
-      word. Wheel only; touch keeps the platform's own bounce. */
+      word.
+      Touch (Jasper 2026-09-08, "mobile 上向上拉他下半部分不显示"): a drag
+      that STARTS at the page's end and moves up is ours — its first
+      touchmove is cancelled, so the platform's bounce never starts for
+      that gesture (WebKit only honours a cancel on a gesture's first
+      move, so a swipe that reaches the end mid-flight still bounces the
+      platform's way; the next drag pulls) — and the lift follows the
+      finger through the same saturation (K_TOUCH: a finger travels far,
+      so it saturates sooner) into the same spring; letting go springs
+      back. A drag down with nothing lifted is left to the platform. */
 
 const REACH_EM = 0.654; // how far the footer may be pulled: the hidden 0.504em and 0.15em of dark
 const HEADROOM_EM = 0.72; // the clipper's headroom (Footer): the reach and the spring's overshoot
 const TAU = 800; // ms — the push's decay while it is still being fed: long, so the first half second reads as finger travel
 const TAU_RELEASE = 40; // ms — its fade once let go (the spring is fast enough now to finish a flick's rise first)
 const K = 200; // px of push for 63% of the reach
+const K_TOUCH = 60; // px of finger travel for 63% of it
 const MIN_STEP = 4; // smaller wheel deltas are momentum crumbs, not a pull
 const MAX_STEP = 78; // one event counts at most this much: a mouse notch (100) lifts ~48px, not 58 (Jasper)
 const MOMENTUM_RUN = 5; // strictly decreasing deltas in a row at the end = momentum: let go
@@ -102,6 +112,9 @@ export default function FooterWordmark() {
     let lastDy = 0; // its delta
     let runDown = 0; // strictly decreasing deltas in a row, at the end
     let released = false; // let go: the rest of this stream is momentum
+    let touchY0 = 0; // where a drag at the end began
+    let touchPulling = false; // this drag is ours
+    let touchTarget = 0; // the lift the finger asks for (px)
     let pull = 0; // the spring's position (px up)
     let vel = 0;
     let last = 0;
@@ -115,7 +128,7 @@ export default function FooterWordmark() {
       last = now;
       push *= Math.exp(-(dt * 1000) / (released || now - pushedAt > LET_GO ? TAU_RELEASE : TAU));
       if (push < 1) push = 0;
-      const target = reach * (1 - Math.exp(-push / K));
+      const target = Math.max(reach * (1 - Math.exp(-push / K)), touchTarget);
       const damping = 2 * (target > pull ? ZETA_UP : ZETA_DOWN) * Math.sqrt(STIFFNESS);
       // a stiff spring wants small steps: integrate in ≤ 8ms substeps
       const n = Math.ceil(dt / 0.008);
@@ -124,7 +137,7 @@ export default function FooterWordmark() {
         vel += (STIFFNESS * (target - pull) - damping * vel) * h;
         pull += vel * h;
       }
-      if (!push && Math.abs(pull) < 0.2 && Math.abs(vel) < 2) {
+      if (!push && !touchTarget && Math.abs(pull) < 0.2 && Math.abs(vel) < 2) {
         pull = vel = 0;
         footer.style.transform = "";
         raf = 0;
@@ -169,17 +182,49 @@ export default function FooterWordmark() {
       }
       push += Math.min(dy, MAX_STEP);
       pushedAt = t;
+      start();
+    };
+    addEventListener("wheel", onWheel, { passive: true });
+
+    const start = () => {
       if (!raf) {
-        last = pushedAt;
+        last = performance.now();
         raf = requestAnimationFrame(tick);
       }
     };
-    addEventListener("wheel", onWheel, { passive: true });
+    const onTouchStart = (e: TouchEvent) => {
+      touchY0 = e.touches[0].clientY;
+      touchPulling = atEnd();
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touchPulling) return;
+      const d = touchY0 - e.touches[0].clientY; // finger up = positive
+      if (d <= 0 && pull < 0.5) {
+        touchPulling = false; // a drag down from rest: the platform scrolls
+        return;
+      }
+      e.preventDefault();
+      touchTarget = reach * (1 - Math.exp(-Math.max(0, d) / K_TOUCH));
+      start();
+    };
+    const onTouchEnd = () => {
+      touchPulling = false;
+      touchTarget = 0; // let go: the spring returns
+      start();
+    };
+    addEventListener("touchstart", onTouchStart, { passive: true });
+    addEventListener("touchmove", onTouchMove, { passive: false });
+    addEventListener("touchend", onTouchEnd);
+    addEventListener("touchcancel", onTouchEnd);
 
     return () => {
       removeEventListener("scroll", light);
       removeEventListener("resize", light);
       removeEventListener("wheel", onWheel);
+      removeEventListener("touchstart", onTouchStart);
+      removeEventListener("touchmove", onTouchMove);
+      removeEventListener("touchend", onTouchEnd);
+      removeEventListener("touchcancel", onTouchEnd);
       if (raf) cancelAnimationFrame(raf);
       footer.style.transform = "";
     };
