@@ -1,3 +1,5 @@
+import FinalCtaGlow from "./FinalCtaGlow";
+
 /* THE CLOSING CALL (Figma yFciEPejue3E2xhstXF0Wu 16555:16606, "MacBook
    Air - 140"): a 1280 x 832 screen with nothing but a two-line 48px
    heading and a white button, centered — 330 above and below on that
@@ -9,21 +11,9 @@
 export default function FinalCta() {
   return (
     <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 py-24 md:px-10">
-      {/* Ellipse 21888: a 289 x 206 ellipse, radial #18365F -> #245292 ->
-          #316FC5 at 52%, LAYER-BLURRED 300 (CSS blur at half the radius),
-          its center 93.5 right of the page's and 31 above the section's
-          middle — level with the heading */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[206px] w-[289px] rounded-full"
-        style={{
-          marginLeft: 93.5 - 144.5,
-          marginTop: -31 - 103,
-          opacity: 0.52,
-          background: "radial-gradient(closest-side, #18365F 0%, #245292 50%, #316FC5 100%)",
-          filter: "blur(150px)",
-        }}
-      />
+      {/* Ellipse 21888, the blue glow level with the heading: it comes up
+          as the section scrolls into view (see FinalCtaGlow) */}
+      <FinalCtaGlow />
       <div className="relative mx-auto flex w-full max-w-[1200px] flex-col items-center">
         <h2 className="text-center text-heading-lg text-text-primary xl:text-display">
           Build the future.
