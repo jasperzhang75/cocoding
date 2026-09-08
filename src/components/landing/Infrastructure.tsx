@@ -351,9 +351,10 @@ const G_MARK =
 
 /* Figma's Vector 24 — the stage-3 wash at the top of the panel: a blob at
    9% #2D69B7 with a white 26% hairline, layer-blurred 60.6 (feGaussianBlur
-   stdDeviation = radius / 2), flipped into place by its node transform. */
-const GLOW_PATH =
-  "M 108.96 275.17 C -90.13 262.91 29.3 52.8 108.96 47.23 C 174.8 42.62 181.3 164.63 246.79 174.68 C 304.18 183.48 330.26 125.58 387.43 114.63 C 436.34 105.26 514.01 114.63 514.01 114.63 C 514.01 114.63 619 123.82 658.41 68.06 C 672.13 48.65 671.59 29.52 685.6 10.46 C 736.96 -59.39 742.8 242.9 708.11 256.78 C 673.41 270.67 591.84 296 591.84 296 C 591.84 296 308.05 287.42 108.96 275.17 Z";
+   stdDeviation = radius / 2), flipped into place by its node transform.
+   Its path and blur are now a pre-rendered raster, public/infrastructure/
+   wash.png — see scripts/infra-glows (2026-09-08, phones stuttered
+   re-running the filter). */
 
 /* The design's grain is generated, not painted: a Figma shader plugin
    whose recipe the designer handed over. Ported here as a one-time canvas
@@ -2277,29 +2278,6 @@ function InfrastructureStage() {
                 <stop stopColor="#A8A8A8" />
                 <stop offset="1" stopColor="#424242" />
               </linearGradient>
-              <filter
-                id="infra-glow-blur"
-                x="-25%"
-                y="-50%"
-                width="150%"
-                height="200%"
-              >
-                <feGaussianBlur stdDeviation="30.3" />
-              </filter>
-              {/* frame-4 paints */}
-              <radialGradient id="infra-env-radial">
-                <stop stopColor="#18365F" />
-                <stop offset="1" stopColor="#316FC5" />
-              </radialGradient>
-              <filter
-                id="infra-env-blur"
-                x="-150%"
-                y="-150%"
-                width="400%"
-                height="400%"
-              >
-                <feGaussianBlur stdDeviation="150" />
-              </filter>
               <linearGradient id="infra-lid" x1="0" y1="0" x2="0" y2="1">
                 <stop stopColor="#6C91F9" stopOpacity="0.75" />
                 <stop offset="1" stopColor="#FFFFFF" stopOpacity="0.85" />
@@ -2342,9 +2320,6 @@ function InfrastructureStage() {
               <clipPath id="infra-grain-clip">
                 <ellipse cx="368.5" cy="370.5" rx="162.5" ry="177.5" />
               </clipPath>
-              <clipPath id="infra-e88-clip">
-                <ellipse cx="370.5" cy="344.5" rx="149.5" ry="107.5" />
-              </clipPath>
             </defs>
 
             {/* frame-4 glows behind everything, both compositing NORMALLY
@@ -2354,58 +2329,40 @@ function InfrastructureStage() {
                 stays inside the paint stack, as in Figma. */}
             <g data-anchor="center" data-md-lift={MD_LIFT}>
             <g data-env-back style={{ opacity: 0 }}>
-              {/* Ellipse 21888 — the ambient, layer-blurred 300; its grain
-                  tile is 241.4px (sf 0.1178), two columns cover the box.
-                  Hidden until the 3 -> 4 entrance blooms it from center.
-                  (21891's sharp radial is dropped — browser compositing
-                  turns it into a solid disc.) */}
-              <g style={{ isolation: "isolate" }} filter="url(#infra-env-blur)">
-                <ellipse
-                  cx="370.5"
-                  cy="344.5"
-                  rx="149.5"
-                  ry="107.5"
-                  fill="url(#infra-env-radial)"
-                  opacity="0.52"
-                />
-                <image
-                  data-noise
-                  x="221"
-                  y="237"
-                  width="241.4"
-                  height="241.4"
-                  preserveAspectRatio="none"
-                  clipPath="url(#infra-e88-clip)"
-                  style={{ mixBlendMode: "lighten" }}
-                />
-                <image
-                  data-noise
-                  x="462.4"
-                  y="237"
-                  width="241.4"
-                  height="241.4"
-                  preserveAspectRatio="none"
-                  clipPath="url(#infra-e88-clip)"
-                  style={{ mixBlendMode: "lighten" }}
-                />
-              </g>
+              {/* Ellipse 21888 — the ambient: the 149.5 x 107.5 ellipse at
+                  370.5 / 344.5 (radial #18365F -> #316FC5 at 52%) with its
+                  grain tiled over it at LIGHTEN, layer-blurred 300 — as a
+                  raster, rendered once from that very markup (see
+                  scripts/infra-glows) over the filter's region, because the
+                  live feGaussianBlur (stdDeviation 150) re-ran on every
+                  repaint of the animating SVG and phones stuttered (Jasper,
+                  2026-09-08). Hidden until the 3 -> 4 entrance blooms it
+                  from center. (21891's sharp radial is dropped — browser
+                  compositing turns it into a solid disc.) */}
+              <image
+                href="/infrastructure/env-glow.png"
+                x="-503.2"
+                y="-125.1"
+                width="1932"
+                height="966"
+                preserveAspectRatio="none"
+              />
             </g>
             </g>
 
-            {/* the blue wash rides along through stages 1-3 */}
+            {/* the blue wash rides along through stages 1-3: Vector 24's
+                path (fill #2D69B7 9%, white 26% hairline, blurred 60.6) as
+                a raster over its filter region, in the same flipped group
+                (see the GLOW note above) */}
             <g data-anchor="center">
-            <g
-              data-wash
-              transform="translate(-15 219) scale(1 -1)"
-              filter="url(#infra-glow-blur)"
-            >
-              <path
-                d={GLOW_PATH}
-                fill="#2D69B7"
-                fillOpacity="0.09"
-                stroke="#FFFFFF"
-                strokeOpacity="0.26"
-                strokeWidth="0.9"
+            <g data-wash transform="translate(-15 219) scale(1 -1)">
+              <image
+                href="/infrastructure/wash.png"
+                x="-182.5"
+                y="-148"
+                width="1095.5"
+                height="592.5"
+                preserveAspectRatio="none"
               />
             </g>
             </g>
