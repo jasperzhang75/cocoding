@@ -42,3 +42,6 @@ next-env.d.ts
 
 # design sources too big for git (the hero still: 22MB PNG); the cut assets live in public/hero
 /assets/
+
+*storybook.log
+storybook-static
