@@ -25,9 +25,8 @@ export const Mobile: Story = { globals: { viewport: { value: 'mobile2', isRotate
 
 export const CssCheck: Story = {
   play: async ({ canvas }) => {
-    // The Pro card is bg-[#07080C] — fails if Tailwind / globals.css did not load.
-    const pro = canvas.getByText('Pro', { exact: true }).closest('article');
-    await expect(pro).not.toBeNull();
-    await expect(getComputedStyle(pro as HTMLElement).backgroundColor).toBe('rgb(7, 8, 12)');
+    // The Pro button is bg-[#4362BA] — fails if Tailwind / globals.css did not load.
+    const pro = canvas.getByRole('button', { name: 'Start with Pro' });
+    await expect(getComputedStyle(pro).backgroundColor).toBe('rgb(67, 98, 186)');
   },
 };

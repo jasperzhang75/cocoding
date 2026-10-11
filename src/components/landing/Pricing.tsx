@@ -1,30 +1,43 @@
 "use client";
 
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
 import { EYEBROW_SCRAMBLE } from "./eyebrow";
 
-/* PRICING (Figma yFciEPejue3E2xhstXF0Wu 16660:18869). Eyebrow, 48px
-   heading, and three 400 x 607 plan cards that share one rounded (8)
-   hairline box: Starter | Pro | Enterprise. Pro is the dark one with the
-   blue glow, the Annual switch, a credits picker and the accent button.
-   Placeholder content: the switch only flips, the credits picker only
-   looks like one.
+/* PRICING, redesigned (Figma bHyNfFfV0ocgVPCHtOyYBp 4:8 in "MacBook Air -
+   34", read 2026-10-12; was yFciEPejue3E2xhstXF0Wu 16660:18869). Eyebrow,
+   48px heading in Title Case (the design's textCase TITLE), and three
+   SEPARATE 386 x 586 cards 21 apart — no longer one shared hairline box:
+   Starter | Pro | Enterprise. Placeholder content: the switch only flips,
+   the credits picker only looks like one.
 
-   Below xl the cards keep their layout but the type steps down, per the
-   Starter card Jasper set in the iPad frame (17474:8038, 2026-09-07):
-   plan name 14 / 137.5% (was 16 / 100% / -1%), price 24 / 100% / -3%
-   (the heading-md token; was 36 / 137.5% / -4%, and "/mo" 16 for 24),
-   blurb 14 / 137.5% (was 16), list items 13 / 137.5% (was 14). Buttons,
-   the credits picker (14) and the Annual label (12) stay.
+   Cards: radius 10, a 1px stroke INSIDE (white 6%; Pro a top-to-bottom
+   gradient #4362BA 43% -> #8382A1 40% at paint opacity 34%), drawn as an
+   inset shadow / a masked ring so the padding stays exact. Pro fills
+   white 3% and carries Ellipse 21887, the blurred blue glow, now centered
+   in the card. Content starts 37 from the top and 32 from the left; the
+   buttons are 318 wide, which leaves 36 on the right, and end 34 above
+   the bottom. Buttons: Starter white 10% with the whole button at 60%,
+   Pro #4362BA, Enterprise white with #0A0A0A text. The Annual switch sits
+   on the name row, 26 from the card's right edge, its pill #4D74E1.
 
-   Heights follow the content: the Pro card — the tallest, with its
-   credits picker — sets the row, and the other two, stretched to it,
-   drop their buttons to the bottom (mt-auto), so the three buttons stay
-   level as in the design. The gap from a list to what follows is the
-   design's 60 at xl (Pro's list ends at 397, the picker starts at 457;
-   the card comes out at the design's 607) and 40 below xl, where Jasper
-   wanted the lists closer to the buttons (2026-09-07). */
+   Below xl the cards keep this layout but the type steps down, per the
+   Starter card Jasper set in the iPad frame (yFciEPejue3E2xhstXF0Wu
+   17474:8038, 2026-09-07): plan name 14 / 137.5% (xl 16 / 100% / -1%),
+   price 24 / 100% / -3% (the heading-md token; xl 36 / 137.5% / -4%, and
+   "/mo" 16 for 24), blurb 14 / 137.5% (xl 16), list items 13 / 137.5%
+   (xl 14). Buttons, the credits picker (14) and the Annual label (12)
+   stay.
+
+   Heights follow the content: the Pro card, the tallest with its credits
+   picker, sets the row; the other two stretch to it and drop their
+   buttons to the bottom (mt-auto), so the three buttons stay level. The
+   gap from a list to what follows is the design's 59 at xl (Pro's list
+   ends at 398, the picker starts at 457; the card comes out at 586) and
+   40 below xl, where Jasper wanted the lists closer to the buttons
+   (2026-09-07). The design has Enterprise's button 2px higher than the
+   other two; level here. */
 
 type Plan = {
   name: string;
@@ -86,12 +99,6 @@ const ENTERPRISE: Plan = {
   cta: "Talk to sales",
 };
 
-/* the cards' 1px white 8% hairlines, inside their edges */
-const HAIRLINE = "rgba(255,255,255,0.08)";
-const HAIRLINE_ALL = `inset 0 0 0 1px ${HAIRLINE}`;
-const HAIRLINE_TOP_BOTTOM = `inset 0 1px 0 ${HAIRLINE}, inset 0 -1px 0 ${HAIRLINE}`;
-const HAIRLINE_SIDES = `inset 1px 0 0 ${HAIRLINE}, inset -1px 0 0 ${HAIRLINE}`;
-
 /* ---------------------------------------------------------------- icons */
 
 /* lucide check / plus at 20px, #4E4E4E 0.9 round; chevron-down at 16px,
@@ -133,53 +140,54 @@ function Features({ items }: { items: Plan["items"] }) {
   );
 }
 
-function Header({ plan, aside }: { plan: Plan; aside?: React.ReactNode }) {
+function Header({ plan }: { plan: Plan }) {
   return (
-    <div className="relative">
+    <div>
       <p className="text-body-sm text-text-primary xl:text-[1rem] xl:leading-none xl:tracking-[-0.01em]">{plan.name}</p>
       <p className="mt-3 text-heading-md text-text-primary xl:text-[2.25rem] xl:leading-[1.375] xl:tracking-[-0.04em]">{plan.price}</p>
       <p className="mt-3 text-body-sm text-text-body xl:text-body-md">{plan.blurb}</p>
-      {aside}
     </div>
   );
 }
 
-/* the 328 x 40 button: white 10% for Starter and Enterprise, the accent
-   at 87% for Pro */
-function Cta({ label, accent }: { label: string; accent?: boolean }) {
+/* the 318 x 40 buttons, r6, 14px: Starter white 10% with the whole button
+   at 60% (text included), Pro #4362BA, Enterprise white with #0A0A0A */
+const CTA_STYLE = {
+  starter: "bg-white/10 text-white opacity-60 hover:opacity-80 transition-opacity",
+  pro: "bg-[#4362BA] text-white hover:bg-[#5070C8] transition-colors",
+  enterprise: "bg-white text-[#0A0A0A] hover:bg-[#EDEDED] transition-colors",
+} as const;
+
+function Cta({ label, kind }: { label: string; kind: keyof typeof CTA_STYLE }) {
   return (
     <button
       type="button"
-      className={`flex h-10 w-full items-center justify-center rounded-sm px-3 text-body-sm text-text-primary transition-colors duration-300 ${
-        accent ? "bg-[#648DFF]/[0.87] hover:bg-[#648DFF]" : "bg-white/10 hover:bg-white/[0.14]"
-      }`}
+      className={`flex h-10 w-full items-center justify-center rounded-sm px-3 text-body-sm duration-300 ${CTA_STYLE[kind]}`}
     >
       {label}
     </button>
   );
 }
 
-/* the Annual switch: 30 x 18, accent 75% with a 12px white knob on the
-   right when on (the design's state); off it dims and the knob slides
-   left. Its bottom sits on the price's baseline: 48 under the header's
-   top at xl (the design; the 36px price's baseline is at 66), 33.75
-   below xl (the 14px name's 19.25 line, 12, then the 24px price's
-   baseline 20.5 down its 24px line, less the switch's 18) — Jasper
-   2026-09-07. Placeholder — nothing is priced differently yet. */
+/* the Annual switch: 30 x 18, #4D74E1 with a 12px white knob on the right
+   when on (the design's state; its shadow 0 4 24 black 20%); off it dims
+   and the knob slides left. "Annual" 12 / 137.5% #A1A1A1, 8 before it. On
+   the name row, 37 from the card's top and 26 from its right edge.
+   Placeholder — nothing is priced differently yet. */
 function AnnualSwitch() {
   const [on, setOn] = useState(true);
   return (
-    <label className="absolute right-0 top-[33.75px] flex cursor-pointer items-center gap-2 select-none xl:top-[48px]">
+    <label className="absolute right-[26px] top-[37px] z-10 flex h-[18px] cursor-pointer items-center gap-2 select-none">
       <span className="text-[0.75rem] leading-[1.375] text-text-body">Annual</span>
       <button
         type="button"
         role="switch"
         aria-checked={on}
         onClick={() => setOn((v) => !v)}
-        className={`relative h-[18px] w-[30px] rounded-full transition-colors duration-300 ${on ? "bg-accent/75" : "bg-white/10"}`}
+        className={`relative h-[18px] w-[30px] rounded-full transition-colors duration-300 ${on ? "bg-[#4D74E1]" : "bg-white/10"}`}
       >
         <span
-          className={`absolute top-[3px] size-3 rounded-full bg-white shadow-[0_2px_24px_rgba(0,0,0,0.4)] transition-[left] duration-300 ${
+          className={`absolute top-[3px] size-3 rounded-full bg-white shadow-[0_4px_24px_rgba(0,0,0,0.2)] transition-[left] duration-300 ${
             on ? "left-[15px]" : "left-[3px]"
           }`}
         />
@@ -188,8 +196,8 @@ function AnnualSwitch() {
   );
 }
 
-/* the credits picker: 328 x 40 at 60%, white 10%, text left and a chevron
-   right. Placeholder — it has one option and opens nothing yet. */
+/* the credits picker: the button's size, white 10% at 60%, text left and a
+   chevron right. Placeholder — it has one option and opens nothing yet. */
 function Credits() {
   return (
     <button
@@ -202,6 +210,29 @@ function Credits() {
     </button>
   );
 }
+
+/* ---------------------------------------------------------------- cards */
+
+/* the card box: radius 10, the design's padding (37 top, 32 left, 36 right,
+   34 bottom), a column so the buttons can sit at the bottom */
+const CARD = "relative flex flex-col overflow-hidden rounded-[10px] pb-[34px] pl-8 pr-9 pt-[37px] xl:min-h-[586px]";
+/* Starter and Enterprise: the 1px white 6% stroke inside */
+const PLAIN_STROKE: CSSProperties = { boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" };
+/* Pro: the gradient stroke inside, a 1px ring cut out of a gradient fill
+   by two masks (a box-shadow cannot take a gradient), at the paint's 34% */
+const PRO_RING: CSSProperties = {
+  padding: "1px",
+  background: "linear-gradient(180deg, rgba(67,98,186,0.43), rgba(131,130,161,0.4))",
+  opacity: 0.34,
+  maskImage: "linear-gradient(#fff 0 0), linear-gradient(#fff 0 0)",
+  maskClip: "content-box, border-box",
+  maskComposite: "exclude",
+  WebkitMaskImage: "linear-gradient(#fff 0 0), linear-gradient(#fff 0 0)",
+  WebkitMaskClip: "content-box, border-box",
+  WebkitMaskComposite: "xor",
+};
+/* the CTA block: the list's gap above it (59 at xl, 40 below) */
+const CTA_BLOCK = "mt-auto pt-10 xl:pt-[59px]";
 
 /* -------------------------------------------------------------- section */
 
@@ -216,73 +247,52 @@ export default function Pricing() {
         >
           Pricing
         </HyperText>
-        <h2 className="mt-3 text-heading-lg text-text-primary xl:text-display">Start for free, scale when ready.</h2>
+        {/* Title Case, as the design sets this layer (textCase TITLE) */}
+        <h2 className="mt-3 text-heading-lg capitalize text-text-primary xl:text-display">Start for free, scale when ready.</h2>
 
-        {/* the three cards share one box: 1px white 8% hairlines drawn
-            INSIDE (inset shadows, so the 36 padding stays exact), the
-            outer corners rounded 8, the middle card keeping only its top
-            and bottom edges (stacked below md: left and right instead).
-            Each card: 36 padding, 56 under the button; the height is the
-            content's (606.5 at xl, so a 607 floor there keeps the design's). */}
-        <div className="mt-[60px] grid grid-cols-1 md:grid-cols-3">
-          <article
-            className="flex flex-col rounded-t-[8px] p-9 pb-14 md:rounded-l-[8px] md:rounded-tr-none xl:min-h-[607px]"
-            style={{ boxShadow: HAIRLINE_ALL }}
-          >
+        <div className="mt-[60px] grid grid-cols-1 gap-[21px] md:grid-cols-3">
+          <article className={CARD} style={PLAIN_STROKE}>
             <Header plan={STARTER} />
             <Features items={STARTER.items} />
-            <div className="mt-auto pt-10 xl:pt-[60px]">
-              <Cta label={STARTER.cta} />
+            <div className={CTA_BLOCK}>
+              <Cta label={STARTER.cta} kind="starter" />
             </div>
           </article>
 
-          <article className="relative flex flex-col overflow-hidden bg-[#07080C] p-9 pb-14 xl:min-h-[607px]">
-            {/* its two (stacked: side) hairlines ride above the glow */}
-            <div aria-hidden className="pointer-events-none absolute inset-0 z-10 md:hidden" style={{ boxShadow: HAIRLINE_SIDES }} />
-            <div aria-hidden className="pointer-events-none absolute inset-0 z-10 hidden md:block" style={{ boxShadow: HAIRLINE_TOP_BOTTOM }} />
-            {/* the 1% white wash, and Ellipse 21887 as the design draws it
-                (node 17050:8036, read 2026-09-08): a 348 x 249 ellipse turned
-                -90°, so a 249 x 348 box at 65 / 104 in the 400 x 607 card —
-                its center 10.5 left of and 25.5 above the card's, which is
-                how it is placed here, so narrower cards below xl keep it
-                near their middle — radial #18365F -> #316FC5 at 43%,
-                LAYER-BLURRED 300 (CSS blur 150), clipped by the card like
-                the design's frame. Jasper had preferred a wider gradient
-                stand-in (2026-09-06) and went back to the design
-                (2026-09-08: "pricing 的光晕还是按照原 figma design 的来").
-                The design's layer order puts the ellipse above the texts;
-                it stays under them here — a glow is a background. */}
-            <div aria-hidden className="pointer-events-none absolute inset-0 bg-white/[0.01]" />
+          <article className={`${CARD} bg-white/[0.03]`}>
+            {/* Ellipse 21887: a 348 x 249 ellipse turned -90°, so a 249 x
+                348 box, centered in the card; radial #18365F -> #316FC5 at
+                43%, LAYER-BLURRED 300 (CSS blur 150), clipped by the card.
+                The design's layer order puts it above the texts; it stays
+                under them here — a glow is a background. */}
             <div
               aria-hidden
-              className="pointer-events-none absolute left-1/2 top-1/2 h-[348px] w-[249px] rounded-full"
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[348px] w-[249px] -translate-x-1/2 -translate-y-1/2 rounded-full"
               style={{
-                transform: "translate(calc(-50% - 10.5px), calc(-50% - 25.5px))",
                 opacity: 0.43,
                 background: "radial-gradient(closest-side, #18365F 0%, #316FC5 100%)",
                 filter: "blur(150px)",
               }}
             />
+            <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[10px]" style={PRO_RING} />
+            <AnnualSwitch />
             <div className="relative flex grow flex-col">
-              <Header plan={PRO} aside={<AnnualSwitch />} />
+              <Header plan={PRO} />
               <Features items={PRO.items} />
-              <div className="mt-auto pt-10 xl:pt-[60px]">
+              <div className={CTA_BLOCK}>
                 <Credits />
-                <div className="mt-[14px]">
-                  <Cta label={PRO.cta} accent />
+                <div className="mt-[15px]">
+                  <Cta label={PRO.cta} kind="pro" />
                 </div>
               </div>
             </div>
           </article>
 
-          <article
-            className="flex flex-col rounded-b-[8px] p-9 pb-14 md:rounded-r-[8px] md:rounded-bl-none xl:min-h-[607px]"
-            style={{ boxShadow: HAIRLINE_ALL }}
-          >
+          <article className={CARD} style={PLAIN_STROKE}>
             <Header plan={ENTERPRISE} />
             <Features items={ENTERPRISE.items} />
-            <div className="mt-auto pt-10 xl:pt-[60px]">
-              <Cta label={ENTERPRISE.cta} />
+            <div className={CTA_BLOCK}>
+              <Cta label={ENTERPRISE.cta} kind="enterprise" />
             </div>
           </article>
         </div>
