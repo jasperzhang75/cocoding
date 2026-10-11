@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { DOCS_URL } from "@/lib/links";
 import SectionLink from "./SectionLink";
 
 /* Values verified against the Figma nodes themselves (the CSS export claimed
@@ -16,16 +17,15 @@ import SectionLink from "./SectionLink";
    the logo and the two auth buttons.
 
    Targets (Jasper 2026-10-11): the first three jump to their sections on
-   this page (SectionLink, smooth, see page-nav); Documents is the docs
-   site. */
+   this page (SectionLink, smooth, see page-nav), Testimonial before
+   Pricing as on the page; Documents is the docs site. */
 
 const LINK_CLASS = "pointer-events-auto text-body-sm text-text-primary transition hover:text-text-body";
 const SECTIONS = [
   { label: "Features", section: "features" },
-  { label: "Pricing", section: "pricing" },
   { label: "Testimonial", section: "testimonial" },
+  { label: "Pricing", section: "pricing" },
 ];
-const DOCS_URL = "https://docs.cocoding.ai/";
 
 export default function Navbar() {
   return (

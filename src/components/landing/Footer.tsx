@@ -1,5 +1,7 @@
 import Image from "next/image";
+import { DOCS_URL } from "@/lib/links";
 import FooterWordmark from "./FooterWordmark";
+import SectionLink from "./SectionLink";
 
 /* FOOTER (Figma yFciEPejue3E2xhstXF0Wu 16555:16756, "MacBook Air - 141").
    A 0.5px hairline across the page, then 72 below it the mark on the
@@ -16,7 +18,17 @@ import FooterWordmark from "./FooterWordmark";
    beneath it — without the footer's top being cut (FooterWordmark drives
    the lift; its reach is 0.654em, the rest is for the spring's
    overshoot). The clipper takes no pointer events: its headroom overlaps
-   the section above. Placeholder links. */
+   the section above. Links: Features and Pricing jump to their sections
+   like the nav bar's, Docs opens the docs site (Jasper 2026-10-11); the
+   rest are placeholders. */
+
+/* the links that go somewhere: a section of this page or a URL */
+const TARGETS: Record<string, { section: string } | { href: string }> = {
+  Features: { section: "features" },
+  Pricing: { section: "pricing" },
+  Docs: { href: DOCS_URL },
+};
+const LINK_CLASS = "text-text-body transition-colors duration-300 hover:text-text-primary";
 
 const COLUMNS: { title: string; width: string; links: string[] }[] = [
   {
@@ -108,16 +120,22 @@ export default function Footer() {
                   <p className="text-body-sm text-text-primary">{col.title}</p>
                   {/* the list carries the type size so each row is one 19px line */}
                   <ul className="mt-6 flex flex-col gap-3 text-body-sm">
-                    {col.links.map((label) => (
-                      <li key={label}>
-                        <a
-                          href="#"
-                          className="text-text-body transition-colors duration-300 hover:text-text-primary"
-                        >
-                          {label}
-                        </a>
-                      </li>
-                    ))}
+                    {col.links.map((label) => {
+                      const to = TARGETS[label];
+                      return (
+                        <li key={label}>
+                          {to && "section" in to ? (
+                            <SectionLink section={to.section} className={LINK_CLASS}>
+                              {label}
+                            </SectionLink>
+                          ) : (
+                            <a href={to ? to.href : "#"} className={LINK_CLASS}>
+                              {label}
+                            </a>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               ))}
