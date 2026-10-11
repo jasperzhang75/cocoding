@@ -60,10 +60,11 @@
   --text-indicator: 0.875rem;       /* Indicator · 14 / 137.5% / 0 · Geist Mono */
   --text-indicator--line-height: 1.375;
 
-  /* Indicator/lg: the section eyebrows (FEATURES, PRICING, ...) at 16
-     (Jasper 2026-10-11). Not a Figma style — the file only has Indicator
-     at 14 — so the same 137.5% leading, 0 tracking, Geist Mono. */
-  --text-indicator-lg: 1rem;        /* Indicator/lg · 16 / 137.5% / 0 · Geist Mono */
+  /* Indicator/lg: the section eyebrows (FEATURES, PRICING, ...) at 15
+     (Jasper 2026-10-11 asked for 16, then settled on 15). Not a Figma
+     style — the file only has Indicator at 14 — so the same 137.5%
+     leading, 0 tracking, Geist Mono. */
+  --text-indicator-lg: 0.9375rem;   /* Indicator/lg · 15 / 137.5% / 0 · Geist Mono */
   --text-indicator-lg--line-height: 1.375;
 
   /* --- Radius --------------------------------------------------------- */
