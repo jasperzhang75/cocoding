@@ -257,14 +257,16 @@ export default function SecurityCard() {
           scale — the blue field jumped the moment the toggle was pressed.
           Drawn ABOVE the glows and the poster, as a Figma inner shadow
           sits over its frame's children; underneath them the blue washed
-          it out to a fraction of the design's 29%. Jasper then took it
-          down to 20% (2026-09-07: "还是要淡一些"); the breath's shape is
-          unchanged. */}
+          it out to a fraction of the design's 29%. Jasper took it down to
+          20% (2026-09-07: "还是要淡一些") and back to the design's value a
+          month later (2026-10-11: "按照 figma 原来的设计"): Frame 2609391's
+          visible INNER_SHADOW, #3AFF4D 29%, blur 50, spread 4 (the
+          #19C12D one under it is hidden). The breath's shape is unchanged. */}
       <div ref={breatheRef} aria-hidden className="pointer-events-none absolute inset-0 will-change-[opacity]">
         <div
           data-loop
           className="security-breathe absolute inset-0 rounded-md md:rounded-none md:rounded-bl-xl"
-          style={{ boxShadow: "inset 0 0 50px 4px rgba(58,255,77,0.2)" }}
+          style={{ boxShadow: "inset 0 0 50px 4px rgba(58,255,77,0.29)" }}
         />
       </div>
 
