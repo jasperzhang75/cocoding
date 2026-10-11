@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import gsap from "gsap";
 import { HyperText } from "@/components/magicui/hyper-text";
+import { EYEBROW_SCRAMBLE } from "./eyebrow";
 import { ICONS6 } from "./infra-icons";
 import { BRAND7 } from "./infra-brand-icons";
 import { FACE_MARKS, type FaceMarkKey } from "./infra-face-marks";
@@ -2205,10 +2206,7 @@ function InfrastructureStage() {
           {/* same one-shot scramble as the FEATURES eyebrow */}
           <HyperText
             as="p"
-            startOnView
-            delay={400}
-            duration={800}
-            animateOnHover={false}
+            {...EYEBROW_SCRAMBLE}
             className="font-mono text-indicator uppercase text-accent"
           >
             Infrastructure

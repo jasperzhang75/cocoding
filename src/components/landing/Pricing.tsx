@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
+import { EYEBROW_SCRAMBLE } from "./eyebrow";
 
 /* PRICING (Figma yFciEPejue3E2xhstXF0Wu 16660:18869). Eyebrow, 48px
    heading, and three 400 x 607 plan cards that share one rounded (8)
@@ -210,10 +211,7 @@ export default function Pricing() {
       <div className="mx-auto w-full max-w-[1200px]">
         <HyperText
           as="p"
-          startOnView
-          delay={400}
-          duration={800}
-          animateOnHover={false}
+          {...EYEBROW_SCRAMBLE}
           className="font-mono text-indicator uppercase text-accent"
         >
           Pricing

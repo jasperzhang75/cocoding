@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, waitFor } from 'storybook/test';
+import { EYEBROW_SCRAMBLE } from '@/components/landing/eyebrow';
 import { HyperText } from './hyper-text';
 
 const meta = {
@@ -18,12 +19,13 @@ type Story = StoryObj<typeof meta>;
 
 // The section eyebrow as every section uses it: one scramble once in view, no hover re-scramble.
 export const Eyebrow: Story = {
-  args: { startOnView: true, delay: 400, duration: 800, animateOnHover: false },
+  args: { ...EYEBROW_SCRAMBLE },
   play: async ({ canvasElement, args }) => {
-    // the letters settle on the children, upper-cased
-    await waitFor(() => expect(canvasElement.textContent).toBe(String(args.children).toUpperCase()), {
-      timeout: 3000,
-    });
+    const word = String(args.children).toUpperCase();
+    // the lead flips every letter, the first one included
+    await waitFor(() => expect(canvasElement.textContent?.[0]).not.toBe(word[0]), { timeout: 1500 });
+    // then the letters settle on the children, upper-cased
+    await waitFor(() => expect(canvasElement.textContent).toBe(word), { timeout: 3000 });
   },
 };
 

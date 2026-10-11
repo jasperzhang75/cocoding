@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
+import { EYEBROW_SCRAMBLE } from "./eyebrow";
 import AgentsDiagram from "./AgentsDiagram";
 import PosterViewport from "./PosterViewport";
 import TokensCard from "./TokensCard";
@@ -188,10 +189,7 @@ export default function Features() {
             one-shot (hover re-scramble off). */}
         <HyperText
           as="p"
-          startOnView
-          delay={400}
-          duration={800}
-          animateOnHover={false}
+          {...EYEBROW_SCRAMBLE}
           className="font-mono text-indicator uppercase text-accent"
         >
           Features

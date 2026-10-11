@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import type { CSSProperties, ReactNode, TouchEvent } from "react";
 import Image from "next/image";
 import { HyperText } from "@/components/magicui/hyper-text";
+import { EYEBROW_SCRAMBLE } from "./eyebrow";
 import { NotionLogo, OpenAILogo, RampLogo } from "./testimonial-logos";
 import { onArrival } from "./on-arrival";
 
@@ -350,10 +351,7 @@ export default function Testimonial() {
         {/* the same one-shot scramble as the other eyebrows */}
         <HyperText
           as="p"
-          startOnView
-          delay={400}
-          duration={800}
-          animateOnHover={false}
+          {...EYEBROW_SCRAMBLE}
           className="font-mono text-indicator uppercase text-accent"
         >
           Testimonial
