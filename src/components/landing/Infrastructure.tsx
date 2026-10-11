@@ -7,6 +7,7 @@ import { HyperText } from "@/components/magicui/hyper-text";
 import { ICONS6 } from "./infra-icons";
 import { BRAND7 } from "./infra-brand-icons";
 import { FACE_MARKS, type FaceMarkKey } from "./infra-face-marks";
+import { isNavigating } from "./page-nav";
 
 /* Infrastructure — the isometric story (Figma 17205:89133 -> 87420 ->
    87636), scrubbed by scroll. The three approved frames are keyframes on
@@ -2032,6 +2033,16 @@ function InfrastructureStage() {
           }
         }
         if (arriving && Math.abs(g.travel - arriveAt) <= 2) arrived();
+        /* A nav-bar jump to Testimonial or Pricing passes straight through
+           (see page-nav): no hold, no bands stepping frames on the way.
+           Only the record is kept, so the first scroll after the landing
+           is not read as a crossing (Jasper 2026-10-11). */
+        if (!captured && isNavigating()) {
+          lastOvershoot = g.overshoot;
+          lastTravel = g.travel;
+          lastAt = performance.now();
+          return;
+        }
         if (bandsOn()) return bands(g.travel);
         if (captured) {
           if (glide) return; // our own glide to the end is what is moving the page

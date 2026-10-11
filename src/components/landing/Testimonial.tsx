@@ -345,7 +345,7 @@ export default function Testimonial() {
   };
 
   return (
-    <section ref={sectionRef} className="overflow-x-clip px-5 pt-24 md:px-10 xl:pt-[120px]">
+    <section ref={sectionRef} id="testimonial" className="overflow-x-clip px-5 pt-24 md:px-10 xl:pt-[120px]">
       <div className="mx-auto w-full max-w-[1200px]">
         {/* the same one-shot scramble as the other eyebrows */}
         <HyperText

@@ -12,8 +12,11 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    // the mark and the name are the home link
+    // the mark and the name are the home link; the section links are in-page
+    // anchors, Documents is the docs site
     await expect(canvas.getByRole('link', { name: /cocoding/i })).toHaveAttribute('href', '/');
+    await expect(canvas.getByRole('link', { name: 'Pricing' })).toHaveAttribute('href', '#pricing');
+    await expect(canvas.getByRole('link', { name: 'Documents' })).toHaveAttribute('href', 'https://docs.cocoding.ai/');
   },
 };
 

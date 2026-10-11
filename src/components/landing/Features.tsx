@@ -182,7 +182,7 @@ function AgentsCard() {
 
 export default function Features() {
   return (
-    <section className="px-5 pt-[71px] md:px-10">
+    <section id="features" className="px-5 pt-[71px] md:px-10">
       <div className="mx-auto w-full max-w-[1200px]">
         {/* Magic UI HyperText: scrambles 400ms after first scroll into view,
             one-shot (hover re-scramble off). */}

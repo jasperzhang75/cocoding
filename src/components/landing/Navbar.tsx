@@ -1,4 +1,5 @@
 import Image from "next/image";
+import SectionLink from "./SectionLink";
 
 /* Values verified against the Figma nodes themselves (the CSS export claimed
    #dedcdc for all of these; only the logo wordmark actually is).
@@ -12,9 +13,19 @@ import Image from "next/image";
    Timing is Tailwind's default `transition`, 150ms cubic-bezier(.4,0,.2,1).
 
    Responsive: below md the links drop out entirely — no hamburger — leaving
-   the logo and the two auth buttons. */
+   the logo and the two auth buttons.
 
-const links = ["Features", "Pricing", "Testimonial", "Documents"];
+   Targets (Jasper 2026-10-11): the first three jump to their sections on
+   this page (SectionLink, smooth, see page-nav); Documents is the docs
+   site. */
+
+const LINK_CLASS = "pointer-events-auto text-body-sm text-text-primary transition hover:text-text-body";
+const SECTIONS = [
+  { label: "Features", section: "features" },
+  { label: "Pricing", section: "pricing" },
+  { label: "Testimonial", section: "testimonial" },
+];
+const DOCS_URL = "https://docs.cocoding.ai/";
 
 export default function Navbar() {
   return (
@@ -36,15 +47,14 @@ export default function Navbar() {
             </span>
           </a>
           <nav className="hidden items-center gap-6 md:flex">
-            {links.map((label) => (
-              <a
-                key={label}
-                href="#"
-                className="pointer-events-auto text-body-sm text-text-primary transition hover:text-text-body"
-              >
+            {SECTIONS.map(({ label, section }) => (
+              <SectionLink key={section} section={section} className={LINK_CLASS}>
                 {label}
-              </a>
+              </SectionLink>
             ))}
+            <a href={DOCS_URL} className={LINK_CLASS}>
+              Documents
+            </a>
           </nav>
         </div>
 

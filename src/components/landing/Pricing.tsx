@@ -206,7 +206,7 @@ function Credits() {
 
 export default function Pricing() {
   return (
-    <section className="px-5 pt-24 md:px-10 xl:pt-[160px]">
+    <section id="pricing" className="px-5 pt-24 md:px-10 xl:pt-[160px]">
       <div className="mx-auto w-full max-w-[1200px]">
         <HyperText
           as="p"
