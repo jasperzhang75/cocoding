@@ -2207,7 +2207,7 @@ function InfrastructureStage() {
           <HyperText
             as="p"
             {...EYEBROW_SCRAMBLE}
-            className="font-mono text-indicator uppercase text-accent"
+            className="font-mono text-indicator-lg uppercase text-accent"
           >
             Infrastructure
           </HyperText>

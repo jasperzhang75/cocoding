@@ -10,7 +10,7 @@ const meta = {
   args: {
     as: 'p',
     children: 'Pricing',
-    className: 'font-mono text-indicator uppercase text-accent',
+    className: 'font-mono text-indicator-lg uppercase text-accent',
   },
 } satisfies Meta<typeof HyperText>;
 

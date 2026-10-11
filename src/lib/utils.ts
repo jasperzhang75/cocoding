@@ -18,6 +18,7 @@ const twMerge = extendTailwindMerge({
         "text-body-xs",
         "text-label-sm",
         "text-indicator",
+        "text-indicator-lg",
       ],
     },
   },
