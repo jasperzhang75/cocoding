@@ -56,14 +56,14 @@ export function formatViews(views: number): string {
   return `${thousands >= 10 ? Math.round(thousands) : thousands.toFixed(1)}K`;
 }
 
-/** Logos for the marquee — same story, replace when there is a real source. */
-export type PartnerLogo = { id: string; name: string; src: string; width: number };
+/** Logos for the marquee: the five Jasper supplied (2026-10-11), in his
+ *  order, each drawn at the size its Figma export has (heights 36-40). */
+export type PartnerLogo = { id: string; name: string; src: string; width: number; height: number };
 
 export const PARTNER_LOGOS: PartnerLogo[] = [
-  { id: "l1", name: "Stripe", src: "/logos/logo-1.svg", width: 95 },
-  { id: "l2", name: "Pinterest", src: "/logos/logo-2.svg", width: 40 },
-  { id: "l3", name: "Brex", src: "/logos/logo-3.svg", width: 151 },
-  { id: "l4", name: "Klaviyo", src: "/logos/logo-4.svg", width: 131 },
-  { id: "l5", name: "Mercado Libre", src: "/logos/logo-5.svg", width: 148 },
-  { id: "l6", name: "Vanta", src: "/logos/logo-6.svg", width: 103 },
+  { id: "ip-paris", name: "Institut Polytechnique de Paris", src: "/logos/ip-paris.svg", width: 158, height: 40 },
+  { id: "google-for-startups", name: "Google for Startups", src: "/logos/google-for-startups.svg", width: 315, height: 38 },
+  { id: "bpifrance", name: "Bpifrance", src: "/logos/bpifrance.svg", width: 139, height: 40 },
+  { id: "imt-lille-douai", name: "IMT Lille Douai", src: "/logos/imt-lille-douai.svg", width: 68, height: 40 },
+  { id: "station-f", name: "Station F", src: "/logos/station-f.svg", width: 201, height: 36 },
 ];

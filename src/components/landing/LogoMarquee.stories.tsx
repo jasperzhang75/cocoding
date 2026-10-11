@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect } from 'storybook/test';
+import { PARTNER_LOGOS } from '@/lib/trending-projects';
 import LogoMarquee from './LogoMarquee';
 
 const meta = {
@@ -11,10 +12,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  play: async ({ canvas, canvasElement }) => {
-    // The loop draws the logo row twice; the copy is aria-hidden, so assistive tech
-    // reads each logo once: as many named images as logos in one row.
-    const all = canvasElement.querySelectorAll('img');
-    await expect(canvas.getAllByRole('img')).toHaveLength(all.length / 2);
+  play: async ({ canvas }) => {
+    // The loop repeats the logo set many times over; every repeat is hidden from
+    // assistive tech, so it reads each partner exactly once, by name.
+    const named = canvas.getAllByRole('img');
+    await expect(named.map((img) => img.getAttribute('alt'))).toEqual(PARTNER_LOGOS.map((logo) => logo.name));
   },
 };
