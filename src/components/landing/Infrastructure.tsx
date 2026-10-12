@@ -9,6 +9,7 @@ import { ICONS6 } from "./infra-icons";
 import { BRAND7 } from "./infra-brand-icons";
 import { FACE_MARKS, type FaceMarkKey } from "./infra-face-marks";
 import { isNavigating } from "./page-nav";
+import { integrationDocsUrl } from "@/lib/links";
 
 /* Infrastructure — the isometric story (Figma 17205:89133 -> 87420 ->
    87636), scrubbed by scroll. The three approved frames are keyframes on
@@ -306,8 +307,16 @@ const FACE_MAP: Record<number, Record<string, string>> = {
    Two rows share the interaction: BUILD-IN (left-facing cards, the
    design's filled 24-grid icons that turn white when lit) and
    CONNECTORS (Figma 17205:88594 — right-facing cards with brand icons).
-   `y` is each card's resting height; the lit one sits `raise` higher. */
-type Card = { key: string; label: string; x: number; y: number; iconT: string; icon?: string; off?: [number, number] };
+   `y` is each card's resting height; the lit one sits `raise` higher.
+
+   Every connector links to its page on the docs site, /integrations/<key>
+   (Jasper 2026-10-12): its card and its legend. Hovering lights a card,
+   so with a mouse one click opens the docs; on touch the first tap on an
+   unlit card lights it (the preview stays), a tap on the lit one opens
+   them. Only the lit card's legend takes clicks — the others are merely
+   faded out, and the labels overlap. `name` is the service's own spelling
+   for the link's accessible name. */
+type Card = { key: string; label: string; x: number; y: number; iconT: string; icon?: string; off?: [number, number]; name?: string };
 const CARDS6: Card[] = [
   { key: "database", icon: "database", label: "DATABASE", x: 204, y: 281.25, iconT: "matrix(0.898 0.439 0 1 23 40.75)" },
   { key: "payments", icon: "creditCard", label: "PAYMENTS", x: 259.1, y: 281.25, iconT: "matrix(0.857 0.514 0 1 22.883 39.75)" },
@@ -317,15 +326,15 @@ const CARDS6: Card[] = [
   { key: "deployment", icon: "rocket", label: "DEPLOYMENT", x: 479.6, y: 281, iconT: "matrix(0.832 0.555 0 1 23.414 39)" },
 ];
 const CARDS7: Card[] = [
-  { key: "notion", label: "NOTION", x: 122, y: 281.3, iconT: "matrix(0.882 -0.471 0 1 23 54.063)" },
-  { key: "whatsapp", label: "WHATSAPP", x: 177.1, y: 281.3, iconT: "matrix(0.942 -0.335 0 1 22.884 51.75)" },
-  { key: "telegram", label: "TELEGRAM", x: 232.2, y: 281.3, iconT: "matrix(0.89 -0.455 0 1 22.768 51.75)" },
-  { key: "stripe", label: "STRIPE", x: 287.4, y: 281.3, iconT: "matrix(0.89 -0.455 0 1 22.649 51.75)" },
-  { key: "slack", label: "SLACK", x: 342.5, y: 281, iconT: "matrix(0.832 -0.555 0 1 23.531 53)" },
-  { key: "openai", label: "OPENAI", x: 397.6, y: 281, iconT: "matrix(0.89 -0.455 0 1 23.414 52)" },
-  { key: "hubspot", label: "HUBSPOT", x: 452, y: 281, iconT: "matrix(0.841 -0.542 0 1 24 52)", off: [0, 8.51] },
-  { key: "airtable", label: "AIRTABLE", x: 507, y: 281, iconT: "matrix(0.898 -0.439 0 1 24 52)", off: [0, 1.92] },
-  { key: "supabase", label: "SUPABASE", x: 562, y: 281, iconT: "matrix(0.857 -0.514 0 1 24 53)" },
+  { key: "notion", name: "Notion", label: "NOTION", x: 122, y: 281.3, iconT: "matrix(0.882 -0.471 0 1 23 54.063)" },
+  { key: "whatsapp", name: "WhatsApp", label: "WHATSAPP", x: 177.1, y: 281.3, iconT: "matrix(0.942 -0.335 0 1 22.884 51.75)" },
+  { key: "telegram", name: "Telegram", label: "TELEGRAM", x: 232.2, y: 281.3, iconT: "matrix(0.89 -0.455 0 1 22.768 51.75)" },
+  { key: "stripe", name: "Stripe", label: "STRIPE", x: 287.4, y: 281.3, iconT: "matrix(0.89 -0.455 0 1 22.649 51.75)" },
+  { key: "slack", name: "Slack", label: "SLACK", x: 342.5, y: 281, iconT: "matrix(0.832 -0.555 0 1 23.531 53)" },
+  { key: "openai", name: "OpenAI", label: "OPENAI", x: 397.6, y: 281, iconT: "matrix(0.89 -0.455 0 1 23.414 52)" },
+  { key: "hubspot", name: "HubSpot", label: "HUBSPOT", x: 452, y: 281, iconT: "matrix(0.841 -0.542 0 1 24 52)", off: [0, 8.51] },
+  { key: "airtable", name: "Airtable", label: "AIRTABLE", x: 507, y: 281, iconT: "matrix(0.898 -0.439 0 1 24 52)", off: [0, 1.92] },
+  { key: "supabase", name: "Supabase", label: "SUPABASE", x: 562, y: 281, iconT: "matrix(0.857 -0.514 0 1 24 53)" },
 ];
 type RowKey = "buildin" | "connectors";
 const ROWS: Record<RowKey, { cards: Card[]; face: string; raise: number; lineDx: number }> = {
@@ -529,12 +538,29 @@ function InfrastructureStage() {
   const rowsBusyRef = useRef(false);
   const rowsAnimRef = useRef<gsap.core.Timeline | null>(null); // the accordion in flight
 
+  /* Only the lit card's legend takes pointer events: the others are just
+     faded out and their labels overlap it, so a hidden one would catch
+     clicks meant for the shown one (a connector legend is a docs link).
+     "inherit", never "auto" — see resetRows. */
+  const syncLegends = (row: RowKey) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    ROWS[row].cards.forEach((c) => {
+      const co = svg.querySelector<SVGElement>(`[data-callout="${row}:${c.key}"]`);
+      if (co) co.style.pointerEvents = c.key === litRef.current[row] ? "inherit" : "none";
+    });
+  };
+  /* whether a press began on the row's lit card: a click follows a
+     connector's docs link only then (null: no press, e.g. a key) */
+  const pressedLitRef = useRef<boolean | null>(null);
+
   const lightCard = (row: RowKey, key: string) => {
     const svg = svgRef.current;
     if (!svg || rowsBusyRef.current || frameRef.current !== 6) return;
     if (litRef.current[row] === key) return;
     const prev = litRef.current[row];
     litRef.current[row] = key;
+    syncLegends(row);
     const { cards, raise } = ROWS[row];
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const D = reduced ? 0 : 0.35;
@@ -622,6 +648,7 @@ function InfrastructureStage() {
       set("[data-icon]", 1);
       gsap.set(svg.querySelector(`[data-callout="${row}:${c.key}"]`), { opacity: lit ? 1 : 0 });
     });
+    syncLegends(row);
   };
 
   /* Both rows back to their authored rest (BUILD-IN showing) — run while
@@ -2764,17 +2791,8 @@ function InfrastructureStage() {
                     {/* drawn right to left so the nearest card is in front */}
                     {[...cards].reverse().map((c, ri) => {
                       const lit = ri === cards.length - 1;
-                      return (
-                        <g
-                          key={c.key}
-                          data-card={`${row}:${c.key}`}
-                          transform={`translate(${c.x} ${c.y - (lit ? raise : 0)})`}
-                          onMouseEnter={() => lightCard(row, c.key)}
-                          onClick={() => lightCard(row, c.key)}
-                          style={{ cursor: "pointer" }}
-                        >
-                          {/* the card's body — face and icon — scales for a
-                              narrow panel (layoutCards); its legend does not */}
+                      const docs = row === "connectors";
+                      const body = (
                           <g data-cscale>
                           <g data-cface transform={face}>
                             <rect width="77.5" height="77.5" rx="8" fill="#617FDC" fillOpacity="0.1" />
@@ -2825,12 +2843,46 @@ function InfrastructureStage() {
                             )}
                           </g>
                           </g>
+                      );
+                      return (
+                        <g
+                          key={c.key}
+                          data-card={`${row}:${c.key}`}
+                          transform={`translate(${c.x} ${c.y - (lit ? raise : 0)})`}
+                          onMouseEnter={() => lightCard(row, c.key)}
+                          // was this card lit when the press began? (touch
+                          // lights it on the way in, before the click)
+                          onPointerDown={() => {
+                            pressedLitRef.current = litRef.current[row] === c.key;
+                          }}
+                          onClick={(e) => {
+                            const pressedLit = pressedLitRef.current;
+                            pressedLitRef.current = null;
+                            // a lit connector (or a key press on its link) opens its docs
+                            if (docs && pressedLit !== false) return;
+                            e.preventDefault();
+                            lightCard(row, c.key);
+                          }}
+                          style={{ cursor: "pointer" }}
+                        >
+                          {/* the card's body — face and icon — scales for a
+                              narrow panel (layoutCards); its legend does not */}
+                          {docs ? (
+                            <a href={integrationDocsUrl(c.key)} aria-label={`${c.name ?? c.label} integration docs`}>
+                              {body}
+                            </a>
+                          ) : (
+                            body
+                          )}
                         </g>
                       );
                     })}
-                    {/* each card's legend, hanging under it when lit */}
-                    {cards.map((c, i) => (
-                      <g key={c.key} data-callout={`${row}:${c.key}`} style={{ opacity: i === 0 ? 1 : 0 }}>
+                    {/* each card's legend, hanging under it when lit; a
+                        connector's is a link to its docs, its hit area the
+                        label and the line above it */}
+                    {cards.map((c, i) => {
+                      const legend = (
+                        <>
                         <line
                           x1={c.x + lineDx}
                           y1="391"
@@ -2850,8 +2902,37 @@ function InfrastructureStage() {
                         >
                           {c.label}
                         </text>
-                      </g>
-                    ))}
+                        </>
+                      );
+                      return (
+                        <g
+                          key={c.key}
+                          data-callout={`${row}:${c.key}`}
+                          style={{ opacity: i === 0 ? 1 : 0, pointerEvents: i === 0 ? "inherit" : "none" }}
+                        >
+                          {row === "connectors" ? (
+                            <a
+                              href={integrationDocsUrl(c.key)}
+                              aria-label={`${c.name ?? c.label} integration docs`}
+                              className="cursor-pointer [&:hover_text]:underline"
+                            >
+                              {/* the hit area: the label's width plus some air,
+                                  from the line's top to below the label */}
+                              <rect
+                                x={c.x + lineDx - (c.label.length * 7.8) / 2 - 8}
+                                y="391"
+                                width={c.label.length * 7.8 + 16}
+                                height="115"
+                                fill="transparent"
+                              />
+                              {legend}
+                            </a>
+                          ) : (
+                            legend
+                          )}
+                        </g>
+                      );
+                    })}
                   </g>
                 );
               })}
