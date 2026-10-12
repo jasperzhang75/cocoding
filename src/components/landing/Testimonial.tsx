@@ -133,27 +133,33 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
 function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
   return (
     <article className={`${CARD_CLASS} bg-[#090A0E]`}>
-      {/* Ellipse 21888 / 21891: two 289 x 206 blue glows, layer-blurred
-          300 in the design — drawn as radial gradients twice their size,
-          no filter. Jasper preferred this first rendering over the
-          faithful blurred ellipses, so it stays. They come up as the
-          cards scroll into view (Jasper 2026-09-08): rise-on-arrival,
-          the row marked by onArrival in the section below. */}
-      {/* 578 x 412 at 55 / 147 and -276 / -41 over the 386 card, in cqw */}
+      {/* Ellipse 21888 / 21891 as the design draws them (16798:8285 /
+          8286, read 2026-10-12): two 289 x 206 ellipses, #18365F ->
+          #245292 -> #316FC5 at 52%, LAYER-BLURRED 300 (CSS blur 150) —
+          21888 radial at 200 / 250, 21891 linear top to bottom at -131 /
+          62 — clipped by the card. Every length in cqw (px / 3.86, the
+          blur too) so a smaller card keeps the same picture. Jasper had
+          preferred wider unblurred gradient stand-ins (2026-09-06) and
+          went back to the design (2026-10-12: "现在的这个蓝和别的 section
+          不搭"); the other blue glows on the page are blurred ellipses
+          like these. They come up as the cards scroll into view
+          (2026-09-08): rise-on-arrival to the design's 52%, the row
+          marked by onArrival in the section below. The two hidden
+          ellipses (21890 / 21892) stay out. */}
       <div
         aria-hidden
-        className="rise-on-arrival pointer-events-none absolute h-[106.74cqw] w-[149.74cqw] left-[14.25cqw] top-[38.08cqw]"
+        className="rise-on-arrival pointer-events-none absolute left-[51.81cqw] top-[64.77cqw] h-[53.37cqw] w-[74.87cqw] rounded-full [--lit:0.52]"
         style={{
-          background:
-            "radial-gradient(closest-side, rgba(49,111,197,0.55), rgba(36,82,146,0.32) 45%, rgba(24,54,95,0) 100%)",
+          background: "radial-gradient(closest-side, #18365F 0%, #245292 50%, #316FC5 100%)",
+          filter: "blur(38.86cqw)",
         }}
       />
       <div
         aria-hidden
-        className="rise-on-arrival pointer-events-none absolute h-[106.74cqw] w-[149.74cqw] left-[-71.5cqw] top-[-10.62cqw]"
+        className="rise-on-arrival pointer-events-none absolute left-[-33.94cqw] top-[16.06cqw] h-[53.37cqw] w-[74.87cqw] rounded-full [--lit:0.52]"
         style={{
-          background:
-            "radial-gradient(closest-side, rgba(49,111,197,0.35), rgba(36,82,146,0.2) 45%, rgba(24,54,95,0) 100%)",
+          background: "linear-gradient(180deg, #18365F 0%, #245292 50%, #316FC5 100%)",
+          filter: "blur(38.86cqw)",
         }}
       />
       <div className="absolute [&>svg]:h-auto [&>svg]:w-full" style={{ left: PAD, top: PAD, width: card.logoW }}>
