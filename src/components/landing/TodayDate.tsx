@@ -1,9 +1,13 @@
 "use client";
 
+import { minuteToDate, useNowMinute } from "@/lib/use-now";
+
 /* The dashboard tooltip's date is live — "12th July, 2026" in the design is
-   a placeholder for today. Rendered on the client so it is the viewer's
-   today; suppressHydrationWarning absorbs the rare midnight-boundary
-   mismatch with the server-rendered value. */
+   a placeholder for today. The viewer's today: read from the browser once
+   the page runs (useNowMinute), never computed during render — the page is
+   prerendered at build time, and a date computed then froze the build's day
+   into the HTML (Jasper 2026-10-12). Empty in the prerendered HTML, which
+   sits below the fold. */
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -17,10 +21,8 @@ function ordinal(n: number): string {
 }
 
 export default function TodayDate() {
-  const now = new Date();
-  return (
-    <span suppressHydrationWarning>
-      {`${ordinal(now.getDate())} ${MONTHS[now.getMonth()]}, ${now.getFullYear()}`}
-    </span>
-  );
+  const minute = useNowMinute();
+  if (minute === null) return <span />;
+  const now = minuteToDate(minute);
+  return <span>{`${ordinal(now.getDate())} ${MONTHS[now.getMonth()]}, ${now.getFullYear()}`}</span>;
 }

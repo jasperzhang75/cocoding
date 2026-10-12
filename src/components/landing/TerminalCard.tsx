@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { minuteToDate, useNowMinute } from "@/lib/use-now";
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import gsap from "gsap";
@@ -57,14 +58,14 @@ const ordinal = (n: number) => {
   if (v >= 11 && v <= 13) return `${n}th`;
   return `${n}${["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
 };
-const todayShort = () => {
-  const d = new Date();
-  return `${MONTHS[d.getMonth()]} ${ordinal(d.getDate())}`;
-};
-/* the three log lines run a minute apart, anchored to the viewer's clock */
-const timeAt = (offsetMin: number) => {
-  const d = new Date(Date.now() + offsetMin * 60_000);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+/* the three log lines run a minute apart, anchored to the viewer's clock
+   (useNowMinute: the browser's time, never the build's); "Oct 12th  09:41" */
+const stampAt = (minute: number | null, offsetMin: number) => {
+  if (minute === null) return ""; // the prerendered HTML: filled in once the page runs
+  const day = minuteToDate(minute);
+  const at = minuteToDate(minute, offsetMin);
+  const hhmm = `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
+  return `${MONTHS[day.getMonth()]} ${ordinal(day.getDate())}  ${hhmm}`;
 };
 
 function Bleed({ src, inset, className }: { src: string; inset: string; className?: string }) {
@@ -89,7 +90,7 @@ function LogBlock({
   countLabel,
   countTo,
   metaX,
-  time,
+  stamp,
   rows,
   blockRef,
 }: {
@@ -100,7 +101,7 @@ function LogBlock({
   countLabel: string;
   countTo: number;
   metaX: number;
-  time: string;
+  stamp: string;
   rows: Row[];
   blockRef?: (el: HTMLDivElement | null) => void;
 }) {
@@ -117,8 +118,8 @@ function LogBlock({
         <span data-count data-count-to={countTo}>{countTo}</span>
         {countLabel}
       </p>
-      <p className="absolute left-[363px] top-[7px] whitespace-pre font-mono text-[13px] uppercase text-[#EBEBEB]/20" suppressHydrationWarning>
-        {`${todayShort()}  ${time}`}
+      <p className="absolute left-[363px] top-[7px] whitespace-pre font-mono text-[13px] uppercase text-[#EBEBEB]/20">
+        {stamp}
       </p>
       <div className="absolute left-[56px] top-[37px] flex flex-col gap-1.5 opacity-80">
         {rows.map((row) => (
@@ -153,6 +154,7 @@ function LogBlock({
 const STRIP_STAGE = [151, 0, -130];
 
 export default function TerminalCard() {
+  const minute = useNowMinute();
   const rootRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const replayRef = useRef<HTMLButtonElement>(null);
@@ -361,7 +363,7 @@ export default function TerminalCard() {
                 countLabel=" files"
                 countTo={42}
                 metaX={143}
-                time={timeAt(0)}
+                stamp={stampAt(minute, 0)}
                 rows={[
                   { text: "Generating routes ", check: "dim" },
                   { text: "Linking auth state", check: "dim" },
@@ -378,7 +380,7 @@ export default function TerminalCard() {
                 countLabel=" issues"
                 countTo={3}
                 metaX={166}
-                time={timeAt(1)}
+                stamp={stampAt(minute, 1)}
                 rows={[
                   { text: "auth.ts   :   9", error: "undefined ref" },
                   { text: "api/users.ts   :   121", error: "type mismatch" },
@@ -394,7 +396,7 @@ export default function TerminalCard() {
                 countLabel=" fixed"
                 countTo={3}
                 metaX={166}
-                time={timeAt(2)}
+                stamp={stampAt(minute, 2)}
                 rows={[
                   { text: "auth.ts   :   9", check: "lit" },
                   { text: "api/users.ts   :   121", check: "lit" },
