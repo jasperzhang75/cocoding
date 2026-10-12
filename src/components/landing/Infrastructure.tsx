@@ -515,11 +515,11 @@ function InfrastructureStage() {
     // at 60% of the tile fill, not all of it, and swells in over 0.9s on a
     // gentle curve instead of popping on in 0.3s (power4.out; Jasper tuned
     // the rise 0.45 -> 0.75 -> 0.9 -> 1.2 -> 1 -> 0.9), then fades from the
-    // peak over 2s (was 2.2).
+    // peak over 1.5s (was 2.2, then 2).
     const BURST_AT = LOOP - 0.25;
     const BURST_PEAK = 0.6; // share of the design's tile fill at the flash
     const BURST_RISE = 0.9; // s
-    const BURST_FADE = 2; // s, from the peak
+    const BURST_FADE = 1.5; // s, from the peak
     t.fromTo(fills, { opacity: 0 }, { opacity: BURST_PEAK, duration: BURST_RISE, ease: "power2.out" }, BURST_AT);
     t.to(fills, { opacity: 0, duration: BURST_FADE, ease: "power1.out" }, BURST_AT + BURST_RISE);
     // ...while the outline settles into the resting gradient
