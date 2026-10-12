@@ -35,6 +35,9 @@ const CELLS: Array<[number, number]> = [
   [-54, 446], [101, 446], [256, 446], [411, 446],
 ];
 
+/* the code field while hidden: masked out everywhere (see applyMask) */
+const HIDDEN_MASK = "linear-gradient(transparent, transparent)";
+
 const CODE_CHARS =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 const randChar = () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
@@ -108,12 +111,23 @@ export default function SecurityCard() {
     if (!breathe || !matrix || !maskEl) return;
 
     /* the code field reveals by GROWING its soft mask from the center and
-       hides by shrinking it back — the radii scale with k in [0,1] */
+       hides by shrinking it back — the radii scale with k in [0,1].
+       Fully shrunk there is no ellipse at all: a 0 x 0 radial-gradient is
+       a degenerate shape that engines may paint differently, and Safari
+       showed the whole code field with the switch on (Jasper 2026-10-12;
+       Chrome and Playwright's WebKit hid it). So at k = 0 the mask is all
+       transparent and the layer's opacity is 0 besides — opacity, not
+       visibility, which would tear the layer down (see the breathe note
+       below) — and on the way the ellipse never goes under 1px. */
     const applyMask = () => {
       const { k } = maskProg.current;
-      const img = `radial-gradient(ellipse ${250 * k}px ${138 * k}px at 296px 279px, black 58%, transparent 96%)`;
+      const shown = k > 0.001;
+      const img = shown
+        ? `radial-gradient(ellipse ${Math.max(1, 250 * k)}px ${Math.max(1, 138 * k)}px at 296px 279px, black 58%, transparent 96%)`
+        : HIDDEN_MASK;
       maskEl.style.maskImage = img;
       maskEl.style.webkitMaskImage = img;
+      matrix.style.opacity = shown ? "1" : "0";
     };
 
     const stopScramble = () => {
@@ -190,16 +204,11 @@ export default function SecurityCard() {
       <PosterViewport designHeight={464} crop={130} className="md:mt-auto xl:mt-0 xl:absolute xl:inset-0">
       {/* scrambling pass-codes, clipped to the design's soft blob (OFF).
           Outer div = show/hide (animated); inner keeps the design's 80%. */}
-      <div ref={matrixRef} aria-hidden className="pointer-events-none absolute inset-0 will-change-transform">
+      <div ref={matrixRef} aria-hidden className="pointer-events-none absolute inset-0 opacity-0 will-change-transform">
         <div
           ref={maskRef}
           className="absolute inset-0 opacity-80"
-          style={{
-            maskImage:
-              "radial-gradient(ellipse 0px 0px at 296px 279px, black 58%, transparent 96%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse 0px 0px at 296px 279px, black 58%, transparent 96%)",
-          }}
+          style={{ maskImage: HIDDEN_MASK, WebkitMaskImage: HIDDEN_MASK }}
         >
           {CELLS.map(([x, y], i) => (
             <p
