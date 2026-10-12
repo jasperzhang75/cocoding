@@ -2,10 +2,9 @@
    Documents and the footer's Docs share the docs site). */
 export const DOCS_URL = "https://docs.cocoding.ai/";
 
-/* the app's template gallery — "View all" over the trending projects */
+/* the app's template gallery — "View all" over the trending projects and
+   the footer's Templates */
 export const TEMPLATES_URL = "https://app.new.cocoding.ai/templates";
-/* the app itself — the footer's "Templates" (Jasper 2026-10-12) */
-export const APP_URL = "https://app.new.cocoding.ai";
 
 /* the company pages on cocoding.ai and the community, linked from the
    footer (Jasper 2026-10-12) */

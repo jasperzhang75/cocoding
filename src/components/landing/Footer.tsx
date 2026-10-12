@@ -1,12 +1,12 @@
 import Image from "next/image";
 import {
   ABOUT_URL,
-  APP_URL,
   BLOG_URL,
   CAREERS_URL,
   DISCORD_URL,
   DOCS_URL,
   PRIVACY_URL,
+  TEMPLATES_URL,
   TERMS_URL,
 } from "@/lib/links";
 import FooterWordmark from "./FooterWordmark";
@@ -37,7 +37,7 @@ import SectionLink from "./SectionLink";
 const TARGETS: Record<string, { section: string } | { href: string }> = {
   Features: { section: "features" },
   Pricing: { section: "pricing" },
-  Templates: { href: APP_URL },
+  Templates: { href: TEMPLATES_URL },
   Docs: { href: DOCS_URL },
   About: { href: ABOUT_URL },
   Careers: { href: CAREERS_URL },
