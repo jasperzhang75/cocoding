@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
 import { EYEBROW_SCRAMBLE } from "./eyebrow";
@@ -64,13 +64,8 @@ const STARTER: Plan = {
 };
 const PRO: Plan = {
   name: "Pro",
-  // "$18" at 36 / -4%, "/mo" at 24 / -3%, one 137.5% line; below xl 24 and 16
-  price: (
-    <>
-      $18
-      <span className="text-[1rem] tracking-[-0.03em] xl:text-[1.5rem]">/mo</span>
-    </>
-  ),
+  price: null, // set by ProCard: it follows the Annual switch and the credits picker
+
   blurb: "For commercial and professional builds",
   items: [
     { text: "Everything in Starter", plus: true },
@@ -117,10 +112,26 @@ function Plus() {
     </svg>
   );
 }
-function Chevron() {
+function Chevron({ flipped = false }: { flipped?: boolean }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden
+      className={`shrink-0 transition-transform duration-200 ${flipped ? "rotate-180" : ""}`}
+    >
+      <path d="m4 6 4 4 4-4" stroke="#A1A1A1" strokeWidth="0.9" strokeLinecap="square" />
+    </svg>
+  );
+}
+/* the chosen pack's mark in the credits list: lucide check at 16, the
+   list's text color */
+function Tick() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden className="shrink-0">
-      <path d="m4 6 4 4 4-4" stroke="#A1A1A1" strokeWidth="0.9" strokeLinecap="square" />
+      <path d="M13.33 4 6 11.33 2.67 8" stroke="#EDEDED" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -140,11 +151,14 @@ function Features({ items }: { items: Plan["items"] }) {
   );
 }
 
-function Header({ plan }: { plan: Plan }) {
+function Header({ plan, price = plan.price }: { plan: Plan; price?: React.ReactNode }) {
   return (
     <div>
       <p className="text-body-sm text-text-primary xl:text-[1rem] xl:leading-none xl:tracking-[-0.01em]">{plan.name}</p>
-      <p className="mt-3 text-heading-md text-text-primary xl:text-[2.25rem] xl:leading-[1.375] xl:tracking-[-0.04em]">{plan.price}</p>
+      {/* polite live region: the Pro price changes with the switch and the picker */}
+      <p aria-live="polite" className="mt-3 text-heading-md text-text-primary xl:text-[2.25rem] xl:leading-[1.375] xl:tracking-[-0.04em]">
+        {price}
+      </p>
       <p className="mt-3 text-body-sm text-text-body xl:text-body-md">{plan.blurb}</p>
     </div>
   );
@@ -169,13 +183,52 @@ function Cta({ label, kind }: { label: string; kind: keyof typeof CTA_STYLE }) {
   );
 }
 
+/* --------------------------------------------------------- Pro pricing */
+
+/* THE PRO PRICE (Jasper 2026-10-12; placeholder figures): $18 a month, or
+   $180 a year with Annual on. An optional credit pack adds to it, shown
+   after the price — "$18/mo + $32". Packs are priced per month (Jasper's
+   200 -> $32 and 300 -> $42, on the same $10-per-100 line); billed
+   annually a pack costs ten months, like the plan itself ($18 -> $180),
+   so 200 credits read "$180/yr + $320". */
+const PRO_PRICE = { monthly: 18, annual: 180 };
+const ANNUAL_MONTHS = 10;
+type CreditPack = { credits: number; monthly: number };
+const NO_PACK: CreditPack = { credits: 0, monthly: 0 };
+const CREDIT_PACKS: CreditPack[] = [
+  NO_PACK,
+  { credits: 100, monthly: 22 },
+  { credits: 200, monthly: 32 },
+  { credits: 300, monthly: 42 },
+  { credits: 500, monthly: 62 },
+  { credits: 1000, monthly: 112 },
+];
+const usd = (n: number) => `$${n.toLocaleString("en-US")}`;
+const packPrice = (pack: CreditPack, annual: boolean) => pack.monthly * (annual ? ANNUAL_MONTHS : 1);
+const packLabel = (pack: CreditPack, annual: boolean) =>
+  pack.credits === 0
+    ? "I don't need extra credits"
+    : `${pack.credits.toLocaleString("en-US")} credits - ${usd(packPrice(pack, annual))}/${annual ? "yr" : "mo"}`;
+
+/* "$18" at 36 / -4%, the rest ("/mo", " + $32") at 24 / -3%, one 137.5%
+   line; below xl 24 and 16 */
+const PRICE_SUFFIX = "text-[1rem] tracking-[-0.03em] xl:text-[1.5rem]";
+function ProPrice({ annual, pack }: { annual: boolean; pack: CreditPack }) {
+  return (
+    <>
+      {usd(annual ? PRO_PRICE.annual : PRO_PRICE.monthly)}
+      <span className={PRICE_SUFFIX}>{annual ? "/yr" : "/mo"}</span>
+      {pack.credits > 0 && <span className={PRICE_SUFFIX}> + {usd(packPrice(pack, annual))}</span>}
+    </>
+  );
+}
+
 /* the Annual switch: 30 x 18, #4D74E1 with a 12px white knob on the right
    when on (the design's state; its shadow 0 4 24 black 20%); off it dims
    and the knob slides left. "Annual" 12 / 137.5% #A1A1A1, 8 before it. On
-   the name row, 37 from the card's top and 26 from its right edge.
-   Placeholder — nothing is priced differently yet. */
-function AnnualSwitch() {
-  const [on, setOn] = useState(true);
+   the name row, 37 from the card's top and 26 from its right edge. It
+   switches the Pro price between a year and a month. */
+function AnnualSwitch({ on, onChange }: { on: boolean; onChange: (on: boolean) => void }) {
   return (
     <label className="absolute right-[26px] top-[37px] z-10 flex h-[18px] cursor-pointer items-center gap-2 select-none">
       <span className="text-[0.75rem] leading-[1.375] text-text-body">Annual</span>
@@ -183,7 +236,7 @@ function AnnualSwitch() {
         type="button"
         role="switch"
         aria-checked={on}
-        onClick={() => setOn((v) => !v)}
+        onClick={() => onChange(!on)}
         className={`relative h-[18px] w-[30px] rounded-full transition-colors duration-300 ${on ? "bg-[#4D74E1]" : "bg-white/10"}`}
       >
         <span
@@ -196,18 +249,142 @@ function AnnualSwitch() {
   );
 }
 
-/* the credits picker: the button's size, white 10% at 60%, text left and a
-   chevron right. Placeholder — it has one option and opens nothing yet. */
-function Credits() {
+/* the credits picker: the button's size, white 10% at 60%, the chosen pack
+   left and a chevron right; a listbox of the packs. It opens UPWARD, over
+   the feature list: the card clips (overflow-hidden, for its glow) and
+   there is no room below. Click or arrow keys to open; arrows, Home / End
+   move, Enter / Space choose, Escape / Tab / a click outside close. The
+   label truncates rather than wrap on the narrow tablet cards. */
+function Credits({ annual, value, onChange }: { annual: boolean; value: CreditPack; onChange: (pack: CreditPack) => void }) {
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const selected = CREDIT_PACKS.findIndex((p) => p.credits === value.credits);
+
+  useEffect(() => {
+    if (!open) return;
+    listRef.current?.focus();
+    const onDown = (e: PointerEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [open]);
+
+  const openAt = (i: number) => {
+    setActive(i);
+    setOpen(true);
+  };
+  const choose = (i: number) => {
+    onChange(CREDIT_PACKS[i]);
+    setOpen(false);
+    buttonRef.current?.focus();
+  };
+  const onListKey = (e: React.KeyboardEvent) => {
+    const last = CREDIT_PACKS.length - 1;
+    if (e.key === "ArrowDown") setActive((a) => Math.min(last, a + 1));
+    else if (e.key === "ArrowUp") setActive((a) => Math.max(0, a - 1));
+    else if (e.key === "Home") setActive(0);
+    else if (e.key === "End") setActive(last);
+    else if (e.key === "Enter" || e.key === " ") choose(active);
+    else if (e.key === "Escape") {
+      setOpen(false);
+      buttonRef.current?.focus();
+    } else if (e.key === "Tab") setOpen(false);
+    else return;
+    if (e.key !== "Tab") e.preventDefault();
+  };
+
   return (
-    <button
-      type="button"
-      aria-haspopup="listbox"
-      className="flex h-10 w-full items-center justify-between rounded-sm bg-white/10 px-3 text-body-sm text-text-primary opacity-60 transition-opacity duration-300 hover:opacity-80"
-    >
-      <span>100 credits - $22/mo</span>
-      <Chevron />
-    </button>
+    <div ref={rootRef} className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={`${id}-list`}
+        onClick={() => (open ? setOpen(false) : openAt(selected))}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            openAt(selected);
+          }
+        }}
+        className="flex h-10 w-full items-center justify-between gap-2 rounded-sm bg-white/10 px-3 text-body-sm text-text-primary opacity-60 transition-opacity duration-300 hover:opacity-80 aria-expanded:opacity-80"
+      >
+        <span className="min-w-0 truncate">{packLabel(value, annual)}</span>
+        <Chevron flipped={open} />
+      </button>
+      {open && (
+        <ul
+          ref={listRef}
+          id={`${id}-list`}
+          role="listbox"
+          tabIndex={-1}
+          aria-label="Extra credits"
+          aria-activedescendant={`${id}-${active}`}
+          onKeyDown={onListKey}
+          className="absolute inset-x-0 bottom-full z-20 mb-2 rounded-md border border-white/10 bg-[#111216] p-1 shadow-[0_8px_24px_rgba(0,0,0,0.5)] outline-none"
+        >
+          {CREDIT_PACKS.map((pack, i) => (
+            <li
+              key={pack.credits}
+              id={`${id}-${i}`}
+              role="option"
+              aria-selected={i === selected}
+              onPointerEnter={() => setActive(i)}
+              onClick={() => choose(i)}
+              className={`flex h-9 cursor-pointer items-center justify-between gap-2 rounded-sm px-2.5 text-body-sm ${
+                i === active ? "bg-white/[0.06]" : ""
+              } ${i === selected ? "text-text-primary" : "text-text-body"}`}
+            >
+              <span className="min-w-0 truncate">{packLabel(pack, annual)}</span>
+              {i === selected && <Tick />}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* the Pro card's state: the billing period (Annual on, as the design
+   shows the switch) and the credit pack (none) */
+function ProCard() {
+  const [annual, setAnnual] = useState(true);
+  const [pack, setPack] = useState<CreditPack>(NO_PACK);
+  return (
+    <article className={`${CARD} bg-white/[0.03]`}>
+      {/* Ellipse 21887: a 348 x 249 ellipse turned -90°, so a 249 x
+          348 box, centered in the card; radial #18365F -> #316FC5 at
+          43%, LAYER-BLURRED 300 (CSS blur 150), clipped by the card.
+          The design's layer order puts it above the texts; it stays
+          under them here — a glow is a background. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[348px] w-[249px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          opacity: 0.43,
+          background: "radial-gradient(closest-side, #18365F 0%, #316FC5 100%)",
+          filter: "blur(150px)",
+        }}
+      />
+      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[10px]" style={PRO_RING} />
+      <AnnualSwitch on={annual} onChange={setAnnual} />
+      <div className="relative flex grow flex-col">
+        <Header plan={PRO} price={<ProPrice annual={annual} pack={pack} />} />
+        <Features items={PRO.items} />
+        <div className={CTA_BLOCK}>
+          <Credits annual={annual} value={pack} onChange={setPack} />
+          <div className="mt-[15px]">
+            <Cta label={PRO.cta} kind="pro" />
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -259,34 +436,7 @@ export default function Pricing() {
             </div>
           </article>
 
-          <article className={`${CARD} bg-white/[0.03]`}>
-            {/* Ellipse 21887: a 348 x 249 ellipse turned -90°, so a 249 x
-                348 box, centered in the card; radial #18365F -> #316FC5 at
-                43%, LAYER-BLURRED 300 (CSS blur 150), clipped by the card.
-                The design's layer order puts it above the texts; it stays
-                under them here — a glow is a background. */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute left-1/2 top-1/2 h-[348px] w-[249px] -translate-x-1/2 -translate-y-1/2 rounded-full"
-              style={{
-                opacity: 0.43,
-                background: "radial-gradient(closest-side, #18365F 0%, #316FC5 100%)",
-                filter: "blur(150px)",
-              }}
-            />
-            <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[10px]" style={PRO_RING} />
-            <AnnualSwitch />
-            <div className="relative flex grow flex-col">
-              <Header plan={PRO} />
-              <Features items={PRO.items} />
-              <div className={CTA_BLOCK}>
-                <Credits />
-                <div className="mt-[15px]">
-                  <Cta label={PRO.cta} kind="pro" />
-                </div>
-              </div>
-            </div>
-          </article>
+          <ProCard />
 
           <article className={CARD} style={PLAIN_STROKE}>
             <Header plan={ENTERPRISE} />

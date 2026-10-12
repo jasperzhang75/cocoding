@@ -10,13 +10,31 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+// the Pro card's price line ("$180/yr", "$18/mo + $32", ...)
+const proPrice = (canvasElement: HTMLElement) =>
+  canvasElement.querySelectorAll('article')[1].querySelectorAll('p')[1].textContent;
+
 export const Default: Story = {
-  play: async ({ canvas, userEvent }) => {
-    // the Pro card's Annual switch starts on and flips
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    // Annual starts on and prices the year; off, the month
     const annual = canvas.getByRole('switch');
     await expect(annual).toHaveAttribute('aria-checked', 'true');
+    await expect(proPrice(canvasElement)).toBe('$180/yr');
     await userEvent.click(annual);
     await expect(annual).toHaveAttribute('aria-checked', 'false');
+    await expect(proPrice(canvasElement)).toBe('$18/mo');
+  },
+};
+
+// A credit pack adds to the price; the menu's figures follow the billing period.
+export const ExtraCredits: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: "I don't need extra credits" }));
+    await userEvent.click(canvas.getByRole('option', { name: '200 credits - $320/yr' }));
+    await expect(proPrice(canvasElement)).toBe('$180/yr + $320');
+    await userEvent.click(canvas.getByRole('switch'));
+    await expect(proPrice(canvasElement)).toBe('$18/mo + $32');
+    await expect(canvas.getByRole('button', { name: '200 credits - $32/mo' })).toHaveAttribute('aria-expanded', 'false');
   },
 };
 
