@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { TEMPLATES_URL } from "@/lib/links";
 import {
   formatViews,
   getTrendingProjects,
@@ -58,8 +59,9 @@ export default async function TrendingProjects() {
           <h2 className="text-heading-sm text-text-primary md:text-heading-md">
             Not inspired yet? Start with a trending project
           </h2>
+          {/* the app's template gallery (Jasper 2026-10-12) */}
           <a
-            href="#"
+            href={TEMPLATES_URL}
             className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-label-sm text-text-body/60 transition hover:text-text-body"
           >
             View all
