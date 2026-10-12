@@ -133,32 +133,25 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
 function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
   return (
     <article className={`${CARD_CLASS} bg-[#090A0E]`}>
-      {/* Ellipse 21888 / 21891 as the design draws them (16798:8285 /
-          8286, read 2026-10-12): two 289 x 206 ellipses, #18365F ->
-          #245292 -> #316FC5 at 52%, LAYER-BLURRED 300 (CSS blur 150) —
-          21888 radial at 200 / 250, 21891 linear top to bottom at -131 /
-          62 — clipped by the card. Every length in cqw (px / 3.86, the
-          blur too) so a smaller card keeps the same picture. Jasper had
+      {/* Ellipse 21888 as the design draws it (16798:8285, read
+          2026-10-12): a 289 x 206 ellipse at 200 / 250, radial #18365F ->
+          #245292 -> #316FC5 at 52%, LAYER-BLURRED 300 (CSS blur 150),
+          clipped by the card. Every length in cqw (px / 3.86, the blur
+          too) so a smaller card keeps the same picture. Jasper had
           preferred wider unblurred gradient stand-ins (2026-09-06) and
           went back to the design (2026-10-12: "现在的这个蓝和别的 section
           不搭"); the other blue glows on the page are blurred ellipses
-          like these. They come up as the cards scroll into view
-          (2026-09-08): rise-on-arrival to the design's 52%, the row
-          marked by onArrival in the section below. The two hidden
-          ellipses (21890 / 21892) stay out. */}
+          like this. Later that day he hid the second one in the design,
+          Ellipse 21891 (the upper-left linear glow), so it is not drawn;
+          nor are the two older hidden ones (21890 / 21892). It comes up
+          as the cards scroll into view (2026-09-08): rise-on-arrival to
+          the design's 52%, the row marked by onArrival in the section
+          below. */}
       <div
         aria-hidden
         className="rise-on-arrival pointer-events-none absolute left-[51.81cqw] top-[64.77cqw] h-[53.37cqw] w-[74.87cqw] rounded-full [--lit:0.52]"
         style={{
           background: "radial-gradient(closest-side, #18365F 0%, #245292 50%, #316FC5 100%)",
-          filter: "blur(38.86cqw)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="rise-on-arrival pointer-events-none absolute left-[-33.94cqw] top-[16.06cqw] h-[53.37cqw] w-[74.87cqw] rounded-full [--lit:0.52]"
-        style={{
-          background: "linear-gradient(180deg, #18365F 0%, #245292 50%, #316FC5 100%)",
           filter: "blur(38.86cqw)",
         }}
       />
