@@ -512,12 +512,13 @@ function InfrastructureStage() {
     // the light decelerates into its finish, so the burst leads it a little
     // (0.25s) rather than waiting for the exact arrival, which read as lag.
     // Softer since Jasper 2026-10-12 ("蓝色的 burst 要缓和一点"): it peaks
-    // at 60% of the tile fill, not all of it, and swells in over 0.45s on a
-    // gentle curve instead of popping on in 0.3s (power4.out); the 2.2s
-    // fade from the peak is unchanged.
+    // at 60% of the tile fill, not all of it, and swells in over 0.75s on a
+    // gentle curve instead of popping on in 0.3s (power4.out; 0.45s at
+    // first, then Jasper asked for 0.75); the 2.2s fade from the peak is
+    // unchanged.
     const BURST_AT = LOOP - 0.25;
     const BURST_PEAK = 0.6; // share of the design's tile fill at the flash
-    const BURST_RISE = 0.45; // s
+    const BURST_RISE = 0.75; // s
     t.fromTo(fills, { opacity: 0 }, { opacity: BURST_PEAK, duration: BURST_RISE, ease: "power2.out" }, BURST_AT);
     t.to(fills, { opacity: 0, duration: 2.2, ease: "power1.out" }, BURST_AT + BURST_RISE);
     // ...while the outline settles into the resting gradient
