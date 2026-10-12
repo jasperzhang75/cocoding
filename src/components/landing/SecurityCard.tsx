@@ -9,8 +9,9 @@ import { setLoopPlayState } from "@/lib/use-in-view";
 /* Card 4 — built-in security, now interactive. Two states, both read from
    Figma (ON: 16629:18699, OFF: 17175:8667):
 
-   ON  — green-gradient shield; a green inner shadow (the revised
-         design's inset 0 0 50px 4px #3AFF4D/29) breathes slowly at the
+   ON  — green-gradient shield; a light-blue inner shadow (the design's
+         inset 0 0 50px 4px #9CD8FF/29 since 2026-10-12; it was green
+         #3AFF4D) breathes slowly at the
          card edge.
    OFF — the toggle knob slides left and the pill grays out (#B5B5B5/50);
          the shield fades to #65686D/82 (same silhouette, recolored through
@@ -257,7 +258,7 @@ export default function SecurityCard() {
 
       </PosterViewport>
 
-      {/* breathing green inner shadow (ON state). The fade lives on this
+      {/* breathing inner shadow at the card's edge (ON state). The fade lives on this
           wrapper — the inner CSS breathe animation owns its own opacity and
           would override a fade applied to the same element, which is what
           made the glow vanish in a snap. It fades by opacity only and keeps
@@ -268,14 +269,16 @@ export default function SecurityCard() {
           sits over its frame's children; underneath them the blue washed
           it out to a fraction of the design's 29%. Jasper took it down to
           20% (2026-09-07: "还是要淡一些") and back to the design's value a
-          month later (2026-10-11: "按照 figma 原来的设计"): Frame 2609391's
-          visible INNER_SHADOW, #3AFF4D 29%, blur 50, spread 4 (the
-          #19C12D one under it is hidden). The breath's shape is unchanged. */}
+          month later (2026-10-11: "按照 figma 原来的设计"). Then he made it
+          BLUE in the design (2026-10-12: "我改了下 features 的蓝色光晕"):
+          Frame 2609391's visible INNER_SHADOW is now #9CD8FF 29%, blur 50,
+          spread 4 (it was #3AFF4D; the #19C12D one under it stays hidden).
+          The breath's shape is unchanged. */}
       <div ref={breatheRef} aria-hidden className="pointer-events-none absolute inset-0 will-change-[opacity]">
         <div
           data-loop
           className="security-breathe absolute inset-0 rounded-md md:rounded-none md:rounded-bl-xl"
-          style={{ boxShadow: "inset 0 0 50px 4px rgba(58,255,77,0.29)" }}
+          style={{ boxShadow: "inset 0 0 50px 4px rgba(156,216,255,0.29)" }}
         />
       </div>
 

@@ -232,7 +232,8 @@ body {
   }
 }
 
-/* Security card: the light-green inner shadow breathes — slow, faint,
+/* Security card: the inner shadow at its edge (light blue since
+   2026-10-12, green before) breathes — slow, faint,
    there-and-not-there. Static under reduced motion. */
 /* the Infrastructure runway, before its effect measures anything: the
    same numbers the JS sets (layoutPanel), so the page is the same length
@@ -269,7 +270,7 @@ body {
   }
 }
 
-/* the Security card's green edge breathes like a person, not a
+/* the Security card's edge glow breathes like a person, not a
    metronome: an inhale, a held crest that eases off a little, a quick
    exhale, then a long rest at the bottom before the next breath.
    Jasper (2026-09-07): 6.25s a cycle — in 1.2s, hold 1.2s, out 0.85s,
