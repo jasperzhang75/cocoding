@@ -1,5 +1,13 @@
 import Image from "next/image";
-import { DOCS_URL } from "@/lib/links";
+import {
+  ABOUT_URL,
+  BLOG_URL,
+  CAREERS_URL,
+  DISCORD_URL,
+  DOCS_URL,
+  PRIVACY_URL,
+  TERMS_URL,
+} from "@/lib/links";
 import FooterWordmark from "./FooterWordmark";
 import SectionLink from "./SectionLink";
 
@@ -19,14 +27,22 @@ import SectionLink from "./SectionLink";
    the lift; its reach is 0.654em, the rest is for the spring's
    overshoot). The clipper takes no pointer events: its headroom overlaps
    the section above. Links: Features and Pricing jump to their sections
-   like the nav bar's, Docs opens the docs site (Jasper 2026-10-11); the
-   rest are placeholders. */
+   like the nav bar's, Docs opens the docs site (Jasper 2026-10-11);
+   About, Careers, Blog, Terms and Privacy go to their pages on
+   cocoding.ai and Discord to the community invite (2026-10-12); the rest
+   are placeholders. */
 
 /* the links that go somewhere: a section of this page or a URL */
 const TARGETS: Record<string, { section: string } | { href: string }> = {
   Features: { section: "features" },
   Pricing: { section: "pricing" },
   Docs: { href: DOCS_URL },
+  About: { href: ABOUT_URL },
+  Careers: { href: CAREERS_URL },
+  Blog: { href: BLOG_URL },
+  Discord: { href: DISCORD_URL },
+  Terms: { href: TERMS_URL },
+  Privacy: { href: PRIVACY_URL },
 };
 const LINK_CLASS = "text-text-body transition-colors duration-300 hover:text-text-primary";
 
