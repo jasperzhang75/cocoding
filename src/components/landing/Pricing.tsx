@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
 import { EYEBROW_SCRAMBLE } from "./eyebrow";
 import ScrambleText from "./ScrambleText";
+import { AUTH_URL } from "@/lib/links";
 
 /* PRICING, redesigned (Figma bHyNfFfV0ocgVPCHtOyYBp 4:8 in "MacBook Air -
    34", read 2026-10-12; was yFciEPejue3E2xhstXF0Wu 16660:18869). Eyebrow,
@@ -173,12 +174,16 @@ const CTA_STYLE = {
   enterprise: "bg-white text-[#0A0A0A] hover:bg-[#EDEDED] transition-colors",
 } as const;
 
-function Cta({ label, kind }: { label: string; kind: keyof typeof CTA_STYLE }) {
-  return (
-    <button
-      type="button"
-      className={`flex h-10 w-full items-center justify-center rounded-sm px-3 text-body-sm duration-300 ${CTA_STYLE[kind]}`}
-    >
+/* with an href a link (Starter and Pro go to sign-up, Jasper 2026-10-13),
+   without one a button (Talk to sales, not wired yet) — the same look */
+function Cta({ label, kind, href }: { label: string; kind: keyof typeof CTA_STYLE; href?: string }) {
+  const className = `flex h-10 w-full items-center justify-center rounded-sm px-3 text-body-sm duration-300 ${CTA_STYLE[kind]}`;
+  return href ? (
+    <a href={href} className={className}>
+      {label}
+    </a>
+  ) : (
+    <button type="button" className={className}>
       {label}
     </button>
   );
@@ -395,7 +400,7 @@ function ProCard() {
         <div className={CTA_BLOCK}>
           <Credits annual={annual} value={pack} onChange={setPack} />
           <div className="mt-[15px]">
-            <Cta label={PRO.cta} kind="pro" />
+            <Cta label={PRO.cta} kind="pro" href={AUTH_URL} />
           </div>
         </div>
       </div>
@@ -447,7 +452,7 @@ export default function Pricing() {
             <Header plan={STARTER} />
             <Features items={STARTER.items} />
             <div className={CTA_BLOCK}>
-              <Cta label={STARTER.cta} kind="starter" />
+              <Cta label={STARTER.cta} kind="starter" href={AUTH_URL} />
             </div>
           </article>
 

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { DOCS_URL } from "@/lib/links";
+import { AUTH_URL, DOCS_URL } from "@/lib/links";
 import SectionLink from "./SectionLink";
 
 /* Values verified against the Figma nodes themselves (the CSS export claimed
@@ -60,13 +60,13 @@ export default function Navbar() {
 
         <div className="flex items-center gap-2">
           <a
-            href="#"
+            href={AUTH_URL}
             className="pointer-events-auto flex h-8 items-center justify-center rounded-sm border border-[#2e2e2e] px-3 text-body-sm whitespace-nowrap text-text-primary transition hover:border-[#414141] hover:bg-white/10"
           >
             Log in
           </a>
           <a
-            href="#"
+            href={AUTH_URL}
             className="pointer-events-auto flex h-8 items-center justify-center rounded-sm bg-button-primary px-3 text-body-sm whitespace-nowrap text-[#0a0a0a] transition hover:bg-button-primary/70"
           >
             Sign up

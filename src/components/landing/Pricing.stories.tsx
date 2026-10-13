@@ -45,7 +45,7 @@ export const Mobile: Story = { globals: { viewport: { value: 'mobile2', isRotate
 export const CssCheck: Story = {
   play: async ({ canvas }) => {
     // The Pro button is bg-[#4362BA] — fails if Tailwind / globals.css did not load.
-    const pro = canvas.getByRole('button', { name: 'Start with Pro' });
+    const pro = canvas.getByRole('link', { name: 'Start with Pro' });
     await expect(getComputedStyle(pro).backgroundColor).toBe('rgb(67, 98, 186)');
   },
 };

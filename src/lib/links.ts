@@ -6,6 +6,10 @@ export const DOCS_URL = "https://docs.cocoding.ai/";
    the footer's Templates */
 export const TEMPLATES_URL = "https://app.new.cocoding.ai/templates";
 
+/* sign in / sign up — the nav's Log in and Sign up, and the Start for free /
+   Start with Pro buttons (Jasper 2026-10-13) */
+export const AUTH_URL = "https://cocoding.ai/auth";
+
 /* the company pages on cocoding.ai and the community, linked from the
    footer (Jasper 2026-10-12) */
 export const ABOUT_URL = "https://cocoding.ai/about-us";

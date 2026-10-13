@@ -1,3 +1,4 @@
+import { AUTH_URL } from "@/lib/links";
 import FinalCtaGlow from "./FinalCtaGlow";
 
 /* THE CLOSING CALL (Figma yFciEPejue3E2xhstXF0Wu 16555:16606, "MacBook
@@ -22,7 +23,7 @@ export default function FinalCta() {
         </h2>
         {/* Frame 2609112: 119 x 40, white, r6, 18 side padding, 36 under the heading */}
         <a
-          href="#"
+          href={AUTH_URL}
           className="mt-9 flex h-10 items-center justify-center rounded-sm bg-white px-[18px] text-body-sm text-[#0A0A0A] transition-colors duration-300 hover:bg-[#EDEDED]"
         >
           Start for free
