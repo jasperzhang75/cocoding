@@ -28,8 +28,8 @@ import { useEffect, useRef } from "react";
       the footer follows it — the push (decaying only slowly, over TAU,
       while fed, so for the first half second it is simply the finger's
       travel; a 320ms memory made the lift ramp for 0.4s and feel draggy)
-      saturates into the lift (K), so it gets harder the further it is —
-      and it lets go the moment the stream turns into momentum: a
+      stretches a rubber band (see BAND below), so it gets harder the
+      further it is — and it lets go the moment the stream turns into momentum: a
       trackpad's tail is a run of strictly decreasing deltas (MOMENTUM_RUN
       of them, counted from the first event at the end so a flick that
       arrives mid-tail still gets its bounce), while fingers still pushing
@@ -44,25 +44,35 @@ import { useEffect, useRef } from "react";
       (a hair of overshoot into the clipper's headroom) and 0.9 on the
       way back (a soft landing at the rest, never under it — a footer
       pushed down even a few px extends the page's scroll height,
-      transforms count, and the end stops being the end). The reach is a little past
-      the hidden half, so a hard pull shows a sliver of dark under the
-      word.
+      transforms count, and the end stops being the end).
+      BAND (Jasper 2026-10-15: "允许这个部分还能被拉的更高一些 ... 不是很
+      符合真实的物理手感"): the lift is the platforms' own rubber-band
+      curve, band * (1 - 1 / (1 + give * pull / band)) — it follows GIVE
+      of the first pixels and less the further it goes, tending to the
+      band's limit (BAND_VH of the viewport) without a wall. It was an
+      exponential saturating at 0.654em (163px at 250, 48 on a phone),
+      the hidden half and a sliver: past about 300px of pull nothing
+      moved, which read as hitting a stop. Small pulls are as before (a
+      mouse notch 48, a gentle swipe ~60); a hard pull goes on giving,
+      the dark under the word growing — a hard trackpad swipe 218 (was
+      159), a long hard pull 233 (was 161) at 1280 x 800, where the
+      footer's top then reaches the nav bar; a phone's 400px drag 139
+      (was 47). Real pulls stay clear of the closing call's button (314px
+      of room at 1280 x 800, 348 on a phone).
       Touch (Jasper 2026-09-08, "mobile 上向上拉他下半部分不显示"): a drag
       that STARTS at the page's end and moves up is ours — its first
       touchmove is cancelled, so the platform's bounce never starts for
       that gesture (WebKit only honours a cancel on a gesture's first
       move, so a swipe that reaches the end mid-flight still bounces the
       platform's way; the next drag pulls) — and the lift follows the
-      finger through the same saturation (K_TOUCH: a finger travels far,
-      so it saturates sooner) into the same spring; letting go springs
-      back. A drag down with nothing lifted is left to the platform. */
+      finger through the same band (GIVE_TOUCH, iOS's 0.55: a finger
+      travels far) into the same spring; letting go springs back. A drag down with nothing lifted is left to the platform. */
 
-const REACH_EM = 0.654; // how far the footer may be pulled: the hidden 0.504em and 0.15em of dark
-const HEADROOM_EM = 0.72; // the clipper's headroom (Footer): the reach and the spring's overshoot
+const BAND_VH = 0.45; // the band's limit: the lift tends to this share of the viewport's height and never reaches it
+const GIVE = 0.8; // how much of the wheel's first pixels the footer follows (the slope at rest)
+const GIVE_TOUCH = 0.55; // a finger's (iOS's own rubber-band coefficient)
 const TAU = 800; // ms — the push's decay while it is still being fed: long, so the first half second reads as finger travel
 const TAU_RELEASE = 40; // ms — its fade once let go (the spring is fast enough now to finish a flick's rise first)
-const K = 200; // px of push for 63% of the reach
-const K_TOUCH = 60; // px of finger travel for 63% of it
 const MIN_STEP = 4; // smaller wheel deltas are momentum crumbs, not a pull
 const MAX_STEP = 78; // one event counts at most this much: a mouse notch (100) lifts ~48px, not 58 (Jasper)
 const MOMENTUM_RUN = 5; // strictly decreasing deltas in a row at the end = momentum: let go
@@ -79,15 +89,16 @@ export default function FooterWordmark() {
     const box = boxRef.current;
     const word = wordRef.current;
     const footer = box?.closest("footer");
-    if (!box || !word || !footer) return;
+    const clipper = footer?.parentElement;
+    if (!box || !word || !footer || !clipper) return;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
       word.style.opacity = "1";
       return;
     }
 
     /* 1. dark -> bright with the reveal */
-    let reach = 0; // how far the footer may be pulled up (px)
-    let headroom = 0; // and how far it may overshoot
+    let band = 0; // the lift's limit (px)
+    let headroom = 0; // the clipper's room above the footer: the band and the spring's overshoot
     const light = () => {
       const fs = parseFloat(getComputedStyle(box).fontSize);
       const r = box.getBoundingClientRect();
@@ -95,11 +106,8 @@ export default function FooterWordmark() {
       // half-pixel border, which leaves the page's end 0.5px under the viewport's
       const t = Math.min(1, Math.max(0, (innerHeight - r.top + 1) / (0.716 * fs)));
       word.style.opacity = String(t);
-      // the hidden half is 0.504em (the 1.22 line box less the 0.716
-      // window: 126 at 250; the g's tail ends 12 above the line box's
-      // bottom); the reach goes 0.15em past it, the headroom past that
-      reach = REACH_EM * fs;
-      headroom = HEADROOM_EM * fs;
+      band = BAND_VH * innerHeight;
+      headroom = parseFloat(getComputedStyle(clipper).paddingTop) || 0;
     };
     light();
     addEventListener("scroll", light, { passive: true });
@@ -119,6 +127,9 @@ export default function FooterWordmark() {
     let vel = 0;
     let last = 0;
     let raf = 0;
+    /* the rubber band: the lift for x px of pull, following `give` of it at
+       first and less the further it goes, tending to the band's limit */
+    const stretch = (x: number, give: number) => band * (1 - 1 / (1 + (give * x) / band));
     const atEnd = () => {
       const d = document.scrollingElement ?? document.documentElement;
       return d.scrollTop + innerHeight >= d.scrollHeight - 1;
@@ -128,7 +139,7 @@ export default function FooterWordmark() {
       last = now;
       push *= Math.exp(-(dt * 1000) / (released || now - pushedAt > LET_GO ? TAU_RELEASE : TAU));
       if (push < 1) push = 0;
-      const target = Math.max(reach * (1 - Math.exp(-push / K)), touchTarget);
+      const target = Math.max(stretch(push, GIVE), touchTarget);
       const damping = 2 * (target > pull ? ZETA_UP : ZETA_DOWN) * Math.sqrt(STIFFNESS);
       // a stiff spring wants small steps: integrate in ≤ 8ms substeps
       const n = Math.ceil(dt / 0.008);
@@ -204,7 +215,7 @@ export default function FooterWordmark() {
         return;
       }
       e.preventDefault();
-      touchTarget = reach * (1 - Math.exp(-Math.max(0, d) / K_TOUCH));
+      touchTarget = stretch(Math.max(0, d), GIVE_TOUCH);
       start();
     };
     const onTouchEnd = () => {

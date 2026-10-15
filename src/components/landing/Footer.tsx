@@ -21,12 +21,13 @@ import SectionLink from "./SectionLink";
    does the cutting: the footer's negative bottom margin (the hidden
    0.504em) folds the word's lower half under the clipper's end, which is
    the page's end, and overflow-clip keeps that fold from lengthening the
-   page. The clipper also begins 0.72em ABOVE the footer (headroom), so a
-   hard pull at the page's end can lift the whole footer that far inside
-   it — the lower half rising from under the page, then a little dark
-   beneath it — without the footer's top being cut (FooterWordmark drives
-   the lift; its reach is 0.654em, the rest is for the spring's
-   overshoot). The clipper takes no pointer events: its headroom overlaps
+   page. The clipper also begins 60% of the viewport ABOVE the footer
+   (headroom), so a hard pull at the page's end can lift the whole footer
+   that far inside it — the lower half rising from under the page, then
+   dark beneath it — without the footer's top being cut (FooterWordmark
+   drives the lift: a rubber band tending to 45% of the viewport; the
+   rest is for the spring's overshoot, and for a phone's viewport growing
+   past its small one as the toolbars retract). The clipper takes no pointer events: its headroom overlaps
    the section above. Links: Features and Pricing jump to their sections
    like the nav bar's, Docs opens the docs site (Jasper 2026-10-11);
    About, Careers, Blog, Terms and Privacy go to their pages on
@@ -96,10 +97,11 @@ const COLUMNS: { title: string; width: string; links: string[] }[] = [
    and the word always 98% of the container, 1% clear each side (sized by
    the viewport it overflowed the tablet's narrower container and lost
    its right margin). The hidden half is 0.504 of it (its 1.22 line box
-   less the 0.716 window; 126px at the design's width), the headroom the
-   footer may rise into 0.72 (180px there). */
+   less the 0.716 window; 126px at the design's width). The headroom the
+   footer may rise into is 60% of the viewport (it was 0.72 of the word,
+   180px, before the pull became a rubber band; 2026-10-15). */
 const HIDDEN = "0.504 * var(--wordmark-size)";
-const HEADROOM = "0.72 * var(--wordmark-size)";
+const HEADROOM = "60svh";
 
 export default function Footer() {
   return (
