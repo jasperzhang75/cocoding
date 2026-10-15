@@ -393,7 +393,7 @@ function ProCard() {
           filter: "blur(150px)",
         }}
       />
-      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[10px]" style={PRO_RING} />
+      <ProRing />
       <AnnualSwitch on={annual} onChange={setAnnual} />
       <div className="relative flex grow flex-col">
         <Header plan={PRO} price={<ProPrice annual={annual} pack={pack} />} />
@@ -416,12 +416,32 @@ function ProCard() {
 const CARD = "relative flex flex-col overflow-hidden rounded-[10px] pb-[34px] pl-8 pr-9 pt-[37px] xl:min-h-[586px]";
 /* Starter and Enterprise: the 1px white 6% stroke inside */
 const PLAIN_STROKE: CSSProperties = { boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" };
-/* Pro: a 1px white 6% stroke inside, like the other two (Jasper
-   2026-10-15: 8% first, then 6%; the design's
-   #4362BA -> #8382A1 gradient ring at 34% before). Drawn on an overlay
-   above the blue glow — as the card's own inset shadow the glow, a child,
-   would paint over it */
-const PRO_RING: CSSProperties = { boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" };
+/* Pro: a 0.8px white 6% stroke inside (Jasper 2026-10-15: white 8%, then
+   6%, then 0.8px wide; the design's #4362BA -> #8382A1 gradient ring at
+   34% before). An SVG stroke: at 2x, inset box-shadows (Safari) and
+   padding-mask rings (both engines) snap 0.8px to two full device pixels
+   — the same as 1px — while an SVG stroke draws one full and one 60%
+   pixel in Chromium and WebKit alike (measured 2026-10-15). The <svg>
+   covers the card exactly (an offset <svg> gets snapped to device pixels,
+   which pushed half the stroke out of the card); the RECT is inset 0.4px
+   by CSS geometry (x / y / width / height as properties, so calc() works)
+   and its stroke straddles that line, covering the card's outer 0.8px at
+   any card size; rx 9.6 follows the card's 10. An overlay above the blue
+   glow, which would paint over the card's own border. */
+function ProRing() {
+  return (
+    <svg aria-hidden className="pointer-events-none absolute inset-0 size-full">
+      <rect
+        rx="9.6"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeOpacity="0.06"
+        strokeWidth="0.8"
+        className="[x:0.4px] [y:0.4px] h-[calc(100%-0.8px)] w-[calc(100%-0.8px)]"
+      />
+    </svg>
+  );
+}
 /* the CTA block: the list's gap above it (59 at xl, 40 below) */
 const CTA_BLOCK = "mt-auto pt-10 xl:pt-[59px]";
 
