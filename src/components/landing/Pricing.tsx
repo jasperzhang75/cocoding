@@ -14,9 +14,10 @@ import { AUTH_URL } from "@/lib/links";
    Starter | Pro | Enterprise. Placeholder content: the switch only flips,
    the credits picker only looks like one.
 
-   Cards: radius 10, a 1px stroke INSIDE (white 6%; Pro a top-to-bottom
-   gradient #4362BA 43% -> #8382A1 40% at paint opacity 34%), drawn as an
-   inset shadow / a masked ring so the padding stays exact. Pro fills
+   Cards: radius 10, a 1px stroke INSIDE (white 6%; Pro white 8% since
+   Jasper 2026-10-15 — the design's top-to-bottom gradient #4362BA 43% ->
+   #8382A1 40% at paint opacity 34% before), drawn as inset shadows so the
+   padding stays exact. Pro fills
    white 3% and carries Ellipse 21887, the blurred blue glow, now centered
    in the card. Content starts 37 from the top and 32 from the left; the
    buttons are 318 wide, which leaves 36 on the right, and end 34 above
@@ -415,19 +416,11 @@ function ProCard() {
 const CARD = "relative flex flex-col overflow-hidden rounded-[10px] pb-[34px] pl-8 pr-9 pt-[37px] xl:min-h-[586px]";
 /* Starter and Enterprise: the 1px white 6% stroke inside */
 const PLAIN_STROKE: CSSProperties = { boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" };
-/* Pro: the gradient stroke inside, a 1px ring cut out of a gradient fill
-   by two masks (a box-shadow cannot take a gradient), at the paint's 34% */
-const PRO_RING: CSSProperties = {
-  padding: "1px",
-  background: "linear-gradient(180deg, rgba(67,98,186,0.43), rgba(131,130,161,0.4))",
-  opacity: 0.34,
-  maskImage: "linear-gradient(#fff 0 0), linear-gradient(#fff 0 0)",
-  maskClip: "content-box, border-box",
-  maskComposite: "exclude",
-  WebkitMaskImage: "linear-gradient(#fff 0 0), linear-gradient(#fff 0 0)",
-  WebkitMaskClip: "content-box, border-box",
-  WebkitMaskComposite: "xor",
-};
+/* Pro: a 1px white 8% stroke inside (Jasper 2026-10-15; the design's
+   #4362BA -> #8382A1 gradient ring at 34% before). Drawn on an overlay
+   above the blue glow — as the card's own inset shadow the glow, a child,
+   would paint over it */
+const PRO_RING: CSSProperties = { boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" };
 /* the CTA block: the list's gap above it (59 at xl, 40 below) */
 const CTA_BLOCK = "mt-auto pt-10 xl:pt-[59px]";
 
