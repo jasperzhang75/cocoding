@@ -21,11 +21,11 @@ import SectionLink from "./SectionLink";
    does the cutting: the footer's negative bottom margin (the hidden
    0.504em) folds the word's lower half under the clipper's end, which is
    the page's end, and overflow-clip keeps that fold from lengthening the
-   page. The clipper also begins 60% of the viewport ABOVE the footer
+   page. The clipper also begins a whole viewport ABOVE the footer
    (headroom), so a hard pull at the page's end can lift the whole footer
    that far inside it — the lower half rising from under the page, then
    dark beneath it — without the footer's top being cut (FooterWordmark
-   drives the lift: a rubber band tending to 45% of the viewport; the
+   drives the lift: a rubber band tending to 80% of the viewport; the
    rest is for the spring's overshoot, and for a phone's viewport growing
    past its small one as the toolbars retract). The clipper takes no pointer events: its headroom overlaps
    the section above. Links: Features and Pricing jump to their sections
@@ -98,10 +98,10 @@ const COLUMNS: { title: string; width: string; links: string[] }[] = [
    the viewport it overflowed the tablet's narrower container and lost
    its right margin). The hidden half is 0.504 of it (its 1.22 line box
    less the 0.716 window; 126px at the design's width). The headroom the
-   footer may rise into is 60% of the viewport (it was 0.72 of the word,
-   180px, before the pull became a rubber band; 2026-10-15). */
+   footer may rise into is the viewport's height (it was 0.72 of the
+   word, 180px, before the pull became a rubber band; 2026-10-15). */
 const HIDDEN = "0.504 * var(--wordmark-size)";
-const HEADROOM = "60svh";
+const HEADROOM = "100svh";
 
 export default function Footer() {
   return (

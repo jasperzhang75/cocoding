@@ -7,11 +7,14 @@ import FinalCtaGlow from "./FinalCtaGlow";
    screen — and a blue glow sitting just right of the words. The screen
    IS the section: it fills the viewport at every width (Jasper
    2026-09-07), the content centered in it. The design's outline "Log
-   in" beside the button is hidden there, so it is not drawn. */
+   in" beside the button is hidden there, so it is not drawn.
+   data-footer-pull: a hard pull at the page's end lifts this section with
+   the footer (FooterWordmark, RIDERS), so the footer never rides over the
+   button. */
 
 export default function FinalCta() {
   return (
-    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 py-24 md:px-10">
+    <section data-footer-pull className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 py-24 md:px-10">
       {/* Ellipse 21888, the blue glow level with the heading: it comes up
           as the section scrolls into view (see FinalCtaGlow) */}
       <FinalCtaGlow />

@@ -53,12 +53,20 @@ import { useEffect, useRef } from "react";
       exponential saturating at 0.654em (163px at 250, 48 on a phone),
       the hidden half and a sliver: past about 300px of pull nothing
       moved, which read as hitting a stop. Small pulls are as before (a
-      mouse notch 48, a gentle swipe ~60); a hard pull goes on giving,
-      the dark under the word growing — a hard trackpad swipe 218 (was
-      159), a long hard pull 233 (was 161) at 1280 x 800, where the
-      footer's top then reaches the nav bar; a phone's 400px drag 139
-      (was 47). Real pulls stay clear of the closing call's button (314px
-      of room at 1280 x 800, 348 on a phone).
+      mouse notch 48, a gentle swipe ~70); a hard pull goes on giving,
+      the dark under the word growing. Same day, "还要加强": the band
+      went from 0.45 of the viewport to 0.8 and the push's memory while
+      fed from 800ms to 1500, so a long pull keeps building — at 1280 x
+      800 a hard trackpad swipe lifts ~308 (159 before the band, 218 at
+      0.45), a long hard pull ~357 (161, 233); a phone's 400px drag 166
+      (47, 139). MAX_STEP came down to 70 so a mouse notch stays 48.
+      RIDERS: pulls that high would carry the footer's columns over the
+      closing call's button (only 364px of room at 1440 x 900), so the
+      closing section ([data-footer-pull]) rides up with the footer —
+      the bottom of the page stretches as one, like the platform's own
+      bounce, and only the word's lower half and the dark under it are
+      new. Its top is above the viewport at the page's end at every
+      size, so what it slides over is never on screen.
       Touch (Jasper 2026-09-08, "mobile 上向上拉他下半部分不显示"): a drag
       that STARTS at the page's end and moves up is ours — its first
       touchmove is cancelled, so the platform's bounce never starts for
@@ -68,13 +76,13 @@ import { useEffect, useRef } from "react";
       finger through the same band (GIVE_TOUCH, iOS's 0.55: a finger
       travels far) into the same spring; letting go springs back. A drag down with nothing lifted is left to the platform. */
 
-const BAND_VH = 0.45; // the band's limit: the lift tends to this share of the viewport's height and never reaches it
+const BAND_VH = 0.8; // the band's limit: the lift tends to this share of the viewport's height and never reaches it
 const GIVE = 0.8; // how much of the wheel's first pixels the footer follows (the slope at rest)
 const GIVE_TOUCH = 0.55; // a finger's (iOS's own rubber-band coefficient)
-const TAU = 800; // ms — the push's decay while it is still being fed: long, so the first half second reads as finger travel
+const TAU = 1500; // ms — the push's decay while it is still being fed: long, so a pull reads as finger travel and a long one keeps building
 const TAU_RELEASE = 40; // ms — its fade once let go (the spring is fast enough now to finish a flick's rise first)
 const MIN_STEP = 4; // smaller wheel deltas are momentum crumbs, not a pull
-const MAX_STEP = 78; // one event counts at most this much: a mouse notch (100) lifts ~48px, not 58 (Jasper)
+const MAX_STEP = 70; // one event counts at most this much: a mouse notch (100) lifts ~48px, not 58 (Jasper)
 const MOMENTUM_RUN = 5; // strictly decreasing deltas in a row at the end = momentum: let go
 const LET_GO = 90; // ms without a push
 const STIFFNESS = 1200; // the spring toward the target, 1/s² (ω ≈ 35: on the finger within ~0.1s)
@@ -91,6 +99,11 @@ export default function FooterWordmark() {
     const footer = box?.closest("footer");
     const clipper = footer?.parentElement;
     if (!box || !word || !footer || !clipper) return;
+    // what the pull lifts: the footer, and the closing call above it (RIDERS)
+    const riders = [footer, ...document.querySelectorAll<HTMLElement>("[data-footer-pull]")];
+    const lift = (px: number) => {
+      for (const el of riders) el.style.transform = px ? `translateY(${-px}px)` : "";
+    };
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
       word.style.opacity = "1";
       return;
@@ -150,13 +163,13 @@ export default function FooterWordmark() {
       }
       if (!push && !touchTarget && Math.abs(pull) < 0.2 && Math.abs(vel) < 2) {
         pull = vel = 0;
-        footer.style.transform = "";
+        lift(0);
         raf = 0;
         return;
       }
       // never under the rest (see above), never past the clipper's headroom
-      const lift = Math.min(Math.max(pull, 0), headroom);
-      footer.style.transform = `translateY(${-lift}px)`;
+      const up = Math.min(Math.max(pull, 0), headroom);
+      lift(up);
       raf = requestAnimationFrame(tick);
     };
     const onWheel = (e: WheelEvent) => {
@@ -237,7 +250,7 @@ export default function FooterWordmark() {
       removeEventListener("touchend", onTouchEnd);
       removeEventListener("touchcancel", onTouchEnd);
       if (raf) cancelAnimationFrame(raf);
-      footer.style.transform = "";
+      lift(0);
     };
   }, []);
 
