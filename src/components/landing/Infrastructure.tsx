@@ -32,6 +32,7 @@ import { NAV_HEIGHT } from "@/lib/layout";
      reaching 100% as the stack settles.
    - Panel: 751x679, top corners 10, stroke 0.9 on top/left/right only,
      painted white -> black at 8%, fill = black under a 2% #3750C8 wash.
+     At xl the panel is 600 tall, the art cropped (see XL_PANEL_H).
    - Left column tokens as bound in Figma: Indicator+Accent eyebrow,
      Display h2, Heading/sm titles, Body/md desc at Text/Body 60%. */
 
@@ -108,6 +109,21 @@ const CO_MD = {
 /* the legend: 24px boxes 16px apart at md (28px, 24 apart at xl) */
 const LEGEND_MD = { box: 24, rowY: [36, 76], textX: 72, textY: [51.5, 91.5] };
 const LEGEND_XL = { box: 28, rowY: [36, 88], textX: 76, textY: [53.5, 105.5] };
+
+/* THE XL PANEL'S HEIGHT (Jasper 2026-10-15: "把右边那个动画演示窗口的高度
+   降低些", then "裁切 固定 600"): the design's panel is 679 tall; at xl it
+   is 600, so at a 800px viewport the eyebrow sits 61 under the pinned nav
+   bar instead of 21. The art is CROPPED, not scaled: in every frame it
+   lies between 36 (the legend) and 531 (frame 5's lowest face) of the
+   679, the rest is glow. The cut is split — the view drops XL_CROP off
+   the top and as much off the bottom (the viewBox, layoutPanel) — so the
+   art stays centered in the shorter panel, and the legend, which belongs
+   to the panel's top-left corner rather than to the art, is pushed back
+   down by XL_CROP to stay 36 from the top. The narrow layouts keep 679.
+   The panel's and the stage's xl heights (600 / 607) are also written as
+   classes in the markup and in globals.css (.infra-runway). */
+const XL_PANEL_H = 600;
+const XL_CROP = (679 - XL_PANEL_H) / 2;
 
 /* Interactive callouts, frames 4 and 5. One is "lit" at a time: gradient
    label plus its description; the others rest gray. Clicking a callout OR
@@ -906,7 +922,7 @@ function InfrastructureStage() {
       const W = narrow ? Math.round(panel.clientWidth) : 751;
       const dxC = (W - 751) / 2; // centered things
       const cx = W / 2;
-      svg.setAttribute("viewBox", `0 0 ${W} 679`);
+      svg.setAttribute("viewBox", narrow ? `0 0 ${W} 679` : `0 ${XL_CROP} 751 ${XL_PANEL_H}`);
       svg.querySelectorAll<SVGElement>('[data-anchor="center"]').forEach((g) => {
         const lift = g.getAttribute("data-md-lift"); // how far the group rises at md
         const dy = narrow && lift !== null ? -Number(lift) : 0;
@@ -962,16 +978,18 @@ function InfrastructureStage() {
       };
       place("data-co", ENV_CALLOUTS);
       place("data-co5", ENV5_CALLOUTS);
-      // the legend's boxes and rows
+      // the legend's boxes and rows, at xl pushed down by the crop so they
+      // keep their place in the panel's corner (see XL_PANEL_H)
       const L = narrow ? LEGEND_MD : LEGEND_XL;
+      const ly = narrow ? 0 : XL_CROP;
       svg.querySelectorAll("[data-env-legend] rect").forEach((rc, i) => {
         rc.setAttribute("width", String(L.box));
         rc.setAttribute("height", String(L.box));
-        rc.setAttribute("y", String(L.rowY[i]));
+        rc.setAttribute("y", String(L.rowY[i] + ly));
       });
       svg.querySelectorAll("[data-env-legend] text").forEach((t, i) => {
         t.setAttribute("x", String(L.textX));
-        t.setAttribute("y", String(L.textY[i < 2 ? 0 : 1])); // ENVIRONMENT / INFRASTRUCTURE share row 1
+        t.setAttribute("y", String(L.textY[i < 2 ? 0 : 1] + ly)); // ENVIRONMENT / INFRASTRUCTURE share row 1
       });
       // frame 5's parts that are placed, not tweened, into its tablet pose
       // (the tweened ones take CUBE5_MD / STACK5_MD in the morph)
@@ -1688,16 +1706,19 @@ function InfrastructureStage() {
 
       /* stages 1-3 run while the panel's top rises from r0 (460px of it
          showing) to r1 (centered) — fixed design coordinates, clamped to
-         the deepest scroll the page allows while this is its last block */
+         the deepest scroll the page allows while this is its last block.
+         At xl the crop takes XL_CROP off the panel's top, so the same art
+         shows when 460 - XL_CROP of the shorter panel does: the stages run
+         over the same stretch of the art's rise as before. */
       const pinTarget = () => {
         const r = panel.getBoundingClientRect();
-        const k = r.height / 679;
+        const showing = 460 - (xlMq.matches ? XL_CROP : 0);
         const vh = window.innerHeight;
         const maxScroll =
           document.documentElement.scrollHeight - vh - window.scrollY;
         const minTop = r.top - Math.max(0, maxScroll); // panel.top at page bottom
         // the panel's top once the stage sticks
-        return { r, r0: vh - 460 * k, r1: Math.max(stickTop() + panel.offsetTop, minTop) };
+        return { r, r0: vh - showing, r1: Math.max(stickTop() + panel.offsetTop, minTop) };
       };
       /* the runway: how far the stuck stage has travelled into it and how
          much of it the page can reach today — the section is the page's
@@ -2235,8 +2256,9 @@ function InfrastructureStage() {
           description, and the panel as wide as the column, 679 tall; md
           two columns, 41px apart — the panel 344 wide at 768 and growing
           to the design's 751, the text taking the rest; xl the 1200px
-          design. The narrow panels' art re-anchors, see layoutPanel. */}
-      <div className="sticky top-[var(--stick-top)] mx-auto max-w-[600px] md:flex md:max-w-none md:items-start md:gap-[41px] xl:block xl:h-[686px] xl:w-[1200px]">
+          design, its panel cut to 600 tall (XL_PANEL_H). The narrow
+          panels' art re-anchors, see layoutPanel. */}
+      <div className="sticky top-[var(--stick-top)] mx-auto max-w-[600px] md:flex md:max-w-none md:items-start md:gap-[41px] xl:block xl:h-[607px] xl:w-[1200px]">
         {/* left column */}
         <div className="md:min-w-0 md:flex-1 xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
           {/* same one-shot scramble as the FEATURES eyebrow */}
@@ -2302,7 +2324,7 @@ function InfrastructureStage() {
         {/* stage panel — bottom edge runs off the section (no border there) */}
         <div
           ref={panelRef}
-          className="relative mt-10 h-[679px] w-full overflow-hidden rounded-t-lg md:mt-0 md:w-[min(751px,calc(100%-344px))] md:shrink-0 xl:absolute xl:left-[449px] xl:top-[7px] xl:w-[751px]"
+          className="relative mt-10 h-[679px] w-full overflow-hidden rounded-t-lg md:mt-0 md:w-[min(751px,calc(100%-344px))] md:shrink-0 xl:absolute xl:left-[449px] xl:top-[7px] xl:h-[600px] xl:w-[751px]"
           style={{
             background:
               "linear-gradient(0deg, rgba(55,80,200,0.02), rgba(55,80,200,0.02)), #000",
