@@ -14,7 +14,7 @@ import { AUTH_URL } from "@/lib/links";
    Starter | Pro | Enterprise. Placeholder content: the switch only flips,
    the credits picker only looks like one.
 
-   Cards: radius 10, a 1px stroke INSIDE (white 6%; Pro white 8% since
+   Cards: radius 10, a 1px stroke INSIDE, white 6% on all three (Pro since
    Jasper 2026-10-15 — the design's top-to-bottom gradient #4362BA 43% ->
    #8382A1 40% at paint opacity 34% before), drawn as inset shadows so the
    padding stays exact. Pro fills
@@ -416,11 +416,12 @@ function ProCard() {
 const CARD = "relative flex flex-col overflow-hidden rounded-[10px] pb-[34px] pl-8 pr-9 pt-[37px] xl:min-h-[586px]";
 /* Starter and Enterprise: the 1px white 6% stroke inside */
 const PLAIN_STROKE: CSSProperties = { boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" };
-/* Pro: a 1px white 8% stroke inside (Jasper 2026-10-15; the design's
+/* Pro: a 1px white 6% stroke inside, like the other two (Jasper
+   2026-10-15: 8% first, then 6%; the design's
    #4362BA -> #8382A1 gradient ring at 34% before). Drawn on an overlay
    above the blue glow — as the card's own inset shadow the glow, a child,
    would paint over it */
-const PRO_RING: CSSProperties = { boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" };
+const PRO_RING: CSSProperties = { boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" };
 /* the CTA block: the list's gap above it (59 at xl, 40 below) */
 const CTA_BLOCK = "mt-auto pt-10 xl:pt-[59px]";
 
