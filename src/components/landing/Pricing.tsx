@@ -4,7 +4,6 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
 import { EYEBROW_SCRAMBLE } from "./eyebrow";
-import ScrambleText from "./ScrambleText";
 import { AUTH_URL } from "@/lib/links";
 
 /* PRICING, redesigned (Figma bHyNfFfV0ocgVPCHtOyYBp 4:8 in "MacBook Air -
@@ -220,26 +219,12 @@ const packLabel = (pack: CreditPack, annual: boolean) =>
 /* "$18" at 36 / -4%, the rest ("/mo", " + $32") at 24 / -3%, one 137.5%
    line; below xl 24 and 16 */
 const PRICE_SUFFIX = "text-[1rem] tracking-[-0.03em] xl:text-[1.5rem]";
-/* Each part scrambles into its new value when Annual switches or a pack is
-   picked (ScrambleText, the eyebrows' flip; Jasper 2026-10-12). Tabular
-   figures keep the flipping digits from jostling the line. The flipping
-   copy is hidden from assistive tech; the live region reads the final
-   price from the sr-only copy. The add-on is always mounted (empty with
-   no pack) so its first appearance flips too. */
 function ProPrice({ annual, pack }: { annual: boolean; pack: CreditPack }) {
-  const base = usd(annual ? PRO_PRICE.annual : PRO_PRICE.monthly);
-  const unit = annual ? "/yr" : "/mo";
-  const addOn = pack.credits > 0 ? ` + ${usd(packPrice(pack, annual))}` : "";
   return (
     <>
-      <span aria-hidden className="tabular-nums">
-        <ScrambleText text={base} />
-        <span className={PRICE_SUFFIX}>
-          <ScrambleText text={unit} />
-          <ScrambleText text={addOn} />
-        </span>
-      </span>
-      <span className="sr-only">{base + unit + addOn}</span>
+      {usd(annual ? PRO_PRICE.annual : PRO_PRICE.monthly)}
+      <span className={PRICE_SUFFIX}>{annual ? "/yr" : "/mo"}</span>
+      {pack.credits > 0 && <span className={PRICE_SUFFIX}> + {usd(packPrice(pack, annual))}</span>}
     </>
   );
 }

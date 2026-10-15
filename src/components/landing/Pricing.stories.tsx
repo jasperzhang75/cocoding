@@ -10,10 +10,9 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// the Pro card's price ("$180/yr", "$18/mo + $32", ...): the screen-reader
-// copy, which holds the final value while the visible one scrambles into it
+// the Pro card's price ("$180/yr", "$18/mo + $32", ...)
 const proPrice = (canvasElement: HTMLElement) =>
-  canvasElement.querySelectorAll('article')[1].querySelectorAll('p')[1].querySelector('.sr-only')?.textContent;
+  canvasElement.querySelectorAll('article')[1].querySelectorAll('p')[1].textContent;
 
 export const Default: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
