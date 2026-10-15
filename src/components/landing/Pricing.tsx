@@ -340,6 +340,9 @@ function Credits({ annual, value, onChange }: { annual: boolean; value: CreditPa
         <Chevron flipped={open} />
       </button>
       {open && (
+        // the menu and its 0.8px white 6% hairline (an SVG over the list,
+        // clicks passing through; see Hairline)
+        <div className="absolute inset-x-0 bottom-full z-20 mb-2">
         <ul
           ref={listRef}
           id={`${id}-list`}
@@ -348,7 +351,7 @@ function Credits({ annual, value, onChange }: { annual: boolean; value: CreditPa
           aria-label="Extra credits"
           aria-activedescendant={`${id}-${active}`}
           onKeyDown={onListKey}
-          className="absolute inset-x-0 bottom-full z-20 mb-2 rounded-md border border-white/10 bg-[#111216] p-1 shadow-[0_8px_24px_rgba(0,0,0,0.5)] outline-none"
+          className="rounded-md bg-[#111216] p-1 shadow-[0_8px_24px_rgba(0,0,0,0.5)] outline-none"
         >
           {CREDIT_PACKS.map((pack, i) => (
             <li
@@ -367,6 +370,8 @@ function Credits({ annual, value, onChange }: { annual: boolean; value: CreditPa
             </li>
           ))}
         </ul>
+        <Hairline radius={8} />
+        </div>
       )}
     </div>
   );
@@ -393,7 +398,7 @@ function ProCard() {
           filter: "blur(150px)",
         }}
       />
-      <ProRing />
+      <Hairline radius={10} />
       <AnnualSwitch on={annual} onChange={setAnnual} />
       <div className="relative flex grow flex-col">
         <Header plan={PRO} price={<ProPrice annual={annual} pack={pack} />} />
@@ -425,14 +430,16 @@ const PLAIN_STROKE: CSSProperties = { boxShadow: "inset 0 0 0 1px rgba(255,255,2
    covers the card exactly (an offset <svg> gets snapped to device pixels,
    which pushed half the stroke out of the card); the RECT is inset 0.4px
    by CSS geometry (x / y / width / height as properties, so calc() works)
-   and its stroke straddles that line, covering the card's outer 0.8px at
-   any card size; rx 9.6 follows the card's 10. An overlay above the blue
-   glow, which would paint over the card's own border. */
-function ProRing() {
+   and its stroke straddles that line, covering the box's outer 0.8px at
+   any size; rx is the box's radius less 0.4. An overlay above everything
+   in its box — on the Pro card, above the blue glow, which would paint
+   over the card's own border. The credits menu wears the same (Jasper
+   2026-10-15: its 1px white 10% border "也要变细和变淡"). */
+function Hairline({ radius }: { radius: number }) {
   return (
     <svg aria-hidden className="pointer-events-none absolute inset-0 size-full">
       <rect
-        rx="9.6"
+        rx={radius - 0.4}
         fill="none"
         stroke="#FFFFFF"
         strokeOpacity="0.06"
