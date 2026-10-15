@@ -86,6 +86,11 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* the pinned nav bar's height — NAV_HEIGHT in src/lib/layout.ts */
+:root {
+  --nav-height: 64px;
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-text-primary);
@@ -241,19 +246,22 @@ body {
    bands of clamp(320, 70svh, 700) and the stage's centering offset (the
    stage is 679 tall from md; a phone's is taller, hence the max(0)).
    --stick-top: the stage centered when it fits, else its bottom on the
-   viewport's; at xl the 679 panel, 7 down in the 686 stage, centered. */
+   viewport's; at xl the 679 panel, 7 down in the 686 stage, centered.
+   Centered in the room under the pinned nav bar (--nav-height, since
+   2026-10-15), never so low that the bottom leaves the viewport — the
+   same formulas as stickTop() in Infrastructure.tsx. */
 .infra-runway {
   --runway: 500px;
-  --stick-top: min(100svh - 679px, (100svh - 679px) / 2);
+  --stick-top: min(100svh - 679px, (100svh + var(--nav-height) - 679px) / 2);
 }
 @media (min-width: 80rem) {
   .infra-runway {
-    --stick-top: calc(50svh - 346.5px);
+    --stick-top: min(50svh + var(--nav-height) / 2 - 346.5px, 100svh - 686px);
   }
 }
 @media (hover: none) and (prefers-reduced-motion: no-preference) {
   .infra-runway {
-    --runway: calc(500px + 4 * clamp(320px, 70svh, 700px) + max(0px, min(100svh - 679px, (100svh - 679px) / 2)));
+    --runway: calc(500px + 4 * clamp(320px, 70svh, 700px) + max(0px, min(100svh - 679px, (100svh + var(--nav-height) - 679px) / 2)));
   }
 }
 

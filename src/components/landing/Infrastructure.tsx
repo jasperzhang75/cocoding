@@ -10,6 +10,7 @@ import { BRAND7 } from "./infra-brand-icons";
 import { FACE_MARKS, type FaceMarkKey } from "./infra-face-marks";
 import { isNavigating } from "./page-nav";
 import { integrationDocsUrl } from "@/lib/links";
+import { NAV_HEIGHT } from "@/lib/layout";
 
 /* Infrastructure — the isometric story (Figma 17205:89133 -> 87420 ->
    87636), scrubbed by scroll. The three approved frames are keyframes on
@@ -817,12 +818,20 @@ function InfrastructureStage() {
        narrow layouts center the whole stage when it fits the viewport,
        otherwise rest the panel's bottom on the viewport's bottom and the
        text above runs off the top (a phone shows the current item's
-       title over the panel that way) */
+       title over the panel that way). Since the nav bar is pinned
+       (2026-10-15) "centered" means in the room UNDER it, NAV_HEIGHT
+       down — but never so low that the panel's bottom leaves the
+       viewport (a short screen gives up the bar's room first). The CSS
+       defaults in globals.css (.infra-runway) mirror these formulas. */
     const stickTop = () => {
       const vh = window.innerHeight;
-      if (xlMq.matches) return vh / 2 - (panel.offsetTop + panel.offsetHeight / 2);
+      if (xlMq.matches) {
+        const top = panel.offsetTop;
+        const h = panel.offsetHeight;
+        return Math.min((vh + NAV_HEIGHT) / 2 - (top + h / 2), vh - (top + h));
+      }
       const h = stage.offsetHeight;
-      return Math.min(vh - h, (vh - h) / 2);
+      return Math.min(vh - h, (vh + NAV_HEIGHT - h) / 2);
     };
     /* a band is 70% of the viewport's height (320-700px), fixed for a
        viewport width so a browser bar sliding away mid-scroll cannot move

@@ -13,6 +13,9 @@ import Footer from "@/components/landing/Footer";
 export default function Home() {
   return (
     <>
+      {/* fixed at the top over every section (see Navbar) */}
+      <Navbar />
+
       {/* The Unicorn Studio scene backs the first screen only, so it is scoped
           to this wrapper rather than the whole (now much taller) page. It stays
           mouse-interactive: the content layer above is pointer-events-none and
@@ -25,7 +28,9 @@ export default function Home() {
         <HeroBackground />
 
         <div className="pointer-events-none relative z-10">
-          <Navbar />
+          {/* where the bar sat in the flow before it was pinned: the hero
+              keeps its place (the 16 + 32 of the old navbar) */}
+          <div aria-hidden className="h-12" />
           <Hero />
         </div>
       </div>
