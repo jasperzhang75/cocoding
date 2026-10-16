@@ -26,6 +26,31 @@ const AUDIO_D =
   "M1.33333 6.66667V8.66667M4 4V11.3333M6.66667 2V14M9.33333 5.33333V10M12 3.33333V12M14.6667 6.66667V8.66667";
 const SEND_D = "M3.5 8H12.5M8.5 4L12.5 8L8.5 12";
 
+/* THE PLACEHOLDER TYPES (Jasper 2026-10-16: "提前预设的 Prompt ... 按照打字机
+   打出来又删除"): "I want to create a " stays; the rest is typed out a
+   character at a time, held, deleted back to the lead, and the next one
+   typed. The first is the design's own placeholder, so the page renders
+   (and the server sends) exactly the design until the first deletion.
+   It is the textarea's real placeholder, written straight to the DOM —
+   no overlay to keep aligned, and it vanishes the moment anything is
+   typed like any placeholder. Paused while the box is off screen;
+   reduced motion keeps the design's placeholder still. Each ending reads
+   after "a" (no vowel sounds). */
+const PROMPT_LEAD = "I want to create a ";
+const PROMPT_TAILS = [
+  "furniture marketing website...",
+  "booking app for my yoga studio...",
+  "portfolio site for my photography...",
+  "SaaS dashboard with team billing...",
+  "recipe app that plans my week...",
+  "landing page for my coffee brand...",
+];
+const TYPE_MS = 55; // per character typed, plus up to TYPE_JITTER
+const TYPE_JITTER = 40; // ms of randomness per character, so it reads as typing
+const DELETE_MS = 25; // per character deleted
+const HOLD_MS = 2200; // a finished prompt stays this long
+const GAP_MS = 350; // the bare lead stays this long before the next one starts
+
 function ArrowRight({ className }: { className?: string }) {
   return (
     <svg
@@ -67,7 +92,57 @@ function PromptBox() {
   const [value, setValue] = useState("");
   const hasText = value.trim().length > 0;
   const morphRef = useRef<SVGPathElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
   const mounted = useRef(false);
+
+  // the typing placeholder (see PROMPT_TAILS)
+  useEffect(() => {
+    const box = boxRef.current;
+    const el = textRef.current;
+    if (!box || !el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let i = 0; // the ending on screen
+    let shown = PROMPT_TAILS[0].length; // how much of it
+    let phase: "hold" | "delete" | "type" = "hold";
+    let timer = 0;
+    const next = (ms: number) => {
+      timer = window.setTimeout(step, ms);
+    };
+    const step = () => {
+      timer = 0;
+      if (phase === "hold") {
+        phase = "delete";
+        next(DELETE_MS);
+        return;
+      }
+      if (phase === "delete") {
+        shown -= 1;
+        el.placeholder = PROMPT_LEAD + PROMPT_TAILS[i].slice(0, shown);
+        if (shown > 0) return next(DELETE_MS);
+        i = (i + 1) % PROMPT_TAILS.length;
+        phase = "type";
+        return next(GAP_MS);
+      }
+      shown += 1;
+      el.placeholder = PROMPT_LEAD + PROMPT_TAILS[i].slice(0, shown);
+      if (shown < PROMPT_TAILS[i].length) return next(TYPE_MS + Math.random() * TYPE_JITTER);
+      phase = "hold";
+      next(HOLD_MS);
+    };
+    const io = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) {
+        window.clearTimeout(timer);
+        timer = 0;
+      } else if (!timer) {
+        next(phase === "hold" ? HOLD_MS : TYPE_MS);
+      }
+    });
+    io.observe(box);
+    return () => {
+      io.disconnect();
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     if (!morphRef.current) return;
@@ -84,6 +159,7 @@ function PromptBox() {
 
   return (
     <div
+      ref={boxRef}
       className="group pointer-events-auto relative h-[150px] w-full overflow-hidden rounded-2xl"
       style={{
         /* Fills read from Figma node 16568:18077: #171717 under #000000 @ 20%.
@@ -95,9 +171,11 @@ function PromptBox() {
       }}
     >
       <textarea
+        ref={textRef}
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="I want to create a furniture marketing website..."
+        aria-label="Describe what you want to build"
+        placeholder={PROMPT_LEAD + PROMPT_TAILS[0]}
         className="pointer-events-auto h-full w-full resize-none bg-transparent px-5 pb-14 pt-[21px] text-body-md text-text-primary outline-none placeholder:text-[#929292]/50 md:text-body-sm"
       />
 
