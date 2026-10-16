@@ -36,6 +36,10 @@ const CELLS: Array<[number, number]> = [
   [-54, 446], [101, 446], [256, 446], [411, 446],
 ];
 
+/* the glow pair's box in the card's design space (600 x 464): Frame
+   2609391's two blur-250 ellipses, as the xl classes place them */
+const GLOW_BOX = { x: -99, y: 77, w: 789, h: 523 };
+
 /* the code field while hidden: masked out everywhere (see applyMask) */
 const HIDDEN_MASK = "linear-gradient(transparent, transparent)";
 
@@ -48,6 +52,7 @@ const randCode = () =>
 export default function SecurityCard() {
   const [on, setOn] = useState(true);
   const rootRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
   const breatheRef = useRef<HTMLDivElement>(null);
   const grayShieldRef = useRef<HTMLDivElement>(null);
   const greenShieldRef = useRef<HTMLImageElement>(null);
@@ -81,6 +86,53 @@ export default function SecurityCard() {
     matrixRef.current
       ?.querySelectorAll("[data-code]")
       .forEach((el) => (el.textContent = randCode()));
+  }, []);
+
+  /* BELOW XL THE GLOWS FOLLOW THE PICTURE (Jasper 2026-10-16: "暗处的中心
+     是在文字的上方的 ... 让人觉得那个文字没有居中"). They stay card-level
+     (the poster's top crop would clip them) but are placed where the
+     scaled, cropped poster puts the design's glow box — so the dark heart
+     between the two ellipses lands where it does on desktop, 62% down the
+     code field, not at its top edge as when they simply covered the card
+     (2-7% on phones and tablets). Read off the code layer's own box (the
+     poster stage, as scaled and shifted by PosterViewport); at xl the
+     classes hold the design's geometry and the inline box is cleared. */
+  useEffect(() => {
+    const card = rootRef.current;
+    const glow = glowRef.current;
+    const stage = matrixRef.current;
+    if (!card || !glow || !stage) return;
+    const xl = window.matchMedia("(min-width: 1280px)");
+    let raf = 0;
+    const place = () => {
+      raf = 0;
+      if (xl.matches) {
+        glow.removeAttribute("style");
+        return;
+      }
+      const c = card.getBoundingClientRect();
+      const s = stage.getBoundingClientRect();
+      const k = s.width / 600;
+      Object.assign(glow.style, {
+        left: `${s.left - c.left - card.clientLeft + GLOW_BOX.x * k}px`,
+        top: `${s.top - c.top - card.clientTop + GLOW_BOX.y * k}px`,
+        width: `${GLOW_BOX.w * k}px`,
+        height: `${GLOW_BOX.h * k}px`,
+        translate: "none",
+      });
+    };
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(place);
+    };
+    schedule();
+    const ro = new ResizeObserver(schedule);
+    ro.observe(card);
+    xl.addEventListener("change", schedule);
+    return () => {
+      ro.disconnect();
+      xl.removeEventListener("change", schedule);
+      cancelAnimationFrame(raf);
+    };
   }, []);
 
   // pause the breathing shimmer (and any active scramble) while off-screen
@@ -179,12 +231,14 @@ export default function SecurityCard() {
       }}
     >
       {/* the pair of blur-250 glows — the card's blue field. Card-level (not
-          in the poster) so the mobile top-crop can't clip them: at base they
-          cover the whole card; from md up they sit at the design geometry.
-          Pinned to its own compositor layer so the blurred SVGs rasterize
-          once and stay put while the states animate. */}
+          in the poster) so the mobile top-crop can't clip them: at xl they
+          sit at the design geometry; below it they follow the scaled poster
+          (see the effect above) — the classes' centered, card-covering box
+          only holds until it runs. Pinned to its own compositor layer so
+          the blurred SVGs rasterize once and stay put while the states
+          animate. */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-md will-change-transform md:rounded-none md:rounded-bl-xl xl:overflow-visible">
-        <div className="absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 xl:left-[-99px] xl:top-[77px] xl:h-[523px] xl:w-[789px] xl:translate-x-0 xl:translate-y-0">
+        <div ref={glowRef} className="absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 xl:left-[-99px] xl:top-[77px] xl:h-[523px] xl:w-[789px] xl:translate-x-0 xl:translate-y-0">
           {(["/features/f4-glow-a.svg", "/features/f4-glow-b.svg"] as const).map((src) => (
             <div key={src} className="absolute inset-0">
               <div className="absolute" style={{ inset: "-47.8% -31.69%" }}>
@@ -195,7 +249,9 @@ export default function SecurityCard() {
         </div>
       </div>
 
-      <div className="px-7 pb-6 pt-8 xl:absolute xl:left-[33px] xl:top-[35px] xl:w-[496px] xl:p-0">
+      {/* relative: in flow below xl it must still paint above the glows (a
+          positioned layer earlier in the card), which tinted it blue */}
+      <div className="relative px-7 pb-6 pt-8 xl:absolute xl:left-[33px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="pr-12 text-body-md text-text-primary xl:pr-0 xl:text-heading-sm">Built-in security, by default</p>
         <p className="mt-3 text-balance text-body-sm text-text-body xl:text-wrap xl:text-body-md xl:w-[394px]">
           With robust security safeguards already in place, your data and user information stay protected as you build.
