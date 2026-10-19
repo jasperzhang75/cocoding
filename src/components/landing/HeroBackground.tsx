@@ -28,8 +28,10 @@ import { preconnect, preload } from "react-dom";
    2. A stand-in paints from the first frame: Jasper's own still of the
       scene, exported from Unicorn Studio (assets/hero/, kept out of the
       served folder and out of git: stand-in-source.png 5760 x 3600 for
-      the first scene, stand-in-source-2026-10-19.webp 2880 x 1800 — a PNG
-      despite the name — for the one with a beam along the top as well),
+      the first scene; for the one with a beam along the top as well,
+      stand-in-source-2026-10-19.webp 2880 x 1800 and then
+      stand-in-source-2026-10-19b.webp 5760 x 3599 — PNGs despite the
+      name),
       cut to 2x and 1x as AVIF and WebP in public/hero — a <picture>
       picks by pixel density, the 2x AVIF is preloaded from the head.
       Object-fit cover, bottom-anchored: a narrower screen gives up the
@@ -50,18 +52,12 @@ import { preconnect, preload } from "react-dom";
       stand-in simply stays.
    4. dpi 1.5 / fps 60 instead of the project's 2 / 120 — a 1440-wide
       canvas at 2x is 2880 x 1800 through thirteen full-screen passes.
-   5. The top glow comes up from dark (Jasper 2026-10-19: "给上面这个光晕
-      也加上加载的时候会从暗到亮像下面一样"). In the scene only the bottom
-      beam has an appear animation (its position, 1.7s easeInOutQuart);
-      the top one (beam1) is just there. A veil — black at the top,
-      clear by 45% of the hero — covers both the still and the canvas
-      from the first paint and lifts when the live scene shows, over
-      the bottom beam's 1.7s and curve; if the scene never comes (no
-      WebGL2, a failure, the 6s fallback without a canvas) it lifts
-      anyway and the still's top glow comes up the same way. Should the
-      scene get an appear animation of its own on that layer in Unicorn
-      Studio, this veil would double it: remove it then.
-   Reduced motion: the stand-in only, nothing loaded, no veil. */
+   5. Both glows come up from dark in the scene itself: the bottom beam's
+      appear animation (position, 1.7s easeInOutQuart) and, since
+      2026-10-19, the top one's (beam1: position y -0.1 -> -0.148, 1s
+      easeInOutQuad), which Jasper added in Unicorn Studio after a veil
+      here had stood in for it for an afternoon.
+   Reduced motion: the stand-in only, nothing loaded. */
 
 const SDK = "https://www.unicorn.studio/unicornStudio.umd.js";
 const PROJECT = "hjz7dlZ2jZHar7bHXhfg";
@@ -111,21 +107,15 @@ export default function HeroBackground() {
   preload(`${STILL}-2880.avif`, { as: "image", type: "image/avif", imageSrcSet: AVIF_SET, fetchPriority: "high" });
 
   const hostRef = useRef<HTMLDivElement>(null);
-  const veilRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const host = hostRef.current;
-    const veil = veilRef.current;
-    if (!host || !veil || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!host || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let scene: Scene | null = null;
     let raf = 0;
     let gone = false;
-    const lift = () => {
-      veil.style.opacity = "0";
-    };
     const show = () => {
       host.style.opacity = "1";
-      lift();
     };
     loadSdk()
       .then((us) =>
@@ -145,7 +135,7 @@ export default function HeroBackground() {
           return;
         }
         scene = sc;
-        if (sc.fallbackOnly) return lift(); // no WebGL2: the stand-in is the background
+        if (sc.fallbackOnly) return; // no WebGL2: the stand-in is the background
         const started = performance.now();
         const poll = () => {
           if (gone) return;
@@ -155,7 +145,6 @@ export default function HeroBackground() {
           }
           if (performance.now() - started > 6000) {
             if (host.querySelector("canvas")) show();
-            else lift();
             return;
           }
           raf = requestAnimationFrame(poll);
@@ -163,7 +152,7 @@ export default function HeroBackground() {
         poll();
       })
       .catch(() => {
-        lift(); // the stand-in stays
+        /* the stand-in stays */
       });
     return () => {
       gone = true;
@@ -195,14 +184,6 @@ export default function HeroBackground() {
         />
       </div>
       <div ref={hostRef} data-unicorn className="absolute inset-0 opacity-0 transition-opacity duration-[1200ms] ease-out" />
-      {/* the top glow's veil (see 5.): lifts over the bottom beam's 1.7s
-          easeInOutQuart */}
-      <div
-        ref={veilRef}
-        data-veil
-        className="pointer-events-none absolute inset-x-0 top-0 h-[45%] transition-opacity duration-[1700ms] ease-[cubic-bezier(0.76,0,0.24,1)] motion-reduce:hidden"
-        style={{ background: "linear-gradient(#000 0%, #000 30%, transparent 100%)" }}
-      />
     </div>
   );
 }
