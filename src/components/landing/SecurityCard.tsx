@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import PosterViewport from "./PosterViewport";
-import Grain from "./grain";
 import { setLoopPlayState } from "@/lib/use-in-view";
 
 /* Card 4 — built-in security, now interactive. Two states, both read from
@@ -225,7 +224,7 @@ export default function SecurityCard() {
   return (
     <div
       ref={rootRef}
-      className="order-4 isolate relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.06] md:grow md:rounded-none md:rounded-bl-xl xl:block xl:grow-0 xl:absolute xl:left-0 xl:top-[610px] xl:h-[464px] xl:w-[600px] xl:max-w-none"
+      className="order-4 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.06] md:grow md:rounded-none md:rounded-bl-xl xl:block xl:grow-0 xl:absolute xl:left-0 xl:top-[610px] xl:h-[464px] xl:w-[600px] xl:max-w-none"
       style={{
         background:
           "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
@@ -356,7 +355,6 @@ export default function SecurityCard() {
           <div ref={knobRef} className="size-3 rounded-full bg-white shadow-[0px_4px_24px_0px_rgba(0,0,0,0.2)]" />
         </div>
       </button>
-      <Grain />
     </div>
   );
 }

@@ -7,7 +7,6 @@ import PosterViewport from "./PosterViewport";
 import TokensCard from "./TokensCard";
 import TerminalCard from "./TerminalCard";
 import SecurityCard from "./SecurityCard";
-import Grain from "./grain";
 
 /* Features bento — Figma node 16555:17150, desktop (1280) only for now.
    Card 1 (parallel agents) only — the other three come one at a time.
@@ -120,7 +119,7 @@ function Bleed({
    moved 2px right (AgentsDiagram). The animation is untouched. */
 function AgentsCard() {
   return (
-    <div data-agents-card className="order-1 isolate relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
+    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
       <CardHeader
         leftClass="xl:left-[35px]"
         title="Go faster with parallel agents"
@@ -197,7 +196,6 @@ function AgentsCard() {
         </div>
       </div>
       </PosterViewport>
-      <Grain />
     </div>
   );
 }

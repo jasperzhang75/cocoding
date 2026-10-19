@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { preconnect, preload } from "react-dom";
-import { GRAIN } from "@/components/landing/grain";
 
 /* THE FIRST SCREEN'S BACKGROUND: the Unicorn Studio scene "Cocoding.ai
    landing" (project hjz7dlZ2jZHar7bHXhfg — a white gradient under noise,
@@ -65,6 +64,19 @@ const PROJECT = "hjz7dlZ2jZHar7bHXhfg";
 const STILL = "/hero/stand-in";
 const AVIF_SET = `${STILL}-1440.avif 1x, ${STILL}-2880.avif 2x`;
 const WEBP_SET = `${STILL}-1440.webp 1x, ${STILL}-2880.webp 2x`;
+
+/* a 240px tile of very dark fractal noise, opaque, 0-10 levels centred on
+   2.5: screened onto the still it lifts the dark by ~2.5 levels and
+   scatters ±2 around that, which is what keeps flats from banding */
+const GRAIN =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'>" +
+      "<filter id='g' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>" +
+      "<feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' seed='11'/>" +
+      "<feColorMatrix values='0.06 0 0 0 -0.02  0.06 0 0 0 -0.02  0.06 0 0 0 -0.02  0 0 0 0 1'/>" +
+      "</filter><rect width='240' height='240' filter='url(#g)'/></svg>"
+  );
 
 type Scene = { initialized?: boolean; rendering?: boolean; fallbackOnly?: boolean; destroy?: () => void };
 type UnicornStudio = { addScene: (options: Record<string, unknown>) => Promise<Scene> };
