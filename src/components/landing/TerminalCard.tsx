@@ -31,7 +31,18 @@ import PosterViewport from "./PosterViewport";
       error-check ghosts into the feather, building is gone.
    Dates in all three headers are today (short form to fit), same source of
    truth as the dashboard tooltip. prefers-reduced-motion shows the final
-   state. */
+   state.
+
+   Revised by Jasper 2026-10-19 (Figma 16555:17673 re-read): the card is
+   #0A0A0A with a white 3% edge (was black, 6%); the outer mask Rectangle
+   2615 is 682 x 411 at -33/139 (was 580 wide — it now runs past the
+   card's right edge, so the panel's right side no longer fades), export
+   1082 x 811; the panel's edge is #E0E0E0 13% as before. Card-level tops
+   are the design's minus the card's 1px top border (the ellipse's 151
+   already was; the panel's 182 and the mask's -61 were raw). Glows, the
+   curve, icons and checks re-exported and matched. The log window
+   Rectangle 2610 reads 135..340 in Figma against this file's 143..339
+   note — left alone, the animation's feather was tuned by eye. */
 
 const mask = (url: string, size: string, position: string): CSSProperties => ({
   maskImage: `url(${url})`,
@@ -276,7 +287,7 @@ export default function TerminalCard() {
   return (
     <div
       ref={rootRef}
-      className="order-3 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.06] bg-black md:grow md:rounded-none md:rounded-br-xl md:border-l-0 xl:block xl:grow-0 xl:absolute xl:left-[600px] xl:top-[462px] xl:h-[611px] xl:w-[600px] xl:max-w-none"
+      className="order-3 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:grow md:rounded-none md:rounded-br-xl md:border-l-0 xl:block xl:grow-0 xl:absolute xl:left-[600px] xl:top-[462px] xl:h-[611px] xl:w-[600px] xl:max-w-none"
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="text-body-md text-text-primary xl:text-heading-sm">Error auto-fix as you move forward</p>
@@ -288,7 +299,7 @@ export default function TerminalCard() {
       <PosterViewport designHeight={611} crop={150} className="md:mt-auto xl:mt-0 xl:absolute xl:inset-0">
       <div
         className="absolute inset-0"
-        style={mask("/features/f3-mask-outer.svg", "980px 811px", "-233px -61px")}
+        style={mask("/features/f3-mask-outer.svg", "1082px 811px", "-233px -62px")}
       >
         <Bleed
           src="/features/f3-glow-wide.svg"
@@ -297,7 +308,7 @@ export default function TerminalCard() {
         />
 
         <div
-          className="absolute left-[36px] top-[182px] h-[435px] w-[562px] overflow-hidden rounded-tl-lg shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
+          className="absolute left-[36px] top-[181px] h-[435px] w-[562px] overflow-hidden rounded-tl-lg shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
           style={{
             borderLeft: "0.9px solid rgba(224,224,224,0.13)",
             borderTop: "0.9px solid rgba(224,224,224,0.13)",
