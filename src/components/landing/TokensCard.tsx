@@ -12,11 +12,16 @@ import PosterViewport from "./PosterViewport";
    (Revised by Jasper 2026-10-19, Figma 16555:17380 re-read: the card is
    #0A0A0A with a white 3% edge, was black / 6%; the tooltip is a new node
    (17576:8575) with #19232D 15% under #929292 4%, was #0D0E10 64% under
-   #606060 4%; the arrow is #14FF00, was #55F247; of the two #2E3046
-   glows only the left one remains, at 28/183, was 24/190 — Ellipse
-   21896 is hidden; the chart (DashboardChart) is unchanged, every vector
-   re-checked. Card-level tops are the design's minus the card's 1px top
-   border, like the header's 35 — they were the raw values before.)
+   #606060 4%; the arrow is #14FF00, was #55F247; the chart
+   (DashboardChart) is unchanged, every vector re-checked. Card-level
+   tops are the design's minus the card's 1px top border, like the
+   header's 35 — they were the raw values before.
+   Same day, later — fewer overlapping gradients: both #2E3046 glows that
+   sat on top (Ellipses 21895 / 21896) are hidden now, and one Ellipse
+   21897 — 573 x 357 at 27/72, #0C1B2A blurred 300, the same glow cards 1
+   and 3 have behind their panels — lies UNDER everything, the header
+   included: the header is raised above the poster so the glow never
+   tints its text.)
    - the dated tooltip drifts a few px against page scroll (subtle parallax
      across the card's pass through the viewport — a plain scroll listener
      writing the transform synchronously, no ticker to go stale);
@@ -157,7 +162,7 @@ export default function TokensCard() {
       ref={cardRef}
       className="order-2 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:rounded-none md:rounded-tr-xl md:border-b-0 md:border-l-0 xl:absolute xl:left-[600px] xl:top-0 xl:h-[462px] xl:w-[600px] xl:max-w-none"
     >
-      <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
+      <div className="relative z-10 flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="text-body-md text-text-primary xl:text-heading-sm">Less tokens, more builds</p>
         <p className="text-balance text-body-sm text-text-body xl:text-wrap xl:text-body-md xl:w-[370px]">
           Optimized call to LLMs and smart search in big code base to allow more efficient token usage.
@@ -165,10 +170,15 @@ export default function TokensCard() {
       </div>
 
       {/* Stacking follows the Figma layer order exactly:
-          chart < tooltip < stats < dashboard label < the #2E3046 glow,
-          which sits ON TOP of everything and tints the dashboard. */}
+          the #0C1B2A glow < chart < tooltip < stats < dashboard label */}
 
       <PosterViewport designHeight={462} crop={150} className="xl:absolute xl:inset-0">
+      {/* Ellipse 21897: the dark blue behind the whole dashboard */}
+      <Bleed
+        src="/features/f2-glow-base.svg"
+        inset="-84.03% -52.36%"
+        className="pointer-events-none absolute left-[27px] top-[71px] h-[357px] w-[573px]"
+      />
       {/* chart — data-driven inline SVG rebuilt from the Figma vectors
           (framer.com-style); see DashboardChart for the layer/mask map */}
       <DashboardChart />
@@ -232,14 +242,6 @@ export default function TokensCard() {
         dashboard
       </p>
 
-      {/* topmost: the #2E3046 glow (Ellipse 21895) tinting the dashboard
-          below; its twin on the right (Ellipse 21896) is hidden in the
-          design since 2026-10-19 */}
-      <Bleed
-        src="/features/f2-glow.svg"
-        inset="-200% -92.17%"
-        className="pointer-events-none absolute left-[28px] top-[182px] h-[100px] w-[217px]"
-      />
       </PosterViewport>
     </div>
   );
