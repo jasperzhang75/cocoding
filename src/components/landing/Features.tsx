@@ -120,7 +120,8 @@ function Bleed({
    Later that day ("尽量减少渐变的重叠"): Ellipse 21892 moved out from
    under the mask — it lies below the mask layer now, so only the panel
    is masked and the ellipse's blur is no longer multiplied by the
-   mask's blurred alpha. */
+   mask's blurred alpha. Then the panel's top curve (Vector 25,
+   f1-curve-top.svg) was hidden too. */
 function AgentsCard() {
   return (
     <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
@@ -182,13 +183,6 @@ function AgentsCard() {
               Building
             </p>
           </div>
-
-          {/* wide top curve */}
-          <Bleed
-            src="/features/f1-curve-top.svg"
-            inset="-103.6% -16.95%"
-            className="absolute left-[-14.9px] top-[-36.9px] h-[96.5px] w-[590px] -scale-y-100"
-          />
 
           {/* ambient glows */}
           <Bleed src="/features/f1-glow-a.svg" inset="-200%" className="absolute left-[221px] top-[53px] size-[100px]" />

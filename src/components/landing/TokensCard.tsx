@@ -18,9 +18,10 @@ import PosterViewport from "./PosterViewport";
    header's 35 — they were the raw values before.
    Same day, later — fewer overlapping gradients: both #2E3046 glows that
    sat on top (Ellipses 21895 / 21896) are hidden now, and one Ellipse
-   21897 — 573 x 357 at 27/72, #0C1B2A at 71% (Jasper, 2026-10-19 evening;
-   cards 1 and 3 have the same glow at 100% behind their panels) blurred
-   300 — lies UNDER everything, the header
+   21897 — 643 x 427 at -43/72 (573 x 357 at 27/72 for an hour), #0C1B2A
+   at 71% (Jasper, 2026-10-19 evening; cards 1 and 3 have the same glow
+   at 100% behind their panels) blurred 300 — lies UNDER everything, the
+   header
    included: the header is raised above the poster so the glow never
    tints its text.)
    - the dated tooltip drifts a few px against page scroll (subtle parallax
@@ -177,8 +178,8 @@ export default function TokensCard() {
       {/* Ellipse 21897: the dark blue behind the whole dashboard, 71% */}
       <Bleed
         src="/features/f2-glow-base.svg"
-        inset="-84.03% -52.36%"
-        className="pointer-events-none absolute left-[27px] top-[71px] h-[357px] w-[573px]"
+        inset="-70.26% -46.66%"
+        className="pointer-events-none absolute left-[-43px] top-[71px] h-[427px] w-[643px]"
       />
       {/* chart — data-driven inline SVG rebuilt from the Figma vectors
           (framer.com-style); see DashboardChart for the layer/mask map */}
