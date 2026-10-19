@@ -121,8 +121,7 @@ function Bleed({
    under the mask — it lies below the mask layer now, so only the panel
    is masked and the ellipse's blur is no longer multiplied by the
    mask's blurred alpha. Then the panel's top curve (Vector 25,
-   f1-curve-top.svg) was hidden too, and the panel's fill became a flat
-   #030303. */
+   f1-curve-top.svg) was hidden too. */
 function AgentsCard() {
   return (
     <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
@@ -157,9 +156,8 @@ function AgentsCard() {
           style={{
             borderLeft: "0.9px solid rgba(224,224,224,0.13)",
             borderTop: "0.9px solid rgba(224,224,224,0.13)",
-            // a flat #030303 since 2026-10-19 (it was #030303 under black
-            // 20% under #2E2E2E 27%)
-            background: "#030303",
+            background:
+              "linear-gradient(90deg, rgba(46,46,46,0.27), rgba(46,46,46,0.27)), linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(90deg, #030303, #030303)",
           }}
         >
           {/* BUILDING header — the mark slowly cycles the Figma gradient
