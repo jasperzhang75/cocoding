@@ -45,7 +45,10 @@ import PosterViewport from "./PosterViewport";
    note — left alone, the animation's feather was tuned by eye.
    Later that day ("尽量减少渐变的重叠"): Ellipse 21894 lies below the
    mask layer now — only the panel (and PROCESSING/) is masked, the
-   ellipse's blur no longer multiplied by the mask's blurred alpha. */
+   ellipse's blur no longer multiplied by the mask's blurred alpha. Then
+   the panel's glows were simplified: the two #3A4780 blobs (Ellipses
+   21889 / 21890) are hidden and Ellipse 21891 is a band along the top,
+   519 x 59 at -24/17, #3A4780 62% blurred 200 (was 143 x 120 at 240/-7). */
 
 const mask = (url: string, size: string, position: string): CSSProperties => ({
   maskImage: `url(${url})`,
@@ -320,9 +323,8 @@ export default function TerminalCard() {
               "linear-gradient(90deg, rgba(50,50,50,0.24), rgba(50,50,50,0.24)), linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(90deg, #030303, #030303)",
           }}
         >
-          <Bleed src="/features/f3-glow-a.svg" inset="-200% -196.08%" className="absolute left-[-24.9px] top-[-50.9px] h-[100px] w-[102px]" />
-          <Bleed src="/features/f3-glow-b.svg" inset="-166.67% -139.86%" className="absolute left-[239px] top-[-7.9px] h-[120px] w-[143px]" />
-          <Bleed src="/features/f3-glow-a.svg" inset="-200% -196.08%" className="absolute left-[79px] top-[205px] h-[100px] w-[102px]" />
+          {/* Ellipse 21891: the one glow left in the panel, a band along its top */}
+          <Bleed src="/features/f3-glow-b.svg" inset="-338.98% -38.54%" className="absolute left-[-24.9px] top-[16.1px] h-[59px] w-[519px]" />
 
           {/* top curve — outside the log window in the updated design */}
           <Bleed
