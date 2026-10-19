@@ -48,7 +48,10 @@ import PosterViewport from "./PosterViewport";
    ellipse's blur no longer multiplied by the mask's blurred alpha. Then
    the panel's glows were simplified: the two #3A4780 blobs (Ellipses
    21889 / 21890) are hidden and Ellipse 21891 is a band along the top,
-   519 x 59 at -24/17, #3A4780 62% blurred 200 (was 143 x 120 at 240/-7). */
+   519 x 59 at -24/17, #3A4780 62% blurred 200 (was 143 x 120 at 240/-7).
+   And the ellipse behind the panel grew and faded: Ellipse 21894 is
+   797 x 514 at -108/56, #0C1B2A at 71%, blurred 300 (was 613 x 418 at
+   -60/152 at 100%). */
 
 const mask = (url: string, size: string, position: string): CSSProperties => ({
   maskImage: `url(${url})`,
@@ -303,12 +306,12 @@ export default function TerminalCard() {
       </div>
 
       <PosterViewport designHeight={611} crop={150} className="md:mt-auto xl:mt-0 xl:absolute xl:inset-0">
-      {/* Ellipse 21894: #0C1B2A blurred 300 behind the panel — unmasked
+      {/* Ellipse 21894: #0C1B2A 71% blurred 300 behind the panel — unmasked
           since 2026-10-19 */}
       <Bleed
         src="/features/f3-glow-wide.svg"
-        inset="-71.77% -48.94%"
-        className="absolute left-[-60px] top-[151px] h-[418px] w-[613px]"
+        inset="-58.37% -37.64%"
+        className="absolute left-[-108px] top-[55px] h-[514px] w-[797px]"
       />
       <div
         className="absolute inset-0"
