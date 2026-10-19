@@ -8,7 +8,11 @@ import { setLoopPlayState } from "@/lib/use-in-view";
 /* The agents-card diagram (chips, connectors, verticals) plus its scroll-in
    animation. Vector geometry extracted from Figma via vectorPaths, in PANEL
    coordinates (563x444); the two right-hand connectors are mirrored in the
-   design, reproduced with scale(-1,1) groups.
+   design, reproduced with scale(-1,1) groups. The whole diagram sits 2px
+   further right since Jasper's 2026-10-19 revision of the card (every
+   chip, connector and vertical: Group 868 at x 78, Prompt at 237); the
+   resting connector art's blue read 57% and is 85% now, and the Design
+   connector (Vector 17) has no blue stop at all in the design.
 
    Sequence, per Jasper's spec — a slow, subtle LOOP started on scroll into
    view. The agents' blue-top/gray-bottom gradient stroke is their PERMANENT
@@ -43,19 +47,19 @@ const CONN_SHORT =
   "M 52 0 C 52 0 46.08 26.15 32.76 35 C 23.06 41.44 18.17 42.44 9.36 50.24 C 1.89 56.85 0 70 0 70";
 
 const CONNECTORS = [
-  { key: "design", d: CONN_LONG, transform: "translate(112,135)" },
-  { key: "plan", d: CONN_SHORT, transform: "translate(214,135)" },
-  { key: "data", d: CONN_SHORT, transform: "translate(326,135) scale(-1,1)" },
-  { key: "cloud", d: CONN_LONG, transform: "translate(428,135) scale(-1,1)" },
+  { key: "design", d: CONN_LONG, transform: "translate(114,135)" },
+  { key: "plan", d: CONN_SHORT, transform: "translate(216,135)" },
+  { key: "data", d: CONN_SHORT, transform: "translate(328,135) scale(-1,1)" },
+  { key: "cloud", d: CONN_LONG, transform: "translate(430,135) scale(-1,1)" },
 ];
 
-const VERTICAL_X = [111, 213, 325, 428];
+const VERTICAL_X = [113, 215, 327, 430];
 
 const AGENTS = [
-  { label: "Agent 1", x: 76 },
-  { label: "Agent 2", x: 177 },
-  { label: "Agent 3", x: 288 },
-  { label: "Agent 4", x: 394 },
+  { label: "Agent 1", x: 78 },
+  { label: "Agent 2", x: 179 },
+  { label: "Agent 3", x: 290 },
+  { label: "Agent 4", x: 396 },
 ];
 const AGENT_Y = 299;
 const AGENT_W = 71;
@@ -94,7 +98,10 @@ export default function AgentsDiagram() {
     const fills = [...root.querySelectorAll<HTMLElement>("[data-agent-fill]")];
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // resting state: default gradient strokes only
+      // resting state: default gradient strokes only — the travelling
+      // lights too, which showed in full here until 2026-10-19 (the
+      // dash that hides them is set below, past this return)
+      gsap.set(lights, { opacity: 0 });
       gsap.set(blues, { opacity: 0 });
       gsap.set(fills, { opacity: 0 });
       return;
@@ -211,14 +218,14 @@ export default function AgentsDiagram() {
       style={mask("/features/f1-mask-inner.svg", "686px 489px", "-49px 4px")}
     >
       {/* function row (static, unchanged) */}
-      <div className={CHIP} style={{ left: 235, top: 102, border: "0.9px solid #313131", padding: "6px 12px" }}>
+      <div className={CHIP} style={{ left: 237, top: 102, border: "0.9px solid #313131", padding: "6px 12px" }}>
         Prompt
       </div>
       {[
-        { label: "Design", x: 76 },
-        { label: "Plan", x: 180 },
-        { label: "Data", x: 289 },
-        { label: "Cloud", x: 394 },
+        { label: "Design", x: 78 },
+        { label: "Plan", x: 182 },
+        { label: "Data", x: 291 },
+        { label: "Cloud", x: 396 },
       ].map(({ label, x }) => (
         <div key={label} className={CHIP} style={{ left: x, top: 206, width: 71, border: "0.9px solid #2A2A2A" }}>
           {label}
@@ -243,10 +250,10 @@ export default function AgentsDiagram() {
       ))}
 
       {/* base connector artwork (unchanged static look) */}
-      <BleedImg src="/features/f1-conn-2.svg" inset="-0.15% -0.31% -0.24% -0.29%" cls="absolute left-[112px] top-[135px] h-[70px] w-[142px]" />
-      <BleedImg src="/features/f1-conn-3.svg" inset="-0.14% -0.84% 0 -0.86%" cls="absolute left-[214px] top-[135px] h-[70px] w-[52px]" />
-      <BleedImg src="/features/f1-conn-4.svg" inset="-0.14% -0.84% 0 -0.86%" cls="absolute left-[274px] top-[135px] h-[70px] w-[52px] -scale-x-100" />
-      <BleedImg src="/features/f1-conn-1.svg" inset="-0.15% -0.31% -0.24% -0.29%" cls="absolute left-[286px] top-[135px] h-[70px] w-[142px] -scale-x-100" />
+      <BleedImg src="/features/f1-conn-2.svg" inset="-0.15% -0.31% -0.24% -0.29%" cls="absolute left-[114px] top-[135px] h-[70px] w-[142px]" />
+      <BleedImg src="/features/f1-conn-3.svg" inset="-0.14% -0.84% 0 -0.86%" cls="absolute left-[216px] top-[135px] h-[70px] w-[52px]" />
+      <BleedImg src="/features/f1-conn-4.svg" inset="-0.14% -0.84% 0 -0.86%" cls="absolute left-[276px] top-[135px] h-[70px] w-[52px] -scale-x-100" />
+      <BleedImg src="/features/f1-conn-1.svg" inset="-0.15% -0.31% -0.24% -0.29%" cls="absolute left-[288px] top-[135px] h-[70px] w-[142px] -scale-x-100" />
       {/* the resting verticals: white 17% hairlines, 239 -> 298. They were
           <img>s of Figma's exports — 59 x 0.9 SVGs stretched into a 1 x 59
           box — which Safari does not paint (an intrinsic height under 1px
