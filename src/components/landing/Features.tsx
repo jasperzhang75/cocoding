@@ -141,20 +141,11 @@ function AgentsCard() {
         className="absolute left-[-1px] top-[106px] h-[70px] w-[752px]"
       />
       {/* Ellipse 21892: #0C1B2A blurred 300, the dark blue behind the
-          panel — unmasked since 2026-10-19. A PNG, not an SVG blur: Jasper's
-          own export of the layer, clipped to the card (600 x 610, alpha),
-          so it carries Figma's dither — the browsers' 8-bit blur of the
-          SVG banded into rings, Safari's worst (2026-10-19 evening). A
-          plain <img>: next/image would re-encode it lossy and smooth the
-          dither away. Card coords, so -1 for the border. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/features/f1-glow-wide.png"
-        alt=""
-        width={600}
-        height={610}
-        decoding="async"
-        className="pointer-events-none absolute left-[-1px] top-[-1px] h-[610px] w-[600px] max-w-none"
+          panel — unmasked since 2026-10-19 */}
+      <Bleed
+        src="/features/f1-glow-wide.svg"
+        inset="-84.03% -49.67%"
+        className="absolute left-[12px] top-[167px] h-[357px] w-[604px]"
       />
       <div
         className="absolute inset-0"
