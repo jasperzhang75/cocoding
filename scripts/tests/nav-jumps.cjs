@@ -5,7 +5,10 @@
    pinned nav bar) and must not be held by the Infrastructure — the first
    version ended a jump 150ms after the click, before a busy page had even
    started scrolling, and the hold caught it. Prints the eyebrow's top per
-   run, HELD(...) when the hold caught the page. */
+   run, HELD(...) when the hold caught the page. The hero's Unicorn scene
+   is blocked: headless Chromium renders its WebGL in software, which
+   starves every timer on the page (2026-10-19: the 14-layer scene timed
+   the clicks out); the jumps don't need it. */
 const pw = require("playwright");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 (async () => {
@@ -14,7 +17,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const tally = {};
     for (let run = 0; run < 3; run++) {
       for (const label of ["Features", "Testimonial", "Pricing"]) {
-        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } }); await page.route(/unicorn/i, (r) => r.abort());
         await page.goto("http://localhost:3000/", { waitUntil: "load" }); await sleep(1800);
         await page.locator(".group\\/nav").getByRole("link", { name: label }).click();
         await sleep(3000);
@@ -23,7 +26,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await page.close();
       }
       for (const label of ["Features", "Pricing"]) {
-        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } }); await page.route(/unicorn/i, (r) => r.abort());
         await page.goto("http://localhost:3000/#testimonial", { waitUntil: "load" }); await sleep(1500);
         await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight)); await sleep(1200);
         await page.locator("footer").getByRole("link", { name: label }).click();

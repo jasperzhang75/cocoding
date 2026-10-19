@@ -13,7 +13,8 @@ import Footer from "@/components/landing/Footer";
 export default function Home() {
   return (
     <>
-      {/* fixed at the top over every section (see Navbar) */}
+      {/* pinned at the top over every section — sticky, so it rides the
+          rubber band with the page (see Navbar) */}
       <Navbar />
 
       {/* The Unicorn Studio scene backs the first screen only, so it is scoped

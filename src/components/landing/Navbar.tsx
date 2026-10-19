@@ -33,7 +33,16 @@ import SectionLink from "./SectionLink";
    are hidden) and the bottom line he specified, #FFFFFF 8% 0.9px, fade in
    over 200ms. The line is an SVG fill: a 0.9px CSS edge would snap to
    whole device pixels (see Hairline in Pricing). The page keeps a 48px
-   spacer where the bar used to sit in the hero's flow, so nothing moved. */
+   spacer where the bar used to sit in the hero's flow, so nothing moved.
+
+   STICKY, not fixed (Jasper 2026-10-19: "向下拉的时候 nav 不会一起向下拉"):
+   pulled past the top, the platforms' rubber band moves the page and
+   leaves fixed elements where they are — the hero, its top glow with
+   it, slid down from under a bar that stayed put. A sticky bar is part
+   of the page, so it travels with the bounce and still pins while
+   scrolling. It sits first in the body (a column spanning the whole
+   page, so it sticks all the way down), 64 tall with -64 below it so
+   the hero still starts under it. */
 
 const LINK_CLASS = "pointer-events-auto text-body-sm text-text-primary transition hover:text-text-body";
 const SECTIONS = [
@@ -55,7 +64,7 @@ export default function Navbar() {
   return (
     <div
       data-scrolled={scrolled || undefined}
-      className="group/nav pointer-events-none fixed inset-x-0 top-0 z-50 h-16 px-5 data-[scrolled]:pointer-events-auto md:px-10"
+      className="group/nav pointer-events-none sticky top-0 z-50 -mb-16 h-16 px-5 data-[scrolled]:pointer-events-auto md:px-10"
     >
       <div
         aria-hidden
