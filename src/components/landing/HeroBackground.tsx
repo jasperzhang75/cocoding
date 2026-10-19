@@ -13,15 +13,30 @@ import { preconnect, preload } from "react-dom";
    fetched uncached from Google Storage — then shader compilation) and then
    popped in. Jasper (2026-09-07): plan 1 + 4, CSS stand-in.
    1. The SDK runs in our page (one document less; the script is preloaded
-      from the HTML head, the two hosts preconnected) with production:
-      true, so the JSON comes from Unicorn's CDN and caches.
+      from the HTML head, the hosts preconnected). It ran with production:
+      true, the JSON from Unicorn's CDN (assets.unicorn.studio), cached —
+      until Jasper republished the scene (2026-10-19) and no browser saw
+      it: that CDN keeps one copy per exact Accept-Encoding string, the
+      one every browser sends ("gzip, deflate, br, zstd") still held the
+      25 Aug scene after the publish, it may keep it for half a year
+      (s-maxage 15811200), and it ignores query strings, so the SDK's
+      "?update=" buster changes nothing. Now production: false — the SDK
+      fetches the JSON from the bucket behind it
+      (storage.googleapis.com/unicornstudio-production) with ?v=<now>,
+      fresh on every load (~90KB, uncached; the stand-in covers the
+      wait), and a publish shows at once, here and live.
    2. A stand-in paints from the first frame: Jasper's own still of the
-      scene, exported from Unicorn Studio (assets/hero/stand-in-source.png,
-      5760 x 3600, kept out of the served folder and out of git), cut to
-      2x and 1x as AVIF 6KB / 3KB and WebP 23KB / 7KB in public/hero —
-      a <picture> picks by pixel density, the 2x AVIF is preloaded from
-      the head. It sits bottom-anchored under object-fit cover, the way
-      the scene keeps its beam on the bottom edge whatever the aspect.
+      scene, exported from Unicorn Studio (assets/hero/, kept out of the
+      served folder and out of git: stand-in-source.png 5760 x 3600 for
+      the first scene, stand-in-source-2026-10-19.webp 2880 x 1800 — a PNG
+      despite the name — for the one with a beam along the top as well),
+      cut to 2x and 1x as AVIF and WebP in public/hero — a <picture>
+      picks by pixel density, the 2x AVIF is preloaded from the head.
+      Object-fit cover, bottom-anchored: a narrower screen gives up the
+      sides, which the scene's horizontal bands can spare. A screen WIDER
+      than the export's 16:10 (most 16:9 desktops) would lose the top
+      instead, the top beam with it, and the live scene would then
+      bring it in on the fade — there the still stretches to fill.
       A CSS gradient was the first stand-in; its navy-to-black run showed
       as 20px bands (a dozen 8-bit levels over 300px). A faint SVG
       fractal-noise tile stays above the still, screen-blended: +2 ±2
@@ -80,7 +95,7 @@ const loadSdk = () =>
 export default function HeroBackground() {
   // in the server HTML's head: the fetches start with the page, not after hydration
   preconnect("https://www.unicorn.studio");
-  preconnect("https://assets.unicorn.studio");
+  preconnect("https://storage.googleapis.com");
   preload(SDK, { as: "script" });
   preload(`${STILL}-2880.avif`, { as: "image", type: "image/avif", imageSrcSet: AVIF_SET, fetchPriority: "high" });
 
@@ -100,7 +115,7 @@ export default function HeroBackground() {
         us.addScene({
           element: host,
           projectId: PROJECT,
-          production: true,
+          production: false, // fresh from the bucket every load (see 1.)
           dpi: 1.5,
           fps: 60,
           lazyLoad: false,
@@ -152,7 +167,7 @@ export default function HeroBackground() {
             alt=""
             fetchPriority="high"
             decoding="async"
-            className="absolute inset-0 size-full object-cover object-bottom"
+            className="absolute inset-0 size-full object-cover object-bottom [@media(min-aspect-ratio:8/5)]:object-fill"
           />
         </picture>
         <div
