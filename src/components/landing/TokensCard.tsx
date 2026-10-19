@@ -9,6 +9,14 @@ import DashboardChart from "./DashboardChart";
 import PosterViewport from "./PosterViewport";
 
 /* Card 2 — the tokens dashboard, now a client component for two touches:
+   (Revised by Jasper 2026-10-19, Figma 16555:17380 re-read: the card is
+   #0A0A0A with a white 3% edge, was black / 6%; the tooltip is a new node
+   (17576:8575) with #19232D 15% under #929292 4%, was #0D0E10 64% under
+   #606060 4%; the arrow is #14FF00, was #55F247; of the two #2E3046
+   glows only the left one remains, at 28/183, was 24/190 — Ellipse
+   21896 is hidden; the chart (DashboardChart) is unchanged, every vector
+   re-checked. Card-level tops are the design's minus the card's 1px top
+   border, like the header's 35 — they were the raw values before.)
    - the dated tooltip drifts a few px against page scroll (subtle parallax
      across the card's pass through the viewport — a plain scroll listener
      writing the transform synchronously, no ticker to go stale);
@@ -54,7 +62,7 @@ function Stat({
   children: ReactNode;
 }) {
   return (
-    <div className="absolute top-[214px] flex flex-col gap-1.5 opacity-80" style={{ left: x }}>
+    <div className="absolute top-[213px] flex flex-col gap-1.5 opacity-80" style={{ left: x }}>
       <p className="text-body-xs text-white/50">{label}</p>
       <div className="flex items-start">{children}</div>
     </div>
@@ -147,7 +155,7 @@ export default function TokensCard() {
   return (
     <div
       ref={cardRef}
-      className="order-2 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.06] bg-black md:rounded-none md:rounded-tr-xl md:border-b-0 md:border-l-0 xl:absolute xl:left-[600px] xl:top-0 xl:h-[462px] xl:w-[600px] xl:max-w-none"
+      className="order-2 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:rounded-none md:rounded-tr-xl md:border-b-0 md:border-l-0 xl:absolute xl:left-[600px] xl:top-0 xl:h-[462px] xl:w-[600px] xl:max-w-none"
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="text-body-md text-text-primary xl:text-heading-sm">Less tokens, more builds</p>
@@ -157,25 +165,25 @@ export default function TokensCard() {
       </div>
 
       {/* Stacking follows the Figma layer order exactly:
-          chart < tooltip < stats < dashboard label < the two #2E3046 glows,
-          which sit ON TOP of everything and tint the whole dashboard. */}
+          chart < tooltip < stats < dashboard label < the #2E3046 glow,
+          which sits ON TOP of everything and tints the dashboard. */}
 
       <PosterViewport designHeight={462} crop={150} className="xl:absolute xl:inset-0">
       {/* chart — data-driven inline SVG rebuilt from the Figma vectors
           (framer.com-style); see DashboardChart for the layer/mask map */}
       <DashboardChart />
 
-      {/* tooltip — restyled node 17168:8284, everything read off it:
-          fills #0D0E10@64% under a #606060@4% wash; stroke stays the
-          vertical white -> #646464 at 9% (ring below); the two visible
-          drop shadows painted verbatim; Figma background blur 3.5 ==
-          backdrop blur 1.75px. Five hidden shadows omitted as intended. */}
+      {/* tooltip — node 17576:8575 (2026-10-19), everything read off it:
+          fills #19232D@15% under a #929292@4% wash; stroke the vertical
+          white -> #646464 at 9% (ring below); the two visible drop
+          shadows painted verbatim; Figma background blur 3.5 == backdrop
+          blur 1.75px. 155 wide in the design, min here: the date is live. */}
       <div
         ref={tipRef}
-        className="absolute left-[409px] top-[214px] w-max min-w-[155px] rounded-md px-[18px] py-3 backdrop-blur-[1.75px]"
+        className="absolute left-[409px] top-[213px] w-max min-w-[155px] rounded-md px-[18px] py-3 backdrop-blur-[1.75px]"
         style={{
           background:
-            "linear-gradient(0deg, rgba(96,96,96,0.04), rgba(96,96,96,0.04)), linear-gradient(0deg, rgba(13,14,16,0.64), rgba(13,14,16,0.64))",
+            "linear-gradient(0deg, rgba(146,146,146,0.04), rgba(146,146,146,0.04)), linear-gradient(0deg, rgba(25,35,45,0.15), rgba(25,35,45,0.15))",
           boxShadow:
             "0 86px 34px rgba(26,26,26,0.01), 0 134px 38px rgba(26,26,26,0)",
         }}
@@ -215,25 +223,22 @@ export default function TokensCard() {
           fill="none"
           aria-hidden
         >
-          <path d="M5.25 12.75L12.75 5.25" stroke="#55F247" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M5.25 5.25H12.75V12.75" stroke="#55F247" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M5.25 12.75L12.75 5.25" stroke="#14FF00" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M5.25 5.25H12.75V12.75" stroke="#14FF00" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </Stat>
 
-      <p className="absolute left-[36px] top-[172px] font-mono text-[13px] uppercase leading-[1.375] text-text-primary">
+      <p className="absolute left-[36px] top-[171px] font-mono text-[13px] uppercase leading-[1.375] text-text-primary">
         dashboard
       </p>
 
-      {/* topmost: the pair of #2E3046 glows tinting the dashboard below */}
+      {/* topmost: the #2E3046 glow (Ellipse 21895) tinting the dashboard
+          below; its twin on the right (Ellipse 21896) is hidden in the
+          design since 2026-10-19 */}
       <Bleed
         src="/features/f2-glow.svg"
         inset="-200% -92.17%"
-        className="pointer-events-none absolute left-[24px] top-[190px] h-[100px] w-[217px]"
-      />
-      <Bleed
-        src="/features/f2-glow.svg"
-        inset="-200% -92.17%"
-        className="pointer-events-none absolute left-[347px] top-[164px] h-[100px] w-[217px]"
+        className="pointer-events-none absolute left-[28px] top-[182px] h-[100px] w-[217px]"
       />
       </PosterViewport>
     </div>
