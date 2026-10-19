@@ -10,9 +10,11 @@ import { setLoopPlayState } from "@/lib/use-in-view";
    coordinates (563x444); the two right-hand connectors are mirrored in the
    design, reproduced with scale(-1,1) groups. The whole diagram sits 2px
    further right since Jasper's 2026-10-19 revision of the card (every
-   chip, connector and vertical: Group 868 at x 78, Prompt at 237); the
-   resting connector art's blue read 57% and is 85% now, and the Design
-   connector (Vector 17) has no blue stop at all in the design.
+   chip, connector and vertical: Group 868 at x 78, Prompt at 237). The
+   resting connector art stays the EARLIER export — white 9% -> #4C8BE9
+   57% -> white 23% on all four: the revised file reads 85% and leaves
+   the Design connector without its blue, and Jasper wants the lines as
+   they were (2026-10-19, "三条线是要按照以前的设计来的").
 
    Sequence, per Jasper's spec — a slow, subtle LOOP started on scroll into
    view. The agents' blue-top/gray-bottom gradient stroke is their PERMANENT
