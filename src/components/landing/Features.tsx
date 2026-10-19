@@ -116,7 +116,11 @@ function Bleed({
    (was 17%); the top curve is #3A4780 44% (was #9CAAF1 12%), glow-c
    #3A4780 (was #5C689D); BUILDING is solid #C4C4C4 (was a gradient) and
    cap-trimmed, so its cap top sits at the design's 36; the diagram
-   moved 2px right (AgentsDiagram). The animation is untouched. */
+   moved 2px right (AgentsDiagram). The animation is untouched.
+   Later that day ("尽量减少渐变的重叠"): Ellipse 21892 moved out from
+   under the mask — it lies below the mask layer now, so only the panel
+   is masked and the ellipse's blur is no longer multiplied by the
+   mask's blurred alpha. */
 function AgentsCard() {
   return (
     <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
@@ -135,17 +139,17 @@ function AgentsCard() {
         inset="-214.29% -19.95%"
         className="absolute left-[-1px] top-[106px] h-[70px] w-[752px]"
       />
+      {/* Ellipse 21892: #0C1B2A blurred 300, the dark blue behind the
+          panel — unmasked since 2026-10-19 */}
+      <Bleed
+        src="/features/f1-glow-wide.svg"
+        inset="-84.03% -49.67%"
+        className="absolute left-[12px] top-[167px] h-[357px] w-[604px]"
+      />
       <div
         className="absolute inset-0"
         style={mask("/features/f1-mask-outer.svg", "970px 777px", "-224px -70px")}
       >
-        {/* Ellipse 21892: #0C1B2A blurred 300, the dark blue behind the panel */}
-        <Bleed
-          src="/features/f1-glow-wide.svg"
-          inset="-84.03% -49.67%"
-          className="absolute left-[12px] top-[167px] h-[357px] w-[604px]"
-        />
-
         <div
           className="absolute left-[35px] top-[171px] h-[444px] w-[563px] overflow-hidden rounded-tl-lg"
           style={{

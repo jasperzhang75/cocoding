@@ -42,7 +42,10 @@ import PosterViewport from "./PosterViewport";
    already was; the panel's 182 and the mask's -61 were raw). Glows, the
    curve, icons and checks re-exported and matched. The log window
    Rectangle 2610 reads 135..340 in Figma against this file's 143..339
-   note — left alone, the animation's feather was tuned by eye. */
+   note — left alone, the animation's feather was tuned by eye.
+   Later that day ("尽量减少渐变的重叠"): Ellipse 21894 lies below the
+   mask layer now — only the panel (and PROCESSING/) is masked, the
+   ellipse's blur no longer multiplied by the mask's blurred alpha. */
 
 const mask = (url: string, size: string, position: string): CSSProperties => ({
   maskImage: `url(${url})`,
@@ -297,16 +300,17 @@ export default function TerminalCard() {
       </div>
 
       <PosterViewport designHeight={611} crop={150} className="md:mt-auto xl:mt-0 xl:absolute xl:inset-0">
+      {/* Ellipse 21894: #0C1B2A blurred 300 behind the panel — unmasked
+          since 2026-10-19 */}
+      <Bleed
+        src="/features/f3-glow-wide.svg"
+        inset="-71.77% -48.94%"
+        className="absolute left-[-60px] top-[151px] h-[418px] w-[613px]"
+      />
       <div
         className="absolute inset-0"
         style={mask("/features/f3-mask-outer.svg", "1082px 811px", "-233px -62px")}
       >
-        <Bleed
-          src="/features/f3-glow-wide.svg"
-          inset="-71.77% -48.94%"
-          className="absolute left-[-60px] top-[151px] h-[418px] w-[613px]"
-        />
-
         <div
           className="absolute left-[36px] top-[181px] h-[435px] w-[562px] overflow-hidden rounded-tl-lg shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
           style={{
