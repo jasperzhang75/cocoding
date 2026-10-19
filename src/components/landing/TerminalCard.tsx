@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import gsap from "gsap";
 import PosterViewport from "./PosterViewport";
+import Grain from "./grain";
 
 /* Card 3 — the error auto-fix terminal, animated per Jasper's spec and the
    updated Figma frame (17175:8367).
@@ -287,7 +288,7 @@ export default function TerminalCard() {
   return (
     <div
       ref={rootRef}
-      className="order-3 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:grow md:rounded-none md:rounded-br-xl md:border-l-0 xl:block xl:grow-0 xl:absolute xl:left-[600px] xl:top-[462px] xl:h-[611px] xl:w-[600px] xl:max-w-none"
+      className="order-3 isolate relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:grow md:rounded-none md:rounded-br-xl md:border-l-0 xl:block xl:grow-0 xl:absolute xl:left-[600px] xl:top-[462px] xl:h-[611px] xl:w-[600px] xl:max-w-none"
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="text-body-md text-text-primary xl:text-heading-sm">Error auto-fix as you move forward</p>
@@ -419,6 +420,7 @@ export default function TerminalCard() {
         </div>
       </div>
       </PosterViewport>
+      <Grain />
     </div>
   );
 }
