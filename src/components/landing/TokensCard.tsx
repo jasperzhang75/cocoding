@@ -18,8 +18,9 @@ import PosterViewport from "./PosterViewport";
    header's 35 — they were the raw values before.
    Same day, later — fewer overlapping gradients: both #2E3046 glows that
    sat on top (Ellipses 21895 / 21896) are hidden now, and one Ellipse
-   21897 — 573 x 357 at 27/72, #0C1B2A blurred 300, the same glow cards 1
-   and 3 have behind their panels — lies UNDER everything, the header
+   21897 — 573 x 357 at 27/72, #0C1B2A at 71% (Jasper, 2026-10-19 evening;
+   cards 1 and 3 have the same glow at 100% behind their panels) blurred
+   300 — lies UNDER everything, the header
    included: the header is raised above the poster so the glow never
    tints its text.)
    - the dated tooltip drifts a few px against page scroll (subtle parallax
@@ -173,7 +174,7 @@ export default function TokensCard() {
           the #0C1B2A glow < chart < tooltip < stats < dashboard label */}
 
       <PosterViewport designHeight={462} crop={150} className="xl:absolute xl:inset-0">
-      {/* Ellipse 21897: the dark blue behind the whole dashboard */}
+      {/* Ellipse 21897: the dark blue behind the whole dashboard, 71% */}
       <Bleed
         src="/features/f2-glow-base.svg"
         inset="-84.03% -52.36%"
