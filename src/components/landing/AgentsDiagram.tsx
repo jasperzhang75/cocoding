@@ -134,7 +134,7 @@ export default function AgentsDiagram() {
     const VERT_T = 0.45;
     const HOLD_UNTIL = 3;
     const FADE_T = 1.2;
-    const GAP = 3;
+    const GAP = 1.5; // quiet between cycles: 3 until 2026-10-20 (Jasper: the lights should leave Prompt more often — every ~6s now, was ~7.5)
 
     /* One flow cycle — identical every repeat. */
     const makeCycle = () => {
