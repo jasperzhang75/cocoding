@@ -123,10 +123,12 @@ function Bleed({
    mask's blurred alpha. 2026-10-20: Ellipse 21892 is #0E1E2E (was
    #0C1B2A), the panel's fill is a flat #060708 (was three layers), and
    of the panel's own art only glow-a (Ellipse 21888) remains — the top
-   curve (Vector 25) and the two #3A4780 glows are hidden. */
+   curve (Vector 25) and the two #3A4780 glows are hidden. Later that day:
+   the card is #0A0D10, the panel #0A0D14, and Ellipse 21892 behind the
+   panel is hidden too — the card-level art is the top band and the mask. */
 function AgentsCard() {
   return (
-    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
+    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0d10] md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
       <CardHeader
         leftClass="xl:left-[35px]"
         title="Go faster with parallel agents"
@@ -142,13 +144,6 @@ function AgentsCard() {
         inset="-214.29% -19.95%"
         className="absolute left-[-1px] top-[106px] h-[70px] w-[752px]"
       />
-      {/* Ellipse 21892: #0E1E2E blurred 300, the dark blue behind the
-          panel — unmasked since 2026-10-19 */}
-      <Bleed
-        src="/features/f1-glow-wide.svg"
-        inset="-84.03% -49.67%"
-        className="absolute left-[12px] top-[167px] h-[357px] w-[604px]"
-      />
       <div
         className="absolute inset-0"
         style={mask("/features/f1-mask-outer.svg", "970px 777px", "-224px -70px")}
@@ -158,7 +153,7 @@ function AgentsCard() {
           style={{
             borderLeft: "0.9px solid rgba(224,224,224,0.13)",
             borderTop: "0.9px solid rgba(224,224,224,0.13)",
-            background: "#060708",
+            background: "#0A0D14",
           }}
         >
           {/* BUILDING header — the mark slowly cycles the Figma gradient

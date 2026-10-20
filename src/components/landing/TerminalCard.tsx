@@ -50,7 +50,9 @@ import PosterViewport from "./PosterViewport";
    all hidden: no Ellipses 21889 / 21890 / 21891 in the panel any more,
    only the top curve. The panel's fill is a flat #0A0D14 (was three
    layers) and the outer mask Rectangle 2615 is 603 x 404 blurred 100
-   (was 682 x 411 blurred 200): export 803 x 604 at -133/38.
+   (was 682 x 411 blurred 200): export 803 x 604 at -133/38. Later that
+   day: the card is #0A0D10 and Ellipse 21894 behind the panel is hidden
+   — the card-level art is the mask alone.
    And the ellipse behind the panel grew and faded: Ellipse 21894 is
    797 x 514 at -108/56, #0C1B2A at 71%, blurred 300 (was 613 x 418 at
    -60/152 at 100%). */
@@ -298,7 +300,7 @@ export default function TerminalCard() {
   return (
     <div
       ref={rootRef}
-      className="order-3 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:grow md:rounded-none md:rounded-br-xl md:border-l-0 xl:block xl:grow-0 xl:absolute xl:left-[600px] xl:top-[462px] xl:h-[611px] xl:w-[600px] xl:max-w-none"
+      className="order-3 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0d10] md:grow md:rounded-none md:rounded-br-xl md:border-l-0 xl:block xl:grow-0 xl:absolute xl:left-[600px] xl:top-[462px] xl:h-[611px] xl:w-[600px] xl:max-w-none"
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="text-body-md text-text-primary xl:text-heading-sm">Error auto-fix as you move forward</p>
@@ -308,13 +310,6 @@ export default function TerminalCard() {
       </div>
 
       <PosterViewport designHeight={611} crop={150} className="md:mt-auto xl:mt-0 xl:absolute xl:inset-0">
-      {/* Ellipse 21894: #0C1B2A 71% blurred 300 behind the panel — unmasked
-          since 2026-10-19 */}
-      <Bleed
-        src="/features/f3-glow-wide.svg"
-        inset="-58.37% -37.64%"
-        className="absolute left-[-108px] top-[55px] h-[514px] w-[797px]"
-      />
       <div
         className="absolute inset-0"
         style={mask("/features/f3-mask-outer.svg", "803px 604px", "-133px 38px")}

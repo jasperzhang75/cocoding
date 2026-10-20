@@ -23,7 +23,9 @@ import PosterViewport from "./PosterViewport";
    at 100% behind their panels) blurred 300 — lies UNDER everything, the
    header
    included: the header is raised above the poster so the glow never
-   tints its text.)
+   tints its text. 2026-10-20: that ellipse is hidden again and the card
+   is #0A0D10 — no glow on this card at all now; the raised header stays,
+   harmless.)
    - the dated tooltip drifts a few px against page scroll (subtle parallax
      across the card's pass through the viewport — a plain scroll listener
      writing the transform synchronously, no ticker to go stale);
@@ -40,24 +42,6 @@ const ring = (gradient: string): CSSProperties => ({
   WebkitMaskClip: "content-box, border-box",
   WebkitMaskComposite: "xor",
 });
-
-function Bleed({
-  src,
-  inset,
-  className,
-}: {
-  src: string;
-  inset: string;
-  className?: string;
-}) {
-  return (
-    <div className={className}>
-      <div className="absolute" style={{ inset }}>
-        <Image src={src} alt="" fill className="max-w-none" />
-      </div>
-    </div>
-  );
-}
 
 function Stat({
   label,
@@ -162,7 +146,7 @@ export default function TokensCard() {
   return (
     <div
       ref={cardRef}
-      className="order-2 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:rounded-none md:rounded-tr-xl md:border-b-0 md:border-l-0 xl:absolute xl:left-[600px] xl:top-0 xl:h-[462px] xl:w-[600px] xl:max-w-none"
+      className="order-2 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0d10] md:rounded-none md:rounded-tr-xl md:border-b-0 md:border-l-0 xl:absolute xl:left-[600px] xl:top-0 xl:h-[462px] xl:w-[600px] xl:max-w-none"
     >
       <div className="relative z-10 flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="text-body-md text-text-primary xl:text-heading-sm">Less tokens, more builds</p>
@@ -172,15 +156,9 @@ export default function TokensCard() {
       </div>
 
       {/* Stacking follows the Figma layer order exactly:
-          the #0C1B2A glow < chart < tooltip < stats < dashboard label */}
+          chart < tooltip < stats < dashboard label */}
 
       <PosterViewport designHeight={462} crop={150} className="xl:absolute xl:inset-0">
-      {/* Ellipse 21897: the dark blue behind the whole dashboard, 71% */}
-      <Bleed
-        src="/features/f2-glow-base.svg"
-        inset="-70.26% -46.66%"
-        className="pointer-events-none absolute left-[-43px] top-[71px] h-[427px] w-[643px]"
-      />
       {/* chart — data-driven inline SVG rebuilt from the Figma vectors
           (framer.com-style); see DashboardChart for the layer/mask map */}
       <DashboardChart />
