@@ -237,9 +237,9 @@ body {
   }
 }
 
-/* Security card: the inner shadow at its edge (light blue since
-   2026-10-12, green before) breathes — slow, faint,
-   there-and-not-there. Static under reduced motion. */
+/* Security card: the inner shadow at its edge (blue since 2026-10-12,
+   green before) breathes — slow, there-and-not-there. Static under
+   reduced motion. */
 /* the Infrastructure runway, before its effect measures anything: the
    same numbers the JS sets (layoutPanel), so the page is the same length
    from the first paint. --runway: the 500px scrub, plus on touch four

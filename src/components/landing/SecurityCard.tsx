@@ -9,9 +9,9 @@ import { setLoopPlayState } from "@/lib/use-in-view";
 /* Card 4 — built-in security, now interactive. Two states, both read from
    Figma (ON: 16629:18699, OFF: 17175:8667):
 
-   ON  — green-gradient shield; a light-blue inner shadow (the design's
-         inset 0 0 50px 4px #9CD8FF/29 since 2026-10-12; it was green
-         #3AFF4D) breathes slowly at the
+   ON  — green-gradient shield; a blue inner shadow (the design's
+         inset 0 0 50px 4px #4B86AE/90 since 2026-10-20; #9CD8FF/29 from
+         2026-10-12, green #3AFF4D before) breathes slowly at the
          card edge.
    OFF — the toggle knob slides left and the pill grays out (#B5B5B5/50);
          the shield fades to #65686D/82 (same silhouette, recolored through
@@ -327,14 +327,16 @@ export default function SecurityCard() {
           20% (2026-09-07: "还是要淡一些") and back to the design's value a
           month later (2026-10-11: "按照 figma 原来的设计"). Then he made it
           BLUE in the design (2026-10-12: "我改了下 features 的蓝色光晕"):
-          Frame 2609391's visible INNER_SHADOW is now #9CD8FF 29%, blur 50,
-          spread 4 (it was #3AFF4D; the #19C12D one under it stays hidden).
-          The breath's shape is unchanged. */}
+          Frame 2609391's visible INNER_SHADOW became #9CD8FF 29%, blur 50,
+          spread 4 (it was #3AFF4D; the #19C12D one under it stays hidden),
+          and on 2026-10-20 a deeper, far stronger #4B86AE 90% ("光晕请使用
+          这个 design 里的颜色 4B86AE 90%"), same blur and spread. The
+          breath's shape is unchanged. */}
       <div ref={breatheRef} aria-hidden className="pointer-events-none absolute inset-0 will-change-[opacity]">
         <div
           data-loop
           className="security-breathe absolute inset-0 rounded-md md:rounded-none md:rounded-bl-xl"
-          style={{ boxShadow: "inset 0 0 50px 4px rgba(156,216,255,0.29)" }}
+          style={{ boxShadow: "inset 0 0 50px 4px rgba(75,134,174,0.9)" }}
         />
       </div>
 
