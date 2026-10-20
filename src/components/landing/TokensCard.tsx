@@ -125,7 +125,7 @@ export default function TokensCard() {
     if (!solid || !edge || !grad) return;
     const REVEAL_FROM = -60; // the feather's right end at the chart's left edge: nothing shows
     const REVEAL_TO = 620; // past the right edge: everything
-    const REVEAL_T = 1.6;
+    const REVEAL_T = 2.0; // 1.6 until 2026-10-20 ("稍微慢一点")
     const REVEAL_EASE = "expo.out"; // the burst: most of the way in the first 0.3s, the tail creeping
     const set = (p: number) => {
       solid.setAttribute("width", String(p + 300));
@@ -160,7 +160,11 @@ export default function TokensCard() {
     };
   }, []);
 
-  const drawArrow = () => {
+  // one redraw of the arrow's two paths over `t` seconds (the second path
+  // starts 0.3 t later); a hover draws at ARROW_HOVER_T, the bursts below
+  // at their own quicker ARROW_BURST_T
+  const ARROW_HOVER_T = 0.4;
+  const drawArrow = (t = ARROW_HOVER_T) => {
     const svg = arrowRef.current;
     if (!svg) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -171,8 +175,8 @@ export default function TokensCard() {
         { strokeDasharray: L, strokeDashoffset: L },
         {
           strokeDashoffset: 0,
-          duration: 0.4,
-          delay: i * 0.12,
+          duration: t,
+          delay: i * 0.3 * t,
           ease: "power1.out",
           overwrite: true,
           onComplete: () => p.style.removeProperty("stroke-dasharray"),
@@ -182,17 +186,20 @@ export default function TokensCard() {
   };
 
   // while the card is on screen the arrow redraws itself in bursts: quiet
-  // for ARROW_AFTER, then ARROW_TIMES redraws in a row, ARROW_GAP apart
-  // (one redraw takes 0.52s — 0.4s plus the second path's 0.12s delay —
-  // so 600ms is back-to-back with a blink between), then quiet again.
-  // Jasper 2026-10-20: a single burst was not enough, "不会有第二次".
-  // Leaving the viewport stops it; coming back starts it over.
+  // for ARROW_AFTER, then ARROW_TIMES redraws in a row, each over
+  // ARROW_BURST_T and ARROW_GAP apart (a redraw takes 1.3 ARROW_BURST_T,
+  // the second path's delay included, so the gap is back-to-back with a
+  // blink between), then quiet again. Jasper 2026-10-20: a single burst
+  // was not enough, "不会有第二次"; then "静 4s 然后闪的速度要再快一点"
+  // (was 3s of quiet, 0.4s redraws 600ms apart). Leaving the viewport
+  // stops it; coming back starts it over.
   useEffect(() => {
     const card = cardRef.current;
     if (!card) return;
-    const ARROW_AFTER = 3000; // ms
+    const ARROW_AFTER = 4000; // ms
     const ARROW_TIMES = 3;
-    const ARROW_GAP = 600; // ms
+    const ARROW_BURST_T = 0.28; // s
+    const ARROW_GAP = 420; // ms
     let timers: number[] = [];
     const stop = () => {
       timers.forEach((t) => window.clearTimeout(t));
@@ -200,7 +207,7 @@ export default function TokensCard() {
     };
     const burst = () => {
       timers = []; // everything scheduled before this burst has fired
-      for (let i = 0; i < ARROW_TIMES; i++) timers.push(window.setTimeout(drawArrow, ARROW_AFTER + i * ARROW_GAP));
+      for (let i = 0; i < ARROW_TIMES; i++) timers.push(window.setTimeout(() => drawArrow(ARROW_BURST_T), ARROW_AFTER + i * ARROW_GAP));
       timers.push(window.setTimeout(burst, ARROW_AFTER + ARROW_TIMES * ARROW_GAP));
     };
     const io = new IntersectionObserver(
@@ -288,7 +295,7 @@ export default function TokensCard() {
         <a
           href={APP_LOGIN_URL}
           aria-label="Open the dashboard"
-          onMouseEnter={drawArrow}
+          onMouseEnter={() => drawArrow()}
           className="pointer-events-auto -m-1 flex size-[26px] items-center justify-center rounded-sm p-1"
         >
           <svg
