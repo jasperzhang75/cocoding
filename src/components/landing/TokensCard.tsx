@@ -18,10 +18,11 @@ import PosterViewport from "./PosterViewport";
    - the dated tooltip drifts a few px against page scroll (subtle parallax
      across the card's pass through the viewport — a plain scroll listener
      writing the transform synchronously, no ticker to go stale);
-   - the green arrow next to "174" redraws its stroke: three times on its
-     own, ARROW_EVERY apart, once the card is on screen (Jasper 2026-10-20:
-     "隔 2-3 秒 ... 3 次"), and again whenever it is hovered; it is a link
-     to the app's login flow (APP_LOGIN_URL).
+   - the green arrow next to "174" redraws its stroke: ARROW_AFTER after
+     the card is on screen, a burst of three back-to-back redraws (Jasper
+     2026-10-20: "隔 3s 他会在极短的时间内连续重绘 3 次"), and again
+     whenever it is hovered; it is a link to the app's login flow
+     (APP_LOGIN_URL).
    All skipped under prefers-reduced-motion. */
 
 const ring = (gradient: string): CSSProperties => ({
@@ -180,19 +181,22 @@ export default function TokensCard() {
     });
   };
 
-  // the arrow redraws itself ARROW_TIMES times, ARROW_EVERY apart, once
-  // the card is on screen (the first ARROW_EVERY after it arrives)
+  // ARROW_AFTER after the card is on screen, the arrow redraws itself
+  // ARROW_TIMES times in a row, ARROW_GAP apart — one redraw takes 0.52s
+  // (0.4s + the second path's 0.12s delay), so 600ms is back-to-back
+  // with a blink between
   useEffect(() => {
     const card = cardRef.current;
     if (!card) return;
+    const ARROW_AFTER = 3000; // ms
     const ARROW_TIMES = 3;
-    const ARROW_EVERY = 2500; // ms
+    const ARROW_GAP = 600; // ms
     const timers: number[] = [];
     const io = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
         io.disconnect();
-        for (let i = 1; i <= ARROW_TIMES; i++) timers.push(window.setTimeout(drawArrow, i * ARROW_EVERY));
+        for (let i = 0; i < ARROW_TIMES; i++) timers.push(window.setTimeout(drawArrow, ARROW_AFTER + i * ARROW_GAP));
       },
       { threshold: 0.6 }
     );
@@ -269,8 +273,8 @@ export default function TokensCard() {
       <Stat label="Build created:" x={126}>
         <p className="whitespace-nowrap text-body-sm text-text-primary">174</p>
         {/* the arrow: a link to the app's login flow; hover redraws its
-            stroke, and it redraws on its own three times after the card
-            arrives (effect above) */}
+            stroke, and it redraws on its own, three times in a row, after
+            the card arrives (effect above) */}
         <a
           href={APP_LOGIN_URL}
           aria-label="Open the dashboard"
