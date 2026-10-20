@@ -104,7 +104,8 @@ function Bleed({
 
 /* From the redesign file (bHyNfFfV0ocgVPCHtOyYBp 1063:460, read
    2026-10-20): the same card as before with the card #080707 (was black),
-   the panel's edge #E0E0E0 13% (was 17%) and BUILDING cap-trimmed in a
+   the panel's edge #E0E0E0 17% (Jasper's call, over the file's 13%) and
+   BUILDING cap-trimmed in a
    9.43px row (its cap top on the design's 36; the row was a 17.9px line
    box before, the caps ~4px low). Everything else matched the nodes. */
 function AgentsCard() {
@@ -131,8 +132,8 @@ function AgentsCard() {
         <div
           className="absolute left-[36px] top-[172px] h-[444px] w-[563px] overflow-hidden rounded-tl-lg"
           style={{
-            borderLeft: "0.9px solid rgba(224,224,224,0.13)",
-            borderTop: "0.9px solid rgba(224,224,224,0.13)",
+            borderLeft: "0.9px solid rgba(224,224,224,0.17)",
+            borderTop: "0.9px solid rgba(224,224,224,0.17)",
             background:
               "linear-gradient(90deg, rgba(46,46,46,0.27), rgba(46,46,46,0.27)), linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(90deg, #030303, #030303)",
           }}

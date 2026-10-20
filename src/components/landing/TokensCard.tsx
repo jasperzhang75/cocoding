@@ -165,19 +165,20 @@ export default function TokensCard() {
           (framer.com-style); see DashboardChart for the layer/mask map */}
       <DashboardChart />
 
-      {/* tooltip — the redesign file's Frame 2609388 (1063:270, read
-          2026-10-20): a #0A0A0B -> #0F0F0F diagonal at 95% under a
-          #929292@4% wash (it was #0D0E10@64% under #606060@4%); stroke
-          stays the vertical white -> #646464 at 9% (ring below); the two
-          visible drop shadows painted verbatim; Figma background blur 3.5
-          == backdrop blur 1.75px. Five hidden shadows omitted as intended.
-          The card itself is #080707 (was black). */}
+      {/* tooltip — the redesign file's Frame 2609389 (1280:66, Jasper's
+          2026-10-20 replacement): #19232D@15% under a #929292@4% wash
+          (the earlier node was a #0A0A0B -> #0F0F0F diagonal at 95%, and
+          before that #0D0E10@64% under #606060@4%); stroke the vertical
+          white -> #646464 at 9% (ring below); the two visible drop shadows
+          painted verbatim; Figma background blur 3.5 == backdrop blur
+          1.75px. Five hidden shadows omitted as intended. The card itself
+          is #080707 (was black). */}
       <div
         ref={tipRef}
         className="absolute left-[409px] top-[214px] w-max min-w-[155px] rounded-md px-[18px] py-3 backdrop-blur-[1.75px]"
         style={{
           background:
-            "linear-gradient(0deg, rgba(146,146,146,0.04), rgba(146,146,146,0.04)), linear-gradient(135deg, rgba(10,10,11,0.95), rgba(15,15,15,0.95))",
+            "linear-gradient(0deg, rgba(146,146,146,0.04), rgba(146,146,146,0.04)), linear-gradient(0deg, rgba(25,35,45,0.15), rgba(25,35,45,0.15))",
           boxShadow:
             "0 86px 34px rgba(26,26,26,0.01), 0 134px 38px rgba(26,26,26,0)",
         }}

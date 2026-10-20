@@ -36,7 +36,8 @@ import PosterViewport from "./PosterViewport";
    From the redesign file (bHyNfFfV0ocgVPCHtOyYBp 1063:535, read
    2026-10-20): the card is #080707 (was black), the outer mask Rectangle
    2615 is 610 wide (was 580; export 1010 x 811) and the panel's lower
-   #3A4780 glow (Ellipse 21890 at 80/206) is hidden. The rest matched. */
+   #3A4780 glow (Ellipse 21890 at 80/206) is hidden. The rest matched.
+   The panel's edge is #E0E0E0 17% — Jasper's call over the file's 13%. */
 
 const mask = (url: string, size: string, position: string): CSSProperties => ({
   maskImage: `url(${url})`,
@@ -304,8 +305,8 @@ export default function TerminalCard() {
         <div
           className="absolute left-[36px] top-[182px] h-[435px] w-[562px] overflow-hidden rounded-tl-lg shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
           style={{
-            borderLeft: "0.9px solid rgba(224,224,224,0.13)",
-            borderTop: "0.9px solid rgba(224,224,224,0.13)",
+            borderLeft: "0.9px solid rgba(224,224,224,0.17)",
+            borderTop: "0.9px solid rgba(224,224,224,0.17)",
             background:
               "linear-gradient(90deg, rgba(50,50,50,0.24), rgba(50,50,50,0.24)), linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(90deg, #030303, #030303)",
           }}
