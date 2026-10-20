@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { CSSProperties } from "react";
 import gsap from "gsap";
 import { setLoopPlayState } from "@/lib/use-in-view";
 
@@ -15,7 +14,9 @@ import { setLoopPlayState } from "@/lib/use-in-view";
    file's default since 2026-10-20 — before that the function chips had a
    #2A2A2A / #313131 edge and the agents a permanent blue-top/gray-bottom
    gradient stroke); the blue fill and the blue stroke belong to the
-   animation only. Each cycle:
+   animation only. The soft ellipse mask that clipped the whole diagram
+   (Figma's Ellipse 124, f1-mask-inner.svg) is off in the design since
+   2026-10-20 and gone here. Each cycle:
    0. (2026-10-20, Jasper: "prompt 这个方块从左到右由快到慢加载完这个蓝色
       filling 然后再向下流出这个光线") the Prompt chip fills from the LEFT
       — its #4375ED 34% + white 6% fill and its #4C8BE9 70% stroke sweep
@@ -34,16 +35,6 @@ import { setLoopPlayState } from "@/lib/use-in-view";
       cycle replays.
    prefers-reduced-motion shows the resting state, no loop. */
 
-const mask = (url: string, size: string, position: string): CSSProperties => ({
-  maskImage: `url(${url})`,
-  maskSize: size,
-  maskPosition: position,
-  maskRepeat: "no-repeat",
-  WebkitMaskImage: `url(${url})`,
-  WebkitMaskSize: size,
-  WebkitMaskPosition: position,
-  WebkitMaskRepeat: "no-repeat",
-});
 
 /* Figma path data, verbatim. Long connectors (to Design / Cloud), short
    connectors (to Plan / Data); both run top -> bottom. */
@@ -229,11 +220,7 @@ export default function AgentsDiagram() {
   }, []);
 
   return (
-    <div
-      ref={rootRef}
-      className="absolute inset-0 opacity-80 mix-blend-plus-lighter"
-      style={mask("/features/f1-mask-inner.svg", "686px 489px", "-49px 4px")}
-    >
+    <div ref={rootRef} className="absolute inset-0 opacity-80 mix-blend-plus-lighter">
       {/* function row (static, unchanged) — except the Prompt, whose fill
           overlay sweeps in from the left each cycle (its blue stroke is in
           the SVG below) */}

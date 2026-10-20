@@ -21,8 +21,8 @@ import SecurityCard from "./SecurityCard";
    The export also stamps parent masks onto every child; each diagram here
    applies its two masks ONCE, on shared containers, at origins recovered
    from the per-child offsets (they all agree):
-     card 1: outer 970x814 @ (-223,-69) on the card,
-             inner 686x489 @ (-49,4) on the panel
+     card 1: outer 970x814 @ (-223,-69) on the card
+             (the inner 686x489 @ (-49,4) on the panel is off since 2026-10-20)
      card 3: outer 980x811 @ (-233,-61), inner 669x425 @ (-66,-35)
      card 4: the lucide/shield alpha mask clips both glows.
    The security toggle is NOT shield-masked even though the export says so —
