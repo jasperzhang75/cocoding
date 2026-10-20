@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import gsap from "gsap";
+import { APP_LOGIN_URL } from "@/lib/links";
 import TodayDate from "./TodayDate";
 import DashboardChart from "./DashboardChart";
 import PosterViewport from "./PosterViewport";
@@ -17,8 +18,11 @@ import PosterViewport from "./PosterViewport";
    - the dated tooltip drifts a few px against page scroll (subtle parallax
      across the card's pass through the viewport — a plain scroll listener
      writing the transform synchronously, no ticker to go stale);
-   - hovering the green arrow next to "174" redraws its stroke once.
-   Both are skipped under prefers-reduced-motion. */
+   - the green arrow next to "174" redraws its stroke: three times on its
+     own, ARROW_EVERY apart, once the card is on screen (Jasper 2026-10-20:
+     "隔 2-3 秒 ... 3 次"), and again whenever it is hovered; it is a link
+     to the app's login flow (APP_LOGIN_URL).
+   All skipped under prefers-reduced-motion. */
 
 const ring = (gradient: string): CSSProperties => ({
   padding: "0.9px",
@@ -133,13 +137,19 @@ export default function TokensCard() {
     set(REVEAL_FROM);
     const state = { p: REVEAL_FROM };
     let tween: gsap.core.Tween | undefined;
+    /* starts once REVEAL_SEEN of the card is on screen — a third of it
+       was too early, the lines had grown before Jasper reached them
+       (2026-10-20) — or, on a viewport too short for that, once the
+       card's top has gone past the viewport's */
+    const REVEAL_SEEN = 0.9;
     const io = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
+        if (entry.intersectionRatio < REVEAL_SEEN && entry.boundingClientRect.top >= 0) return;
         io.disconnect();
         tween = gsap.to(state, { p: REVEAL_TO, duration: REVEAL_T, ease: REVEAL_EASE, onUpdate: () => set(state.p) });
       },
-      { threshold: 0.35 }
+      { threshold: [0, 0.5, REVEAL_SEEN] }
     );
     io.observe(card);
     return () => {
@@ -170,23 +180,27 @@ export default function TokensCard() {
     });
   };
 
-  // touch devices never fire hover; draw the arrow once when the card
-  // scrolls into view there
+  // the arrow redraws itself ARROW_TIMES times, ARROW_EVERY apart, once
+  // the card is on screen (the first ARROW_EVERY after it arrives)
   useEffect(() => {
-    if (window.matchMedia("(hover: hover)").matches) return;
     const card = cardRef.current;
     if (!card) return;
+    const ARROW_TIMES = 3;
+    const ARROW_EVERY = 2500; // ms
+    const timers: number[] = [];
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          io.disconnect();
-          drawArrow();
-        }
+        if (!entry.isIntersecting) return;
+        io.disconnect();
+        for (let i = 1; i <= ARROW_TIMES; i++) timers.push(window.setTimeout(drawArrow, i * ARROW_EVERY));
       },
       { threshold: 0.6 }
     );
     io.observe(card);
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      timers.forEach((t) => window.clearTimeout(t));
+    };
   }, []);
 
 
@@ -254,19 +268,27 @@ export default function TokensCard() {
       </Stat>
       <Stat label="Build created:" x={126}>
         <p className="whitespace-nowrap text-body-sm text-text-primary">174</p>
-        {/* hover redraws the arrow's stroke once */}
-        <svg
-          ref={arrowRef}
+        {/* the arrow: a link to the app's login flow; hover redraws its
+            stroke, and it redraws on its own three times after the card
+            arrives (effect above) */}
+        <a
+          href={APP_LOGIN_URL}
+          aria-label="Open the dashboard"
           onMouseEnter={drawArrow}
-          width="18"
-          height="18"
-          viewBox="0 0 18 18"
-          fill="none"
-          aria-hidden
+          className="pointer-events-auto -m-1 flex size-[26px] items-center justify-center rounded-sm p-1"
         >
-          <path d="M5.25 12.75L12.75 5.25" stroke="#55F247" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M5.25 5.25H12.75V12.75" stroke="#55F247" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+          <svg
+            ref={arrowRef}
+            width="18"
+            height="18"
+            viewBox="0 0 18 18"
+            fill="none"
+            aria-hidden
+          >
+            <path d="M5.25 12.75L12.75 5.25" stroke="#55F247" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M5.25 5.25H12.75V12.75" stroke="#55F247" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </a>
       </Stat>
 
       <p className="absolute left-[36px] top-[172px] font-mono text-[13px] uppercase leading-[1.375] text-text-primary">

@@ -22,3 +22,7 @@ export const DISCORD_URL = "https://discord.com/invite/Xxnw3vqEVh";
 /* an integration's page on the docs site, by its slug (notion, stripe, ...)
    — the Infrastructure connectors link here */
 export const integrationDocsUrl = (slug: string) => `${DOCS_URL}integrations/${slug}`;
+
+/* the tokens card's "174 ↗" arrow (Jasper 2026-10-20): the app's login
+   flow, as he gave it */
+export const APP_LOGIN_URL = "https://app.new.cocoding.ai/auth/login?flow=5f165529-d28e-4211-bd38-12dda3625a19";
