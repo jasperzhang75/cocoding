@@ -11,10 +11,10 @@ its lighten-blended grain (the generator copied from Infrastructure.tsx)
 
 ```bash
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-# the wash: 2x over its filter region (x -199.4, y -198.51, 1106.5 x 486.5 —
-# frame 4's Vector 24 as of 2026-10-20, in panel space)
+# the wash: 2x over its filter region (x -294, y -245, 1350 x 511 — frame 4's
+# Ellipse 21903 as of 2026-10-20, in panel space)
 "$CHROME" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
-  --default-background-color=00000000 --virtual-time-budget=3000 --window-size=2213,973 \
+  --default-background-color=00000000 --virtual-time-budget=3000 --window-size=2700,1022 \
   --screenshot=public/infrastructure/wash.png "file://$PWD/scripts/infra-glows/wash.html"
 # the ambient: 0.5x over its filter region (x -503.2, y -125.1, 1932 x 966)
 "$CHROME" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \

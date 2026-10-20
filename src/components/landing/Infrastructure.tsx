@@ -12,18 +12,19 @@ import { isNavigating } from "./page-nav";
 import { integrationDocsUrl } from "@/lib/links";
 import { NAV_HEIGHT } from "@/lib/layout";
 
-/* Infrastructure — the isometric story (Figma 17205:87852 and on),
+/* Infrastructure — the isometric story (Figma 16990:8066 and on),
    driven by scroll. The section arrives straight at frame 4 — the
-   ENVIRONMENT cube — which GROWS IN with the scroll: one paused timeline
-   whose progress is bound directly to the section's position in the
-   viewport, from the panel's arrival to the runway's end, where the hold
-   takes over and gestures step the later frames. No easing chase —
-   scroll stops, the drawing stops; scroll back up, it shrinks back.
-   (Until 2026-10-20 three stages came first — a block of three isometric
-   layers splitting under FRONTEND / BACKEND / DATABASE callouts and
-   settling into the stack; Jasper: "去除 1-3 帧", the cube "顺着 scroll
-   从小到大丝滑变大", the legend "全部进入视野以后".) All geometry is read
-   off the Figma nodes:
+   ENVIRONMENT cube: the whole panel comes up from dark as it rises into
+   place, and the legend and callouts surface once it is all in view, as
+   the runway under the stuck stage begins; at the runway's end the hold
+   takes over and gestures step the later frames. Both are bound directly
+   to the section's position in the viewport — scroll stops, the drawing
+   stops; scroll back up, it rewinds. (Until 2026-10-20 three stages came
+   first — a block of three isometric layers splitting under FRONTEND /
+   BACKEND / DATABASE callouts and settling into the stack — then, for an
+   afternoon, the cube grew in with the scroll; Jasper: "去除 1-3 帧",
+   then "去除掉那个 scroll 从小变大的动画 改为整个卡片从暗到明".) All
+   geometry is read off the Figma nodes:
 
    - The stack under the cube: three 65.8 rounded squares (r6) through the
      isometric matrix [[0.866,-0.866],[0.5,0.5]] — the Figma transform
@@ -32,8 +33,8 @@ import { NAV_HEIGHT } from "@/lib/layout";
      composites through Plus lighter.
    - Panel: 751x679, top corners 10, stroke 0.9 on top/left/right only,
      painted white -> black at 8%, fill = black under a 2% #3750C8 wash;
-     Vector 24, a blurred blue blob across its top, brightens it in every
-     frame (the design's "光晕", 2026-10-20).
+     Ellipse 21903, a blurred blue band along its top edge, lights it in
+     every frame (the design's "光晕", 2026-10-20).
      At xl the panel is 600 tall, the art cropped (see XL_PANEL_H).
    - Left column tokens as bound in Figma: Indicator+Accent eyebrow,
      Display h2, Heading/sm titles, Body/md desc at Text/Body 60%. */
@@ -81,13 +82,14 @@ const ITEMS: { key: string; title: string; desc?: string; open?: boolean }[] = [
 const STACK = { x: 372, size: 65.8 };
 const ENV_STACK_Y = [351.7, 334.3, 311];
 
-/* THE ENTRANCE (Jasper 2026-10-20, Figma 17205:87852): the cube, its stack
-   and its ambient glow grow from GROW.from about the cube's center
-   (GROW.origin — the cube-group's center in the 751x679 space; layoutPanel
-   moves it with the layout) while they fade in over the first GROW.fade of
-   the scrub, and the legend and the callouts surface over the last stretch
-   from GROW.legendAt, once the picture is whole. */
-const GROW = { from: 0.3, ease: "power1.out", fade: 0.3, legendAt: 0.86, origin: { x: 374.8, y: 347.1 } };
+/* THE ENTRANCE (Jasper 2026-10-20, Figma 16990:8066): the whole panel
+   comes up from dark — its opacity follows the panel's rise from the
+   viewport's bottom edge to where the stage sticks, through FADE_EASE
+   (mostly lit by halfway, settling as it arrives) — and the legend and
+   the callouts surface over the first LEGEND_OVER of the runway, once
+   the panel is all in view. */
+const FADE_EASE = "power2.out";
+const LEGEND_OVER = 0.4;
 
 /* THE TABLET PANEL (md, 768-1279; Figma bHyNfFfV0ocgVPCHtOyYBp 1166:917,
    1166:1019, 1168:1080, 1165:742). Two columns again, the panel 344 wide
@@ -920,11 +922,6 @@ function InfrastructureStage() {
         svg.querySelectorAll<SVGElement>(sel).forEach((el) => {
           el.style.display = on ? "" : "none";
         });
-      // the entrance grows the picture about the cube's center — where
-      // that is in this layout (centered, lifted at md like its groups)
-      gsap.set(svg.querySelector("[data-grow]"), {
-        svgOrigin: `${GROW.origin.x + dxC} ${GROW.origin.y - (narrow ? MD_LIFT : 0)}`,
-      });
       // the cube frames' callouts: three around the cube at xl; at md one
       // centered block beneath it — the lit face's label and description
       // (the resting gray labels and the hairlines are not drawn)
@@ -1086,25 +1083,19 @@ function InfrastructureStage() {
       // morph states these values as its fromTo starts)
       faces.forEach((f, i) => gsap.set(f, { x: STACK.x, y: ENV_STACK_Y[i], opacity: 0.8 }));
 
-      /* THE ENTRANCE — one scrub from the panel's arrival (r0, see
-         pinTarget) to the runway's end, a pure function of scroll
-         (apply()), so scrolling up shrinks the picture back. The cube, its
-         stack and the ambient glow ([data-grow]) grow from GROW.from about
-         the cube's center while they fade in; the legend and the callouts
-         surface as the growth lands. The wash — the panel's own glow — is
-         static, there in every frame. The one-shot side effects (the mark
-         flicker, building the morph) live in land(), not here. */
+      /* THE ENTRANCE'S SECOND HALF — the legend and the callouts surface
+         over the first LEGEND_OVER of the runway, once the panel (lit by
+         apply() as it rose) is all in view; a pure function of scroll, so
+         scrolling up takes them away again. The one-shot side effects
+         (the mark flicker, building the morph) live in land(), not here. */
       const env = {
-        grow: svg.querySelector("[data-grow]"),
         cube: svg.querySelector("[data-env-cube]"),
         legend: svg.querySelector("[data-env-legend]"),
         callouts: svg.querySelector("[data-env-callouts]"),
       };
       const tl2 = gsap.timeline({ paused: true });
-      tl2.fromTo(env.grow, { scale: GROW.from }, { scale: 1, duration: 1, ease: GROW.ease }, 0);
-      tl2.fromTo(env.grow, { opacity: 0 }, { opacity: 1, duration: GROW.fade, ease: "power1.out" }, 0);
-      tl2.to(env.legend, { opacity: 1, duration: 1 - GROW.legendAt, ease: "power1.out" }, GROW.legendAt);
-      tl2.to(env.callouts, { opacity: 1, duration: 1 - GROW.legendAt, ease: "power1.out" }, GROW.legendAt);
+      tl2.to(env.legend, { opacity: 1, duration: LEGEND_OVER, ease: "power1.out" }, 0);
+      tl2.to(env.callouts, { opacity: 1, duration: LEGEND_OVER, ease: "power1.out" }, 0);
       // clicks arm only once the entrance lands; scrubbing back re-disarms them
       tl2.set([env.callouts, env.cube], { pointerEvents: "auto" }, 0.99);
 
@@ -1595,12 +1586,13 @@ function InfrastructureStage() {
         stepToCube(cur as 6 | 8, target as 4 | 5, instant);
       };
       /* ---------- SCROLL-DRIVEN NAVIGATION ----------
-         Frame 4's entrance is ONE scrubbed animation (tl2): the picture
-         grows while the panel rises to the viewport's center and on over
-         the RUNWAY the stage stays stuck for — a pure function of scroll
-         position, so scrolling up rewinds it. The scrub runs only while
-         frame 4 is the base: at 5/6/8 the runway is inert and the panel
-         keeps its frame wherever the page goes.
+         Frame 4's entrance is scrubbed: the panel lights up as it rises
+         to the viewport's center (apply() sets its opacity), the legend
+         and callouts come over the start of the RUNWAY the stage stays
+         stuck for (tl2) — pure functions of scroll position, so scrolling
+         up rewinds them. The scrub runs only while frame 4 is the base:
+         at 5/6/8 the runway is inert and the panel keeps its frame
+         wherever the page goes.
 
          EVERY pass is walked frame by frame. Whenever the page crosses the
          runway's end — coming down from Features or back up from below,
@@ -1617,6 +1609,7 @@ function InfrastructureStage() {
          only; touch reads BANDS instead (below); reduced motion never
          captures. */
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+      const fadeEase = gsap.parseEase(FADE_EASE);
 
       let captured = false;
       let landed = false; // frame 4 formed (tl2 at 1)
@@ -1628,29 +1621,24 @@ function InfrastructureStage() {
       let arriving: (() => void) | null = null; // runs when a programmatic scroll lands
       let arriveTimer = 0;
 
-      /* the entrance's first leg runs while the panel's top rises from r0
-         (460px of it showing — the cube's spot is well inside the viewport
-         before it starts to grow) to r1 (centered) — fixed design
-         coordinates, clamped to the deepest scroll the page allows while
-         this is its last block. At xl the crop takes XL_CROP off the
-         panel's top, so the same art shows when 460 - XL_CROP of the
-         shorter panel does: the leg runs over the same stretch of the
-         art's rise. */
+      /* the panel lights up while its top rises from r0 (the viewport's
+         bottom edge — dark as it enters) to r1 (where the stage sticks) —
+         clamped to the deepest scroll the page allows while this is its
+         last block. */
       const pinTarget = () => {
         const r = panel.getBoundingClientRect();
-        const showing = 460 - (xlMq.matches ? XL_CROP : 0);
         const vh = window.innerHeight;
         const maxScroll =
           document.documentElement.scrollHeight - vh - window.scrollY;
         const minTop = r.top - Math.max(0, maxScroll); // panel.top at page bottom
         // the panel's top once the stage sticks
-        return { r, r0: vh - showing, r1: Math.max(stickTop() + panel.offsetTop, minTop) };
+        return { r, r0: vh, r1: Math.max(stickTop() + panel.offsetTop, minTop) };
       };
       /* the runway: how far the stuck stage has travelled into it and how
          much of it the page can reach today — the section is the page's
          last block, so the story clamps to the deepest scroll available
          and the clamp retires as later sections add room. `scrub` is the
-         entrance's share of it (its last leg). */
+         share of it the legend's scrub reads. */
       const geometry = () => {
         const vh = window.innerHeight;
         const room = Math.max(0, document.documentElement.scrollHeight - vh - window.scrollY);
@@ -1995,13 +1983,13 @@ function InfrastructureStage() {
         const base4 = frameRef.current === 4;
         const g = geometry();
         if (base4) {
-          /* the entrance's progress: the panel's rise from r0 to r1, then
-             the runway — one scrub, the two legs weighted by their lengths
-             so the growth keeps one pace per pixel across the join */
-          const riseLen = Math.max(r0 - r1, 1);
-          const rise = clamp01((r0 - r.top) / riseLen);
-          const run = clamp01(g.travel / g.scrub);
-          const p = (rise * riseLen + run * g.scrub) / (riseLen + g.scrub);
+          // the panel comes up from dark as it rises (not under reduced
+          // motion, where it simply stands lit)
+          if (!reduced) {
+            const rise = clamp01((r0 - r.top) / Math.max(r0 - r1, 1));
+            gsap.set(panel, { opacity: fadeEase(rise) });
+          }
+          const p = clamp01(g.travel / g.scrub);
           /* the last two pixels of the scrub count as its end. Browsers
              that round scroll offsets (Safari) can leave the hold half a
              pixel short of the runway's end: the scrub then read 0.999,
@@ -2009,7 +1997,7 @@ function InfrastructureStage() {
              every step and click — the page stuck in the section
              (Jasper, Safari, 2026-09-07). Within the tolerance the scrub
              snaps to 1 so the frame is exactly whole. */
-          if (run >= 1 - 2 / g.scrub) {
+          if (p >= 1 - 2 / g.scrub) {
             if (tl2.progress() !== 1) tl2.progress(1);
             if (!landed) land();
           } else {
@@ -2319,20 +2307,21 @@ function InfrastructureStage() {
               </clipPath>
             </defs>
 
-            {/* the panel's wash — Vector 24 (Figma 17205:88031, read
-                2026-10-20): a blob across the panel's top (-15..723 x
-                -77..166 in panel space, fill #5194ED 9%, blurred 60.6) as
-                a raster over its filter region (scripts/infra-glows/
-                wash.html prints it). Under everything and in EVERY frame —
-                it is the panel's, not the cube's: Jasper, "他的目的是提亮的". */}
+            {/* the panel's wash — Ellipse 21903 (Figma 17576:8596, read
+                2026-10-20): a 900 x 61 ellipse at 381 / 10.5, #5D7ABE 37%,
+                layer-blurred 150 — a band of light along the panel's top
+                edge, as a raster over its filter region (scripts/
+                infra-glows/wash.html prints it). Under everything and in
+                EVERY frame — it is the panel's, not the cube's: Jasper,
+                "他的目的是提亮的". */}
             <g data-anchor="center">
               <g data-wash>
                 <image
                   href="/infrastructure/wash.png"
-                  x="-199.4"
-                  y="-198.51"
-                  width="1106.5"
-                  height="486.5"
+                  x="-294"
+                  y="-245"
+                  width="1350"
+                  height="511"
                   preserveAspectRatio="none"
                 />
               </g>
@@ -2353,11 +2342,6 @@ function InfrastructureStage() {
               style={{ display: "none" }}
             />
 
-            {/* THE PICTURE THAT GROWS IN (the entrance, in the effect): the
-                ambient glow, the stack and the cube, scaled together about
-                the cube's center and faded in by the scrub — unseen until
-                it starts */}
-            <g data-grow style={{ opacity: 0 }}>
             {/* the ambient, compositing NORMALLY (adding it was what read
                 as a solid ball): its two Figma fills — the 52% radial with
                 the grain tiled over it at LIGHTEN — in an isolated group so
@@ -2426,9 +2410,9 @@ function InfrastructureStage() {
               ))}
             </g>
 
-            {/* frame 4: the cube around the stack with its mark (inside the
-                growing picture), then the legend and the ENVIRONMENT
-                callouts — their own groups, hidden until the entrance lands */}
+            {/* frame 4: the cube around the stack with its mark, then the
+                legend and the ENVIRONMENT callouts — their own groups,
+                hidden until the panel is all in view */}
             {/* every face is a click target for its callout: lid = NETWORK
                 ISOLATION, left = AUTOMATED BACKUP, right = HIGH
                 AVAILABILITY. Each carries its dim skin (the translucent
@@ -2573,8 +2557,6 @@ function InfrastructureStage() {
                   <path d="M14.1667 3.33333V16.6667" />
                 </g>
               </g>
-            </g>
-
             </g>
 
             {/* legend — row 1's label swaps per frame (ENVIRONMENT in
