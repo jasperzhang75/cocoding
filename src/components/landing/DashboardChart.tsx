@@ -37,8 +37,7 @@ const area = (pts: Pt[], base: number) =>
 export default function DashboardChart() {
   return (
     <svg
-      // card space starts at the card's outer edge: 1px above its top border
-      className="absolute left-0 top-[-1px]"
+      className="absolute inset-0"
       width="600"
       height="462"
       viewBox="0 0 600 462"

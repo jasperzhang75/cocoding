@@ -21,12 +21,7 @@ import SecurityCard from "./SecurityCard";
    The export also stamps parent masks onto every child; each diagram here
    applies its two masks ONCE, on shared containers, at origins recovered
    from the per-child offsets (they all agree):
-     card 1: outer 970x777 @ (-223,-69) on the card (Rectangle 2612,
-             570x377 blurred 200 — 414 tall until 2026-10-19); the card's
-             1px border is inside the design's frame, so card-level
-             positions are the design's minus 1 (the header's 35 is the
-             design's 36, the panel's 35/171 its 36/172 — since 2026-10-19;
-             it sat at 36/172, a px low and right, before),
+     card 1: outer 970x814 @ (-223,-69) on the card,
              inner 686x489 @ (-49,4) on the panel
      card 3: outer 980x811 @ (-233,-61), inner 669x425 @ (-66,-35)
      card 4: the lucide/shield alpha mask clips both glows.
@@ -107,28 +102,9 @@ function Bleed({
 
 /* ---------------------------------------------------------------- card 1 */
 
-/* Revised by Jasper 2026-10-19 (Figma 16555:17598 re-read): the card is
-   #0A0A0A with a white 3% edge (was black, 6%); a new wide, faint glow
-   (Ellipse 21903: 752x70 at 0/107, #5D7ABE 5%, blur 150) lies under the
-   panel's top edge, outside the mask; the big ellipse behind the panel
-   (Ellipse 21892) is 604x357 at 13/168 (was 990x394 at 35/130); the
-   mask above it is 377 tall (was 414); the panel's edge is #E0E0E0 13%
-   (was 17%); the top curve is #3A4780 44% (was #9CAAF1 12%), glow-c
-   #3A4780 (was #5C689D); BUILDING is solid #C4C4C4 (was a gradient) and
-   cap-trimmed, so its cap top sits at the design's 36; the diagram
-   moved 2px right (AgentsDiagram). The animation is untouched.
-   Later that day ("尽量减少渐变的重叠"): Ellipse 21892 moved out from
-   under the mask — it lies below the mask layer now, so only the panel
-   is masked and the ellipse's blur is no longer multiplied by the
-   mask's blurred alpha. 2026-10-20: Ellipse 21892 is #0E1E2E (was
-   #0C1B2A), the panel's fill is a flat #060708 (was three layers), and
-   of the panel's own art only glow-a (Ellipse 21888) remains — the top
-   curve (Vector 25) and the two #3A4780 glows are hidden. Later that day:
-   the card is #0A0D10, the panel #0A0D14, and Ellipse 21892 behind the
-   panel is hidden too — the card-level art is the top band and the mask. */
 function AgentsCard() {
   return (
-    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0d10] md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
+    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.06] bg-black md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
       <CardHeader
         leftClass="xl:left-[35px]"
         title="Go faster with parallel agents"
@@ -137,37 +113,32 @@ function AgentsCard() {
       />
 
       <PosterViewport designHeight={610} crop={120} className="xl:absolute xl:inset-0">
-      {/* Ellipse 21903: the faint band under the panel's top edge — below
-          the mask in the design, so unmasked; -1 for the card's border */}
-      <Bleed
-        src="/features/f1-glow-top.svg"
-        inset="-214.29% -19.95%"
-        className="absolute left-[-1px] top-[106px] h-[70px] w-[752px]"
-      />
       <div
         className="absolute inset-0"
-        style={mask("/features/f1-mask-outer.svg", "970px 777px", "-224px -70px")}
+        style={mask("/features/f1-mask-outer.svg", "970px 814px", "-223px -69px")}
       >
+        <Bleed
+          src="/features/f1-glow-wide.svg"
+          inset="-76.14% -30.3%"
+          className="absolute left-[35px] top-[130px] h-[394px] w-[990px]"
+        />
+
         <div
-          className="absolute left-[35px] top-[171px] h-[444px] w-[563px] overflow-hidden rounded-tl-lg"
+          className="absolute left-[36px] top-[172px] h-[444px] w-[563px] overflow-hidden rounded-tl-lg"
           style={{
-            borderLeft: "0.9px solid rgba(224,224,224,0.13)",
-            borderTop: "0.9px solid rgba(224,224,224,0.13)",
-            background: "#0A0D14",
+            borderLeft: "0.9px solid rgba(224,224,224,0.17)",
+            borderTop: "0.9px solid rgba(224,224,224,0.17)",
+            background:
+              "linear-gradient(90deg, rgba(46,46,46,0.27), rgba(46,46,46,0.27)), linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(90deg, #030303, #030303)",
           }}
         >
           {/* BUILDING header — the mark slowly cycles the Figma gradient
-              (#FFFFFF / #ACACAC 25% / #595959) back and forth, "running".
-              The design's row (Frame 2609249) is 9.43 tall: the label is
-              cap-trimmed (text-box-trim), its cap top on the row's top at
-              36, the mark as tall as the caps. The row is fixed to that
-              height so browsers without text-box-trim still center the
-              line box on it, a px or two off at most. */}
-          <div className="absolute left-[35px] top-[35px] flex h-[9.43px] items-center gap-2 mix-blend-plus-lighter">
+              (#FFFFFF / #ACACAC 25% / #595959) back and forth, "running" */}
+          <div className="absolute left-[35px] top-[35px] flex items-center gap-2 mix-blend-plus-lighter">
             <div
               aria-hidden
               data-loop
-              className="building-mark h-[9.43px] w-[16.56px]"
+              className="building-mark h-[9px] w-[17px]"
               style={{
                 maskImage: "url(/features/f1-logo-mark.svg)",
                 maskSize: "100% 100%",
@@ -175,13 +146,28 @@ function AgentsCard() {
                 WebkitMaskSize: "100% 100%",
               }}
             />
-            <p className="font-mono text-[13px] uppercase leading-[1.375] text-[#C4C4C4] [text-box-edge:cap_alphabetic] [text-box-trim:trim-both]">
+            <p
+              className="bg-clip-text font-mono text-[13px] uppercase leading-[1.375] text-transparent"
+              style={{
+                backgroundImage:
+                  "linear-gradient(179.6deg, rgba(196,196,196,0.73) 37.75%, rgba(153,153,153,0.73) 170.01%)",
+              }}
+            >
               Building
             </p>
           </div>
 
-          {/* the one ambient glow left: Ellipse 21888, #1A2C7D 20% blurred 200 */}
+          {/* wide top curve */}
+          <Bleed
+            src="/features/f1-curve-top.svg"
+            inset="-103.6% -16.95%"
+            className="absolute left-[-14.9px] top-[-36.9px] h-[96.5px] w-[590px] -scale-y-100"
+          />
+
+          {/* ambient glows */}
           <Bleed src="/features/f1-glow-a.svg" inset="-200%" className="absolute left-[221px] top-[53px] size-[100px]" />
+          <Bleed src="/features/f1-glow-b.svg" inset="-235.29% -196.08%" className="absolute left-[313px] top-[267px] h-[85px] w-[102px]" />
+          <Bleed src="/features/f1-glow-c.svg" inset="-322.58% -180.18%" className="absolute left-[404px] top-[4px] h-[62px] w-[111px]" />
 
           {/* diagram + its scroll-in flow animation (client component) */}
           <AgentsDiagram />

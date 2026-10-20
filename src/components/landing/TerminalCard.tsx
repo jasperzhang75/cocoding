@@ -31,31 +31,7 @@ import PosterViewport from "./PosterViewport";
       error-check ghosts into the feather, building is gone.
    Dates in all three headers are today (short form to fit), same source of
    truth as the dashboard tooltip. prefers-reduced-motion shows the final
-   state.
-
-   Revised by Jasper 2026-10-19 (Figma 16555:17673 re-read): the card is
-   #0A0A0A with a white 3% edge (was black, 6%); the outer mask Rectangle
-   2615 is 682 x 411 at -33/139 (was 580 wide — it now runs past the
-   card's right edge, so the panel's right side no longer fades), export
-   1082 x 811; the panel's edge is #E0E0E0 13% as before. Card-level tops
-   are the design's minus the card's 1px top border (the ellipse's 151
-   already was; the panel's 182 and the mask's -61 were raw). Glows, the
-   curve, icons and checks re-exported and matched. The log window
-   Rectangle 2610 reads 135..340 in Figma against this file's 143..339
-   note — left alone, the animation's feather was tuned by eye.
-   Later that day ("尽量减少渐变的重叠"): Ellipse 21894 lies below the
-   mask layer now — only the panel (and PROCESSING/) is masked, the
-   ellipse's blur no longer multiplied by the mask's blurred alpha. Then
-   the panel's glows were simplified, restored, and (2026-10-20, later)
-   all hidden: no Ellipses 21889 / 21890 / 21891 in the panel any more,
-   only the top curve. The panel's fill is a flat #0A0D14 (was three
-   layers) and the outer mask Rectangle 2615 is 603 x 404 blurred 100
-   (was 682 x 411 blurred 200): export 803 x 604 at -133/38. Later that
-   day: the card is #0A0D10 and Ellipse 21894 behind the panel is hidden
-   — the card-level art is the mask alone.
-   And the ellipse behind the panel grew and faded: Ellipse 21894 is
-   797 x 514 at -108/56, #0C1B2A at 71%, blurred 300 (was 613 x 418 at
-   -60/152 at 100%). */
+   state. */
 
 const mask = (url: string, size: string, position: string): CSSProperties => ({
   maskImage: `url(${url})`,
@@ -300,7 +276,7 @@ export default function TerminalCard() {
   return (
     <div
       ref={rootRef}
-      className="order-3 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0d10] md:grow md:rounded-none md:rounded-br-xl md:border-l-0 xl:block xl:grow-0 xl:absolute xl:left-[600px] xl:top-[462px] xl:h-[611px] xl:w-[600px] xl:max-w-none"
+      className="order-3 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.06] bg-black md:grow md:rounded-none md:rounded-br-xl md:border-l-0 xl:block xl:grow-0 xl:absolute xl:left-[600px] xl:top-[462px] xl:h-[611px] xl:w-[600px] xl:max-w-none"
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="text-body-md text-text-primary xl:text-heading-sm">Error auto-fix as you move forward</p>
@@ -312,16 +288,26 @@ export default function TerminalCard() {
       <PosterViewport designHeight={611} crop={150} className="md:mt-auto xl:mt-0 xl:absolute xl:inset-0">
       <div
         className="absolute inset-0"
-        style={mask("/features/f3-mask-outer.svg", "803px 604px", "-133px 38px")}
+        style={mask("/features/f3-mask-outer.svg", "980px 811px", "-233px -61px")}
       >
+        <Bleed
+          src="/features/f3-glow-wide.svg"
+          inset="-71.77% -48.94%"
+          className="absolute left-[-60px] top-[151px] h-[418px] w-[613px]"
+        />
+
         <div
-          className="absolute left-[36px] top-[181px] h-[435px] w-[562px] overflow-hidden rounded-tl-lg shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
+          className="absolute left-[36px] top-[182px] h-[435px] w-[562px] overflow-hidden rounded-tl-lg shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
           style={{
             borderLeft: "0.9px solid rgba(224,224,224,0.13)",
             borderTop: "0.9px solid rgba(224,224,224,0.13)",
-            background: "#0A0D14",
+            background:
+              "linear-gradient(90deg, rgba(50,50,50,0.24), rgba(50,50,50,0.24)), linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(90deg, #030303, #030303)",
           }}
         >
+          <Bleed src="/features/f3-glow-a.svg" inset="-200% -196.08%" className="absolute left-[-24.9px] top-[-50.9px] h-[100px] w-[102px]" />
+          <Bleed src="/features/f3-glow-b.svg" inset="-166.67% -139.86%" className="absolute left-[239px] top-[-7.9px] h-[120px] w-[143px]" />
+          <Bleed src="/features/f3-glow-a.svg" inset="-200% -196.08%" className="absolute left-[79px] top-[205px] h-[100px] w-[102px]" />
 
           {/* top curve — outside the log window in the updated design */}
           <Bleed
