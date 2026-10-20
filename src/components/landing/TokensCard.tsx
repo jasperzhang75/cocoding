@@ -18,10 +18,10 @@ import PosterViewport from "./PosterViewport";
    - the dated tooltip drifts a few px against page scroll (subtle parallax
      across the card's pass through the viewport — a plain scroll listener
      writing the transform synchronously, no ticker to go stale);
-   - the green arrow next to "174" redraws its stroke: ARROW_AFTER after
-     the card is on screen, a burst of three back-to-back redraws (Jasper
-     2026-10-20: "隔 3s 他会在极短的时间内连续重绘 3 次"), and again
-     whenever it is hovered; it is a link to the app's login flow
+   - the green arrow next to "174" redraws its stroke: while the card is
+     on screen, every ARROW_AFTER a burst of three back-to-back redraws
+     (Jasper 2026-10-20: "隔 3s 他会在极短的时间内连续重绘 3 次"), and
+     again whenever it is hovered; it is a link to the app's login flow
      (APP_LOGIN_URL).
    All skipped under prefers-reduced-motion. */
 
@@ -181,29 +181,39 @@ export default function TokensCard() {
     });
   };
 
-  // ARROW_AFTER after the card is on screen, the arrow redraws itself
-  // ARROW_TIMES times in a row, ARROW_GAP apart — one redraw takes 0.52s
-  // (0.4s + the second path's 0.12s delay), so 600ms is back-to-back
-  // with a blink between
+  // while the card is on screen the arrow redraws itself in bursts: quiet
+  // for ARROW_AFTER, then ARROW_TIMES redraws in a row, ARROW_GAP apart
+  // (one redraw takes 0.52s — 0.4s plus the second path's 0.12s delay —
+  // so 600ms is back-to-back with a blink between), then quiet again.
+  // Jasper 2026-10-20: a single burst was not enough, "不会有第二次".
+  // Leaving the viewport stops it; coming back starts it over.
   useEffect(() => {
     const card = cardRef.current;
     if (!card) return;
     const ARROW_AFTER = 3000; // ms
     const ARROW_TIMES = 3;
     const ARROW_GAP = 600; // ms
-    const timers: number[] = [];
+    let timers: number[] = [];
+    const stop = () => {
+      timers.forEach((t) => window.clearTimeout(t));
+      timers = [];
+    };
+    const burst = () => {
+      timers = []; // everything scheduled before this burst has fired
+      for (let i = 0; i < ARROW_TIMES; i++) timers.push(window.setTimeout(drawArrow, ARROW_AFTER + i * ARROW_GAP));
+      timers.push(window.setTimeout(burst, ARROW_AFTER + ARROW_TIMES * ARROW_GAP));
+    };
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) return;
-        io.disconnect();
-        for (let i = 0; i < ARROW_TIMES; i++) timers.push(window.setTimeout(drawArrow, ARROW_AFTER + i * ARROW_GAP));
+        stop();
+        if (entry.isIntersecting) burst();
       },
       { threshold: 0.6 }
     );
     io.observe(card);
     return () => {
       io.disconnect();
-      timers.forEach((t) => window.clearTimeout(t));
+      stop();
     };
   }, []);
 
@@ -273,8 +283,8 @@ export default function TokensCard() {
       <Stat label="Build created:" x={126}>
         <p className="whitespace-nowrap text-body-sm text-text-primary">174</p>
         {/* the arrow: a link to the app's login flow; hover redraws its
-            stroke, and it redraws on its own, three times in a row, after
-            the card arrives (effect above) */}
+            stroke, and it redraws on its own in bursts of three while the
+            card is on screen (effect above) */}
         <a
           href={APP_LOGIN_URL}
           aria-label="Open the dashboard"
@@ -289,8 +299,8 @@ export default function TokensCard() {
             fill="none"
             aria-hidden
           >
-            <path d="M5.25 12.75L12.75 5.25" stroke="#55F247" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M5.25 5.25H12.75V12.75" stroke="#55F247" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M5.25 12.75L12.75 5.25" stroke="#14FF00" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M5.25 5.25H12.75V12.75" stroke="#14FF00" strokeWidth="0.75" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </a>
       </Stat>
