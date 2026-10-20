@@ -11,8 +11,11 @@ import { setLoopPlayState } from "@/lib/use-in-view";
    design, reproduced with scale(-1,1) groups.
 
    Sequence, per Jasper's spec — a slow, subtle LOOP started on scroll into
-   view. The agents' blue-top/gray-bottom gradient stroke is their PERMANENT
-   resting state, visible before, between and after cycles; each cycle:
+   view. At rest every chip is a borderless #181C1F 65% pill (the redesign
+   file's default since 2026-10-20 — before that the function chips had a
+   #2A2A2A / #313131 edge and the agents a permanent blue-top/gray-bottom
+   gradient stroke); the blue fill and the blue stroke belong to the
+   animation only. Each cycle:
    0. (2026-10-20, Jasper: "prompt 这个方块从左到右由快到慢加载完这个蓝色
       filling 然后再向下流出这个光线") the Prompt chip fills from the LEFT
       — its #4375ED 34% + white 6% fill and its #4C8BE9 70% stroke sweep
@@ -58,38 +61,23 @@ const CONNECTORS = [
 
 const VERTICAL_X = [111, 213, 325, 428];
 
+/* the agents' boxes: 2-4 hug their wider label at 75 in the design */
 const AGENTS = [
-  { label: "Agent 1", x: 76 },
-  { label: "Agent 2", x: 177 },
-  { label: "Agent 3", x: 288 },
-  { label: "Agent 4", x: 394 },
+  { label: "Agent 1", x: 76, w: 71 },
+  { label: "Agent 2", x: 177, w: 75 },
+  { label: "Agent 3", x: 288, w: 75 },
+  { label: "Agent 4", x: 394, w: 75 },
 ];
 const AGENT_Y = 299;
-const AGENT_W = 71;
 const AGENT_H = 32;
 const R = 6;
 /* the Prompt chip's box (its 0.9 border inside), for the fill overlay and
    the blue stroke that sweep across it */
 const PROMPT = { x: 235, y: 102, w: 73, h: 32 };
 
-/* Half-perimeter of the chip outline, from top-center down one side to
-   bottom-center; mirrored for the other side. */
-const halfOutline = (x: number, y: number, dir: 1 | -1) => {
-  const cx = x + AGENT_W / 2;
-  const edge = dir === 1 ? x + AGENT_W : x;
-  const inner = dir === 1 ? edge - R : edge + R;
-  return [
-    `M ${cx} ${y}`,
-    `H ${inner}`,
-    `Q ${edge} ${y} ${edge} ${y + R}`,
-    `V ${y + AGENT_H - R}`,
-    `Q ${edge} ${y + AGENT_H} ${inner} ${y + AGENT_H}`,
-    `H ${cx}`,
-  ].join(" ");
-};
-
+/* a chip at rest: the design's #181C1F 65% pill, no edge */
 const CHIP =
-  "absolute flex h-8 items-center justify-center rounded-sm text-label-sm text-text-primary";
+  "absolute flex h-8 items-center justify-center rounded-sm bg-[rgba(24,28,31,0.65)] text-label-sm text-text-primary";
 
 export default function AgentsDiagram() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -249,7 +237,7 @@ export default function AgentsDiagram() {
       {/* function row (static, unchanged) — except the Prompt, whose fill
           overlay sweeps in from the left each cycle (its blue stroke is in
           the SVG below) */}
-      <div className={CHIP} style={{ left: PROMPT.x, top: PROMPT.y, width: PROMPT.w, border: "0.9px solid #313131", padding: "6px 12px" }}>
+      <div className={CHIP} style={{ left: PROMPT.x, top: PROMPT.y, width: PROMPT.w, padding: "6px 12px" }}>
         <div
           aria-hidden
           data-prompt-fill
@@ -268,15 +256,15 @@ export default function AgentsDiagram() {
         { label: "Data", x: 289 },
         { label: "Cloud", x: 394 },
       ].map(({ label, x }) => (
-        <div key={label} className={CHIP} style={{ left: x, top: 206, width: 71, border: "0.9px solid #2A2A2A" }}>
+        <div key={label} className={CHIP} style={{ left: x, top: 206, width: 71 }}>
           {label}
         </div>
       ))}
 
-      {/* agent row: strokeless until the light arrives; fill overlay fades
+      {/* agent row: edgeless until the light arrives; fill overlay fades
           to Agent 2's active style */}
-      {AGENTS.map(({ label, x }) => (
-        <div key={label} className={`${CHIP} w-[71px]`} style={{ left: x, top: AGENT_Y }}>
+      {AGENTS.map(({ label, x, w }) => (
+        <div key={label} className={CHIP} style={{ left: x, top: AGENT_Y, width: w }}>
           <div
             aria-hidden
             data-agent-fill
@@ -312,13 +300,6 @@ export default function AgentsDiagram() {
         fill="none"
         aria-hidden
       >
-        <defs>
-          <linearGradient id="ad-agent-stroke" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#4C8BE9" stopOpacity="0.7" />
-            <stop offset="1" stopColor="#676767" stopOpacity="0.7" />
-          </linearGradient>
-        </defs>
-
         {/* the light IS the vector lighting up: hairline width, no extra
             glow layer, emerging from under the Prompt chip */}
         {CONNECTORS.map(({ key, d, transform }) => (
@@ -331,23 +312,20 @@ export default function AgentsDiagram() {
           <path key={x} data-light="vertical" d={`M ${x} 239 V 298`} stroke="#4C8BE9" strokeOpacity="0.85" strokeWidth="1.1" />
         ))}
 
-        {/* per agent: the resting blue-top/gray-bottom stroke is permanent
-            (Figma default). The solid-blue outline is revealed by a clip
-            rect descending from the top — a waterline moving down over the
-            whole stroke at once, blue enclosing the gray — then drains
-            away with the hold fade. */}
-        {AGENTS.map(({ label, x }, i) => (
+        {/* per agent: no stroke at rest. The solid-blue outline is revealed
+            by a clip rect descending from the top — a waterline moving down
+            over the whole box at once — then drains away with the hold
+            fade. */}
+        {AGENTS.map(({ label, x, w }, i) => (
           <g key={label}>
-            <path d={halfOutline(x, AGENT_Y, -1)} stroke="url(#ad-agent-stroke)" strokeWidth="0.9" />
-            <path d={halfOutline(x, AGENT_Y, 1)} stroke="url(#ad-agent-stroke)" strokeWidth="0.9" />
             <clipPath id={`ad-blue-clip-${i}`}>
-              <rect data-agent-clip x={x - 2} y={AGENT_Y - 2} width={AGENT_W + 4} height="0" />
+              <rect data-agent-clip x={x - 2} y={AGENT_Y - 2} width={w + 4} height="0" />
             </clipPath>
             <rect
               data-agent-blue
               x={x}
               y={AGENT_Y}
-              width={AGENT_W}
+              width={w}
               height={AGENT_H}
               rx={R}
               fill="none"
