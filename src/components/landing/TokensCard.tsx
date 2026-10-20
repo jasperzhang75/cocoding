@@ -8,7 +8,10 @@ import TodayDate from "./TodayDate";
 import DashboardChart from "./DashboardChart";
 import PosterViewport from "./PosterViewport";
 
-/* Card 2 — the tokens dashboard, now a client component for two touches:
+/* Card 2 — the tokens dashboard, now a client component for three touches:
+   - the chart grows in from the left when the card scrolls into view (a
+     feathered mask slid across both series — see DashboardChart's
+     reveal; REVEAL_T on REVEAL_EASE, from REVEAL_FROM to REVEAL_TO);
    - the dated tooltip drifts a few px against page scroll (subtle parallax
      across the card's pass through the viewport — a plain scroll listener
      writing the transform synchronously, no ticker to go stale);
@@ -100,6 +103,47 @@ export default function TokensCard() {
       cancelAnimationFrame(raf);
       window.removeEventListener("scroll", measure);
       window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  /* the chart's reveal: once, when the card arrives — unless it is already
+     on screen when the page runs (a reload at this scroll position), then
+     the chart stays as the HTML drew it. Reduced motion: as drawn. */
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const solid = card.querySelector<SVGRectElement>("[data-reveal-solid]");
+    const edge = card.querySelector<SVGRectElement>("[data-reveal-edge]");
+    const grad = card.querySelector<SVGLinearGradientElement>("#dc-reveal-edge");
+    if (!solid || !edge || !grad) return;
+    const REVEAL_FROM = -60; // the feather's right end at the chart's left edge: nothing shows
+    const REVEAL_TO = 620; // past the right edge: everything
+    const REVEAL_T = 1.8;
+    const REVEAL_EASE = "power2.out";
+    const set = (p: number) => {
+      solid.setAttribute("width", String(p + 300));
+      edge.setAttribute("x", String(p));
+      grad.setAttribute("x1", String(p));
+      grad.setAttribute("x2", String(p + 60));
+    };
+    const r = card.getBoundingClientRect();
+    if (r.top < window.innerHeight && r.bottom > 0) return; // already in view
+    set(REVEAL_FROM);
+    const state = { p: REVEAL_FROM };
+    let tween: gsap.core.Tween | undefined;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        io.disconnect();
+        tween = gsap.to(state, { p: REVEAL_TO, duration: REVEAL_T, ease: REVEAL_EASE, onUpdate: () => set(state.p) });
+      },
+      { threshold: 0.35 }
+    );
+    io.observe(card);
+    return () => {
+      io.disconnect();
+      tween?.kill();
+      set(REVEAL_TO);
     };
   }, []);
 

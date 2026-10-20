@@ -37,6 +37,7 @@ const area = (pts: Pt[], base: number) =>
 export default function DashboardChart() {
   return (
     <svg
+      data-chart
       className="absolute inset-0"
       width="600"
       height="462"
@@ -48,6 +49,22 @@ export default function DashboardChart() {
         <filter id="dc-blur" x="-150%" y="-150%" width="400%" height="400%">
           <feGaussianBlur stdDeviation="50" />
         </filter>
+
+        {/* THE REVEAL (Jasper 2026-10-20: the curves should grow in as the
+            card scrolls into view): a mask over both series — a solid
+            band from far left up to the reveal's position p, then a 60px
+            feather fading to nothing — that TokensCard slides from p -60
+            (nothing visible) to 620 (everything) when the card arrives.
+            Drawn fully revealed here, so the server HTML and a page
+            without the script show the finished chart. */}
+        <linearGradient id="dc-reveal-edge" gradientUnits="userSpaceOnUse" x1="620" y1="0" x2="680" y2="0">
+          <stop offset="0" stopColor="#fff" />
+          <stop offset="1" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+        <mask id="dc-reveal" maskUnits="userSpaceOnUse" x="-300" y="-100" width="1300" height="700">
+          <rect data-reveal-solid x="-300" y="-100" width="920" height="700" fill="#fff" />
+          <rect data-reveal-edge x="620" y="-100" width="60" height="700" fill="url(#dc-reveal-edge)" />
+        </mask>
 
         {/* soft window over the green series: blurred ellipse */}
         <mask id="dc-green-soft" maskUnits="userSpaceOnUse">
@@ -74,6 +91,7 @@ export default function DashboardChart() {
         </linearGradient>
       </defs>
 
+      <g mask="url(#dc-reveal)">
       {/* green series, 70% as in Figma */}
       <g opacity="0.7" mask="url(#dc-green-soft)">
         <path d={line(GREEN_LINE)} stroke="#87FF89" strokeOpacity="0.86" strokeWidth="1" />
@@ -92,6 +110,7 @@ export default function DashboardChart() {
         </g>
         <path d={line(BLUE_LINE)} stroke="#FFFFFF" strokeOpacity="0.06" strokeWidth="0.9" />
         <path d={line(BLUE_LINE)} stroke="url(#dc-blue-stroke)" strokeWidth="0.9" />
+      </g>
       </g>
     </svg>
   );
