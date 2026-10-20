@@ -120,8 +120,10 @@ function Bleed({
    Later that day ("尽量减少渐变的重叠"): Ellipse 21892 moved out from
    under the mask — it lies below the mask layer now, so only the panel
    is masked and the ellipse's blur is no longer multiplied by the
-   mask's blurred alpha. The panel's top curve (Vector 25,
-   f1-curve-top.svg) was hidden for an evening and is back (2026-10-20). */
+   mask's blurred alpha. 2026-10-20: Ellipse 21892 is #0E1E2E (was
+   #0C1B2A), the panel's fill is a flat #060708 (was three layers), and
+   of the panel's own art only glow-a (Ellipse 21888) remains — the top
+   curve (Vector 25) and the two #3A4780 glows are hidden. */
 function AgentsCard() {
   return (
     <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.03] bg-[#0a0a0a] md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
@@ -140,7 +142,7 @@ function AgentsCard() {
         inset="-214.29% -19.95%"
         className="absolute left-[-1px] top-[106px] h-[70px] w-[752px]"
       />
-      {/* Ellipse 21892: #0C1B2A blurred 300, the dark blue behind the
+      {/* Ellipse 21892: #0E1E2E blurred 300, the dark blue behind the
           panel — unmasked since 2026-10-19 */}
       <Bleed
         src="/features/f1-glow-wide.svg"
@@ -156,17 +158,9 @@ function AgentsCard() {
           style={{
             borderLeft: "0.9px solid rgba(224,224,224,0.13)",
             borderTop: "0.9px solid rgba(224,224,224,0.13)",
-            background:
-              "linear-gradient(90deg, rgba(46,46,46,0.27), rgba(46,46,46,0.27)), linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(90deg, #030303, #030303)",
+            background: "#060708",
           }}
         >
-          {/* wide top curve (Vector 25: #3A4780 44%, blurred 100) */}
-          <Bleed
-            src="/features/f1-curve-top.svg"
-            inset="-103.6% -16.95%"
-            className="absolute left-[-14.9px] top-[-36.9px] h-[96.5px] w-[590px] -scale-y-100"
-          />
-
           {/* BUILDING header — the mark slowly cycles the Figma gradient
               (#FFFFFF / #ACACAC 25% / #595959) back and forth, "running".
               The design's row (Frame 2609249) is 9.43 tall: the label is
@@ -191,10 +185,8 @@ function AgentsCard() {
             </p>
           </div>
 
-          {/* ambient glows */}
+          {/* the one ambient glow left: Ellipse 21888, #1A2C7D 20% blurred 200 */}
           <Bleed src="/features/f1-glow-a.svg" inset="-200%" className="absolute left-[221px] top-[53px] size-[100px]" />
-          <Bleed src="/features/f1-glow-b.svg" inset="-235.29% -196.08%" className="absolute left-[313px] top-[267px] h-[85px] w-[102px]" />
-          <Bleed src="/features/f1-glow-c.svg" inset="-322.58% -180.18%" className="absolute left-[404px] top-[4px] h-[62px] w-[111px]" />
 
           {/* diagram + its scroll-in flow animation (client component) */}
           <AgentsDiagram />

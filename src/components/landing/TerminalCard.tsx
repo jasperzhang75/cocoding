@@ -46,11 +46,11 @@ import PosterViewport from "./PosterViewport";
    Later that day ("尽量减少渐变的重叠"): Ellipse 21894 lies below the
    mask layer now — only the panel (and PROCESSING/) is masked, the
    ellipse's blur no longer multiplied by the mask's blurred alpha. Then
-   the panel's glows were simplified, then (2026-10-20) partly restored:
-   the two #3A4780 blobs (Ellipses 21889 / 21890) are back at -24/-50 and
-   80/206, and Ellipse 21891 is a band, 519 x 59 at 34/41 (it was the
-   143 x 120 blob at 240/-7, then at -24/17 for an evening), #3A4780 62%
-   blurred 200.
+   the panel's glows were simplified, restored, and (2026-10-20, later)
+   all hidden: no Ellipses 21889 / 21890 / 21891 in the panel any more,
+   only the top curve. The panel's fill is a flat #0A0D14 (was three
+   layers) and the outer mask Rectangle 2615 is 603 x 404 blurred 100
+   (was 682 x 411 blurred 200): export 803 x 604 at -133/38.
    And the ellipse behind the panel grew and faded: Ellipse 21894 is
    797 x 514 at -108/56, #0C1B2A at 71%, blurred 300 (was 613 x 418 at
    -60/152 at 100%). */
@@ -317,21 +317,16 @@ export default function TerminalCard() {
       />
       <div
         className="absolute inset-0"
-        style={mask("/features/f3-mask-outer.svg", "1082px 811px", "-233px -62px")}
+        style={mask("/features/f3-mask-outer.svg", "803px 604px", "-133px 38px")}
       >
         <div
           className="absolute left-[36px] top-[181px] h-[435px] w-[562px] overflow-hidden rounded-tl-lg shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
           style={{
             borderLeft: "0.9px solid rgba(224,224,224,0.13)",
             borderTop: "0.9px solid rgba(224,224,224,0.13)",
-            background:
-              "linear-gradient(90deg, rgba(50,50,50,0.24), rgba(50,50,50,0.24)), linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(90deg, #030303, #030303)",
+            background: "#0A0D14",
           }}
         >
-          <Bleed src="/features/f3-glow-a.svg" inset="-200% -196.08%" className="absolute left-[-24.9px] top-[-50.9px] h-[100px] w-[102px]" />
-          {/* Ellipse 21891: a band along the panel's top */}
-          <Bleed src="/features/f3-glow-b.svg" inset="-338.98% -38.54%" className="absolute left-[33.1px] top-[40.1px] h-[59px] w-[519px]" />
-          <Bleed src="/features/f3-glow-a.svg" inset="-200% -196.08%" className="absolute left-[79px] top-[205px] h-[100px] w-[102px]" />
 
           {/* top curve — outside the log window in the updated design */}
           <Bleed
