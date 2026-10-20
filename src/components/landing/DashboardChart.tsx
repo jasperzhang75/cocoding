@@ -51,12 +51,13 @@ export default function DashboardChart() {
         </filter>
 
         {/* THE REVEAL (Jasper 2026-10-20: the curves should grow in as the
-            card scrolls into view): a mask over both series — a solid
-            band from far left up to the reveal's position p, then a 60px
-            feather fading to nothing — that TokensCard slides from p -60
-            (nothing visible) to 620 (everything) when the card arrives.
-            Drawn fully revealed here, so the server HTML and a page
-            without the script show the finished chart. */}
+            card scrolls into view — the LINES only, the glowing areas
+            under them are there from the start): a mask on the three line
+            paths — a solid band from far left up to the reveal's position
+            p, then a 60px feather fading to nothing — that TokensCard
+            bursts from p -60 (no line) to 620 (whole line) when the card
+            arrives. Drawn fully revealed here, so the server HTML and a
+            page without the script show the finished chart. */}
         <linearGradient id="dc-reveal-edge" gradientUnits="userSpaceOnUse" x1="620" y1="0" x2="680" y2="0">
           <stop offset="0" stopColor="#fff" />
           <stop offset="1" stopColor="#fff" stopOpacity="0" />
@@ -91,10 +92,9 @@ export default function DashboardChart() {
         </linearGradient>
       </defs>
 
-      <g mask="url(#dc-reveal)">
       {/* green series, 70% as in Figma */}
       <g opacity="0.7" mask="url(#dc-green-soft)">
-        <path d={line(GREEN_LINE)} stroke="#87FF89" strokeOpacity="0.86" strokeWidth="1" />
+        <path d={line(GREEN_LINE)} stroke="#87FF89" strokeOpacity="0.86" strokeWidth="1" mask="url(#dc-reveal)" />
         <g mask="url(#dc-green-area)">
           <rect x="-199.2" y="255.7" width="1148.5" height="194.6" fill="#14AF35" opacity="0.35" filter="url(#dc-blur)" />
           <rect x="-199.2" y="255.7" width="1148.5" height="194.6" fill="#000000" opacity="0.16" filter="url(#dc-blur)" />
@@ -108,9 +108,8 @@ export default function DashboardChart() {
           <rect x="-224.7" y="267.7" width="1199.8" height="194.6" fill="#4D74E1" opacity="0.6" filter="url(#dc-blur)" />
           <rect x="-224.7" y="267.7" width="1199.8" height="194.6" fill="#FFFFFF" opacity="0.03" filter="url(#dc-blur)" />
         </g>
-        <path d={line(BLUE_LINE)} stroke="#FFFFFF" strokeOpacity="0.06" strokeWidth="0.9" />
-        <path d={line(BLUE_LINE)} stroke="url(#dc-blue-stroke)" strokeWidth="0.9" />
-      </g>
+        <path d={line(BLUE_LINE)} stroke="#FFFFFF" strokeOpacity="0.06" strokeWidth="0.9" mask="url(#dc-reveal)" />
+        <path d={line(BLUE_LINE)} stroke="url(#dc-blue-stroke)" strokeWidth="0.9" mask="url(#dc-reveal)" />
       </g>
     </svg>
   );

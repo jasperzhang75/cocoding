@@ -9,9 +9,11 @@ import DashboardChart from "./DashboardChart";
 import PosterViewport from "./PosterViewport";
 
 /* Card 2 — the tokens dashboard, now a client component for three touches:
-   - the chart grows in from the left when the card scrolls into view (a
-     feathered mask slid across both series — see DashboardChart's
-     reveal; REVEAL_T on REVEAL_EASE, from REVEAL_FROM to REVEAL_TO);
+   - the chart's two LINES grow in from the left when the card scrolls into
+     view, bursting — fast, then slowing as they near the end (a feathered
+     mask on the line paths, see DashboardChart's reveal; REVEAL_T on
+     REVEAL_EASE, from REVEAL_FROM to REVEAL_TO). The glowing areas under
+     them are there from the start (Jasper, 2026-10-20);
    - the dated tooltip drifts a few px against page scroll (subtle parallax
      across the card's pass through the viewport — a plain scroll listener
      writing the transform synchronously, no ticker to go stale);
@@ -118,8 +120,8 @@ export default function TokensCard() {
     if (!solid || !edge || !grad) return;
     const REVEAL_FROM = -60; // the feather's right end at the chart's left edge: nothing shows
     const REVEAL_TO = 620; // past the right edge: everything
-    const REVEAL_T = 1.8;
-    const REVEAL_EASE = "power2.out";
+    const REVEAL_T = 1.6;
+    const REVEAL_EASE = "expo.out"; // the burst: most of the way in the first 0.3s, the tail creeping
     const set = (p: number) => {
       solid.setAttribute("width", String(p + 300));
       edge.setAttribute("x", String(p));
