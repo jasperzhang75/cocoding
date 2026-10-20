@@ -9,7 +9,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// The scroll-driven section: scroll the canvas to walk stages 1-3, then the
+// The scroll-driven section: scroll the canvas to grow frame 4 in, then the
 // held frames 4, 5, 6 and 8 (wheel on pointer devices, scroll bands on touch).
 export const Default: Story = {};
 

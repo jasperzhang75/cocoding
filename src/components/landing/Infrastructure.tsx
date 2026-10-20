@@ -12,26 +12,28 @@ import { isNavigating } from "./page-nav";
 import { integrationDocsUrl } from "@/lib/links";
 import { NAV_HEIGHT } from "@/lib/layout";
 
-/* Infrastructure — the isometric story (Figma 17205:89133 -> 87420 ->
-   87636), scrubbed by scroll. The three approved frames are keyframes on
-   one paused timeline whose progress is bound directly to the section's
-   position in the viewport: it starts as the section enters from below and
-   the stack has settled (stage 3) just before the section is centered.
-   No easing chase — scroll stops, the drawing stops; scroll back up, it
-   plays backwards. All geometry is read off the Figma nodes:
+/* Infrastructure — the isometric story (Figma 17205:87852 and on),
+   driven by scroll. The section arrives straight at frame 4 — the
+   ENVIRONMENT cube — which GROWS IN with the scroll: one paused timeline
+   whose progress is bound directly to the section's position in the
+   viewport, from the panel's arrival to the runway's end, where the hold
+   takes over and gestures step the later frames. No easing chase —
+   scroll stops, the drawing stops; scroll back up, it shrinks back.
+   (Until 2026-10-20 three stages came first — a block of three isometric
+   layers splitting under FRONTEND / BACKEND / DATABASE callouts and
+   settling into the stack; Jasper: "去除 1-3 帧", the cube "顺着 scroll
+   从小到大丝滑变大", the legend "全部进入视野以后".) All geometry is read
+   off the Figma nodes:
 
-   - Each "diamond" is a 90.64x90.64 rounded square (r6) through the
+   - The stack under the cube: three 65.8 rounded squares (r6) through the
      isometric matrix [[0.866,-0.866],[0.5,0.5]] — the Figma transform
-     verbatim. Stage 1 stacks all three in one spot (y294.6) with a BUILD
-     callout; stage 2 spreads them to 240/294.6/348.3 under FRONTEND /
-     BACKEND / DATABASE callouts; stage 3 shrinks the squares to 65.8 and
-     settles them at x372, y302.7/326.1/343.5. The faint blue glow at the
-     panel top rides along through all three stages.
-   - Faces: black fill, stroke = A8A8A8 -> 424242 linear at 50%, dashed
-     1.8/1.8 at 0.9. The group composites through Plus lighter at 90%,
-     reaching 100% as the stack settles.
+     verbatim — at x372, y311/334.3/351.7, 80% faces. Black fill, stroke =
+     A8A8A8 -> 424242 linear at 50%, dashed 1.8/1.8 at 0.9; the group
+     composites through Plus lighter.
    - Panel: 751x679, top corners 10, stroke 0.9 on top/left/right only,
-     painted white -> black at 8%, fill = black under a 2% #3750C8 wash.
+     painted white -> black at 8%, fill = black under a 2% #3750C8 wash;
+     Vector 24, a blurred blue blob across its top, brightens it in every
+     frame (the design's "光晕", 2026-10-20).
      At xl the panel is 600 tall, the art cropped (see XL_PANEL_H).
    - Left column tokens as bound in Figma: Indicator+Accent eyebrow,
      Display h2, Heading/sm titles, Body/md desc at Text/Body 60%. */
@@ -74,13 +76,18 @@ const ITEMS: { key: string; title: string; desc?: string; open?: boolean }[] = [
   },
 ];
 
-/* Face keyframes, back-to-front like the Figma children order (the front
-   face is the highest one, its black fill occluding the two behind). */
-const SPREAD_Y = [348.3, 294.6, 240];
-const STACK = { x: 372, y: [343.5, 326.1, 302.7], size: 65.8 };
-
-/* Frame 4 poses the settled stack ~8px lower with 80% faces. */
+/* The stack's faces, back-to-front like the Figma children order (the
+   front face is the highest one, its black fill occluding the two behind). */
+const STACK = { x: 372, size: 65.8 };
 const ENV_STACK_Y = [351.7, 334.3, 311];
+
+/* THE ENTRANCE (Jasper 2026-10-20, Figma 17205:87852): the cube, its stack
+   and its ambient glow grow from GROW.from about the cube's center
+   (GROW.origin — the cube-group's center in the 751x679 space; layoutPanel
+   moves it with the layout) while they fade in over the first GROW.fade of
+   the scrub, and the legend and the callouts surface over the last stretch
+   from GROW.legendAt, once the picture is whole. */
+const GROW = { from: 0.3, ease: "power1.out", fade: 0.3, legendAt: 0.86, origin: { x: 374.8, y: 347.1 } };
 
 /* THE TABLET PANEL (md, 768-1279; Figma bHyNfFfV0ocgVPCHtOyYBp 1166:917,
    1166:1019, 1168:1080, 1165:742). Two columns again, the panel 344 wide
@@ -89,16 +96,8 @@ const ENV_STACK_Y = [351.7, 334.3, 311];
    one callout — the lit face's — can sit centered beneath the cube
    (frame 5's opened cube has its own place, see MD5), the card rows
    (Figma 1204:1333) and the scorecard (1204:1233) rise 16 and 36 — set
-   against the left column's title lines, see their groups — the
-   stage layers sit at their own frames' heights, and the stage labels
-   gather under the layers, centered, without their hairlines. */
+   against the left column's title lines, see their groups. */
 const MD_LIFT = 77; // frame 4's lid: 246.16 -> 169.17
-const SPREAD_Y_MD = SPREAD_Y.map((v) => v + 6); // the layers spread 71 higher, not 77
-const STACK_Y_MD = STACK.y.map((v) => v + 10.3); // the stack settles 66.7 higher
-const FACE_Y0 = 294.6; // the stage-1 block, on the middle layer's line
-const FACE_Y0_MD = FACE_Y0 + 6;
-const LABEL_Y = { top: 310.5, mid: 364.5, bot: 418.5 }; // baselines under the callout lines
-const LABEL_Y_MD = { top: 401.5, mid: 433.5, bot: 466.5 }; // stacked beneath the layers (boxes 389/421/454)
 /* the one centered callout under the cube, per frame: 12px label and
    description (boxes 416 / 440 in frame 4, 525 / 549 in frame 5 — the
    opened cube reaches lower), baselines from the boxes' tops */
@@ -174,24 +173,13 @@ const ENV_CALLOUTS = [
   },
 ];
 
-/* The RUNWAY: at xl the stage sticks at the viewport's center while this
-   much extra scroll passes underneath it, and that scroll drives the
-   3 -> 4 leg of the animation (see the effect's navigation section). */
+/* The RUNWAY: the stage sticks at the viewport's center while this much
+   extra scroll passes underneath it, and that scroll drives the last leg
+   of frame 4's entrance (see the effect's navigation section). */
 const RUNWAY = 500;
 
-/* Right-hand callouts: a hairline from x475 to x715 with a 13px mono label
-   hanging under its right end. BUILD (stage 1) sits on the same middle
-   line the BACKEND callout uses in stage 2. */
-const CALLOUTS = [
-  { key: "top", y: 286, label: "FRONTEND" },
-  { key: "mid", y: 340, label: "BACKEND" },
-  { key: "bot", y: 394, label: "DATABASE" },
-];
-
-/* Frame 4 (ENVIRONMENT, Figma 17205:87852): the cube materializes around
-   the settled stack — its hidden top/left/right faces become visible, the
-   stack drops ~8px and dims to 80%, the wash swaps for two radial glows,
-   and legend + three new callouts appear. All values off the nodes:
+/* Frame 4 (ENVIRONMENT, Figma 17205:87852): the cube around the stack, the
+   ambient glow, the legend and three callouts. All values off the nodes:
 
    - lid: 85.2 rounded square (r6) through the iso matrix, filled with the
      blue -> white gradient down its local axis, stroke #6C91F9 6%;
@@ -932,15 +920,10 @@ function InfrastructureStage() {
         svg.querySelectorAll<SVGElement>(sel).forEach((el) => {
           el.style.display = on ? "" : "none";
         });
-      // the stage labels: under their hairlines, right-aligned, at xl; at
-      // md the hairlines go and the labels gather centered under the layers
-      show("[data-line]", !narrow);
-      svg.querySelectorAll<SVGElement>("[data-label], [data-build]").forEach((t) => {
-        t.setAttribute("x", String(narrow ? cx : 715));
-        t.setAttribute("text-anchor", narrow ? "middle" : "end");
-      });
-      svg.querySelectorAll<SVGElement>('[data-label="mid"], [data-build]').forEach((t) => {
-        t.setAttribute("y", String(narrow ? LABEL_Y_MD.mid : LABEL_Y.mid));
+      // the entrance grows the picture about the cube's center — where
+      // that is in this layout (centered, lifted at md like its groups)
+      gsap.set(svg.querySelector("[data-grow]"), {
+        svgOrigin: `${GROW.origin.x + dxC} ${GROW.origin.y - (narrow ? MD_LIFT : 0)}`,
       });
       // the cube frames' callouts: three around the cube at xl; at md one
       // centered block beneath it — the lit face's label and description
@@ -1097,92 +1080,33 @@ function InfrastructureStage() {
     settleMarks(4, "lid");
 
     const ctx = gsap.context(() => {
-      const faces = Array.from(
-        svg.querySelectorAll<SVGGElement>("[data-face]")
-      );
-      const rects = faces.map((f) => f.querySelector("rect")!);
-      const cube = svg.querySelector("[data-cube]");
-      const build = svg.querySelector("[data-build]");
-      const line = (k: string) => svg.querySelector(`[data-line="${k}"]`);
-      const label = (k: string) => svg.querySelector(`[data-label="${k}"]`);
-
-      // the stage geometry for this layout (see the MD constants)
+      const faces = Array.from(svg.querySelectorAll<SVGGElement>("[data-face]"));
       const narrow = !xlMq.matches;
-      const SY = narrow ? SPREAD_Y_MD : SPREAD_Y;
-      const STY = narrow ? STACK_Y_MD : STACK.y;
-      const LY = narrow ? LABEL_Y_MD : LABEL_Y;
-      gsap.set(faces, { y: narrow ? FACE_Y0_MD : FACE_Y0 });
+      // the stack stands in its frame-4 pose from the start (the 4 <-> 5
+      // morph states these values as its fromTo starts)
+      faces.forEach((f, i) => gsap.set(f, { x: STACK.x, y: ENV_STACK_Y[i], opacity: 0.8 }));
 
-      const tl = gsap.timeline({ paused: true, defaults: { ease: "none" } });
-
-      /* 0.00-0.10 rests at stage 1 so it registers while entering. */
-
-      // stage 1 -> 2: the block splits into layers, and the BUILD hairline
-      // splits with it — two clones ride up and down IN SYNC with the
-      // faces (same span, same ease), each staying centered on its layer
-      tl.to(build, { opacity: 0, duration: 0.1, ease: "power1.out" }, 0.1);
-      tl.to(faces[2], { y: SY[2], duration: 0.33, ease: "power2.inOut" }, 0.12);
-      tl.to(faces[0], { y: SY[0], duration: 0.33, ease: "power2.inOut" }, 0.12);
-      tl.to(line("top"), { attr: { y1: 286, y2: 286 }, duration: 0.33, ease: "power2.inOut" }, 0.12);
-      tl.to(line("bot"), { attr: { y1: 394, y2: 394 }, duration: 0.33, ease: "power2.inOut" }, 0.12);
-      // the clones surface while still overlapping the original, so no pop
-      tl.to([line("top"), line("bot")], { opacity: 1, duration: 0.08 }, 0.12);
-
-      // the three labels surface together while the lines split, each
-      // riding beneath its own line from BUILD's spot — so BUILD reads as
-      // becoming FRONTEND / BACKEND / DATABASE rather than being replaced
-      tl.fromTo(label("top"), { attr: { y: LY.mid } }, { attr: { y: LY.top }, duration: 0.33, ease: "power2.inOut" }, 0.12);
-      tl.fromTo(label("bot"), { attr: { y: LY.mid } }, { attr: { y: LY.bot }, duration: 0.33, ease: "power2.inOut" }, 0.12);
-      tl.to([label("top"), label("mid"), label("bot")], { opacity: 1, duration: 0.15 }, 0.18);
-
-      /* 0.65-0.70 rests at stage 2. */
-
-      // stage 2 -> 3: callouts fall away, the layers settle into the stack
-      tl.to(
-        [line("top"), line("mid"), line("bot"), label("top"), label("mid"), label("bot")],
-        { opacity: 0, duration: 0.1 },
-        0.7
-      );
-      faces.forEach((f, i) => {
-        tl.to(f, { x: STACK.x, y: STY[i], duration: 0.26, ease: "power2.inOut" }, 0.72);
-      });
-      tl.to(rects, { attr: { width: STACK.size, height: STACK.size }, duration: 0.26, ease: "power2.inOut" }, 0.72);
-      tl.to(cube, { opacity: 1, duration: 0.26 }, 0.72);
-
-      /* The 3 -> 4 leg (~1.4 units long): the wash dissolves, the legend
-         surfaces, the cube's other faces materialize while the stack eases
-         into its frame-4 pose, and the ambient glow blooms from its center
-         outward. Callouts trail in last. At xl it is SCRUBBED by the
-         runway (progress = scroll position, see apply()); below xl a title
-         click plays it timed. Its one-shot side effects (the mark flicker,
-         building the morph) live in land(), not in the timeline. */
+      /* THE ENTRANCE — one scrub from the panel's arrival (r0, see
+         pinTarget) to the runway's end, a pure function of scroll
+         (apply()), so scrolling up shrinks the picture back. The cube, its
+         stack and the ambient glow ([data-grow]) grow from GROW.from about
+         the cube's center while they fade in; the legend and the callouts
+         surface as the growth lands. The wash — the panel's own glow — is
+         static, there in every frame. The one-shot side effects (the mark
+         flicker, building the morph) live in land(), not here. */
       const env = {
-        wash: svg.querySelector("[data-wash]"),
+        grow: svg.querySelector("[data-grow]"),
         cube: svg.querySelector("[data-env-cube]"),
         legend: svg.querySelector("[data-env-legend]"),
         callouts: svg.querySelector("[data-env-callouts]"),
-        ambient: svg.querySelector("[data-env-back]"),
       };
       const tl2 = gsap.timeline({ paused: true });
-      tl2.to(env.wash, { opacity: 0, duration: 0.42, ease: "power1.out" }, 0);
-      tl2.to(env.legend, { opacity: 1, duration: 0.5, ease: "power1.out" }, 0.14);
-      tl2.to(env.cube, { opacity: 1, duration: 0.63, ease: "power2.out" }, 0.21);
-      faces.forEach((f, i) => {
-        tl2.to(
-          f,
-          { y: ENV_STACK_Y[i], opacity: 0.8, duration: 0.56, ease: "power2.inOut" },
-          0.21
-        );
-      });
-      tl2.fromTo(
-        env.ambient,
-        { opacity: 0, scale: 0.3, svgOrigin: "370.5 344.5" },
-        { opacity: 1, scale: 1, duration: 1.05, ease: "power2.out" },
-        0.35
-      );
-      tl2.to(env.callouts, { opacity: 1, duration: 0.28, ease: "power1.out" }, 1.12);
+      tl2.fromTo(env.grow, { scale: GROW.from }, { scale: 1, duration: 1, ease: GROW.ease }, 0);
+      tl2.fromTo(env.grow, { opacity: 0 }, { opacity: 1, duration: GROW.fade, ease: "power1.out" }, 0);
+      tl2.to(env.legend, { opacity: 1, duration: 1 - GROW.legendAt, ease: "power1.out" }, GROW.legendAt);
+      tl2.to(env.callouts, { opacity: 1, duration: 1 - GROW.legendAt, ease: "power1.out" }, GROW.legendAt);
       // clicks arm only once the entrance lands; scrubbing back re-disarms them
-      tl2.set([env.callouts, env.cube], { pointerEvents: "auto" }, 1.38);
+      tl2.set([env.callouts, env.cube], { pointerEvents: "auto" }, 0.99);
 
       /* The 4 -> 5 transition (SCALABILITY): built lazily on first use so
          the left column's description heights are measured fresh. Timed
@@ -1671,10 +1595,10 @@ function InfrastructureStage() {
         stepToCube(cur as 6 | 8, target as 4 | 5, instant);
       };
       /* ---------- SCROLL-DRIVEN NAVIGATION ----------
-         Frames 1-4 are ONE scrubbed animation: stages 1-3 while the panel
-         rises to the viewport's center (tl), 3 -> 4 over the RUNWAY the
-         stage stays stuck for (tl2). Both are pure functions of scroll
-         position, so scrolling up rewinds them. The scrub runs only while
+         Frame 4's entrance is ONE scrubbed animation (tl2): the picture
+         grows while the panel rises to the viewport's center and on over
+         the RUNWAY the stage stays stuck for — a pure function of scroll
+         position, so scrolling up rewinds it. The scrub runs only while
          frame 4 is the base: at 5/6/8 the runway is inert and the panel
          keeps its frame wherever the page goes.
 
@@ -1704,12 +1628,14 @@ function InfrastructureStage() {
       let arriving: (() => void) | null = null; // runs when a programmatic scroll lands
       let arriveTimer = 0;
 
-      /* stages 1-3 run while the panel's top rises from r0 (460px of it
-         showing) to r1 (centered) — fixed design coordinates, clamped to
-         the deepest scroll the page allows while this is its last block.
-         At xl the crop takes XL_CROP off the panel's top, so the same art
-         shows when 460 - XL_CROP of the shorter panel does: the stages run
-         over the same stretch of the art's rise as before. */
+      /* the entrance's first leg runs while the panel's top rises from r0
+         (460px of it showing — the cube's spot is well inside the viewport
+         before it starts to grow) to r1 (centered) — fixed design
+         coordinates, clamped to the deepest scroll the page allows while
+         this is its last block. At xl the crop takes XL_CROP off the
+         panel's top, so the same art shows when 460 - XL_CROP of the
+         shorter panel does: the leg runs over the same stretch of the
+         art's rise. */
       const pinTarget = () => {
         const r = panel.getBoundingClientRect();
         const showing = 460 - (xlMq.matches ? XL_CROP : 0);
@@ -1724,7 +1650,7 @@ function InfrastructureStage() {
          much of it the page can reach today — the section is the page's
          last block, so the story clamps to the deepest scroll available
          and the clamp retires as later sections add room. `scrub` is the
-         3 -> 4 leg's share of it. */
+         entrance's share of it (its last leg). */
       const geometry = () => {
         const vh = window.innerHeight;
         const room = Math.max(0, document.documentElement.scrollHeight - vh - window.scrollY);
@@ -2067,9 +1993,15 @@ function InfrastructureStage() {
       const apply = () => {
         const { r, r1, r0 } = pinTarget();
         const base4 = frameRef.current === 4;
-        if (base4) tl.progress(clamp01((r0 - r.top) / Math.max(r0 - r1, 1)));
         const g = geometry();
         if (base4) {
+          /* the entrance's progress: the panel's rise from r0 to r1, then
+             the runway — one scrub, the two legs weighted by their lengths
+             so the growth keeps one pace per pixel across the join */
+          const riseLen = Math.max(r0 - r1, 1);
+          const rise = clamp01((r0 - r.top) / riseLen);
+          const run = clamp01(g.travel / g.scrub);
+          const p = (rise * riseLen + run * g.scrub) / (riseLen + g.scrub);
           /* the last two pixels of the scrub count as its end. Browsers
              that round scroll offsets (Safari) can leave the hold half a
              pixel short of the runway's end: the scrub then read 0.999,
@@ -2077,8 +2009,7 @@ function InfrastructureStage() {
              every step and click — the page stuck in the section
              (Jasper, Safari, 2026-09-07). Within the tolerance the scrub
              snaps to 1 so the frame is exactly whole. */
-          const p = clamp01(g.travel / g.scrub);
-          if (p >= 1 - 2 / g.scrub) {
+          if (run >= 1 - 2 / g.scrub) {
             if (tl2.progress() !== 1) tl2.progress(1);
             if (!landed) land();
           } else {
@@ -2190,7 +2121,6 @@ function InfrastructureStage() {
       };
 
       if (reduced) {
-        tl.progress(1);
         tl2.progress(1);
         land();
         return;
@@ -2389,49 +2319,23 @@ function InfrastructureStage() {
               </clipPath>
             </defs>
 
-            {/* frame-4 glows behind everything, both compositing NORMALLY
-                (adding them was what read as a solid ball). Each ellipse's
-                two Figma fills — the 52% radial with the grain tiled over
-                it at LIGHTEN — live in an isolated group so the lighten
-                stays inside the paint stack, as in Figma. */}
-            <g data-anchor="center" data-md-lift={MD_LIFT}>
-            <g data-env-back style={{ opacity: 0 }}>
-              {/* Ellipse 21888 — the ambient: the 149.5 x 107.5 ellipse at
-                  370.5 / 344.5 (radial #18365F -> #316FC5 at 52%) with its
-                  grain tiled over it at LIGHTEN, layer-blurred 300 — as a
-                  raster, rendered once from that very markup (see
-                  scripts/infra-glows) over the filter's region, because the
-                  live feGaussianBlur (stdDeviation 150) re-ran on every
-                  repaint of the animating SVG and phones stuttered (Jasper,
-                  2026-09-08). Hidden until the 3 -> 4 entrance blooms it
-                  from center. (21891's sharp radial is dropped — browser
-                  compositing turns it into a solid disc.) */}
-              <image
-                href="/infrastructure/env-glow.png"
-                x="-503.2"
-                y="-125.1"
-                width="1932"
-                height="966"
-                preserveAspectRatio="none"
-              />
-            </g>
-            </g>
-
-            {/* the blue wash rides along through stages 1-3: Vector 24's
-                path (fill #2D69B7 9%, white 26% hairline, blurred 60.6) as
-                a raster over its filter region, in the same flipped group
-                (see the GLOW note above) */}
+            {/* the panel's wash — Vector 24 (Figma 17205:88031, read
+                2026-10-20): a blob across the panel's top (-15..723 x
+                -77..166 in panel space, fill #5194ED 9%, blurred 60.6) as
+                a raster over its filter region (scripts/infra-glows/
+                wash.html prints it). Under everything and in EVERY frame —
+                it is the panel's, not the cube's: Jasper, "他的目的是提亮的". */}
             <g data-anchor="center">
-            <g data-wash transform="translate(-15 219) scale(1 -1)">
-              <image
-                href="/infrastructure/wash.png"
-                x="-182.5"
-                y="-148"
-                width="1095.5"
-                height="592.5"
-                preserveAspectRatio="none"
-              />
-            </g>
+              <g data-wash>
+                <image
+                  href="/infrastructure/wash.png"
+                  x="-199.4"
+                  y="-198.51"
+                  width="1106.5"
+                  height="486.5"
+                  preserveAspectRatio="none"
+                />
+              </g>
             </g>
 
             {/* the halo grain — kept but hidden: neither in nor under the
@@ -2449,13 +2353,45 @@ function InfrastructureStage() {
               style={{ display: "none" }}
             />
 
-            {/* the three layers, authored coincident (stage 1) */}
-            <g data-cube data-anchor="center" data-md-lift={MD_LIFT} opacity="0.9" style={{ mixBlendMode: "plus-lighter" }}>
-              {SPREAD_Y.map((y) => (
-                <g key={y} data-face transform="translate(375.5 294.6)">
+            {/* THE PICTURE THAT GROWS IN (the entrance, in the effect): the
+                ambient glow, the stack and the cube, scaled together about
+                the cube's center and faded in by the scrub — unseen until
+                it starts */}
+            <g data-grow style={{ opacity: 0 }}>
+            {/* the ambient, compositing NORMALLY (adding it was what read
+                as a solid ball): its two Figma fills — the 52% radial with
+                the grain tiled over it at LIGHTEN — in an isolated group so
+                the lighten stays inside the paint stack, as in Figma. */}
+            <g data-anchor="center" data-md-lift={MD_LIFT}>
+            <g data-env-back>
+              {/* Ellipse 21888 — the ambient: the 149.5 x 107.5 ellipse at
+                  370.5 / 344.5 (radial #18365F -> #316FC5 at 52%) with its
+                  grain tiled over it at LIGHTEN, layer-blurred 300 — as a
+                  raster, rendered once from that very markup (see
+                  scripts/infra-glows) over the filter's region, because the
+                  live feGaussianBlur (stdDeviation 150) re-ran on every
+                  repaint of the animating SVG and phones stuttered (Jasper,
+                  2026-09-08). (21891's sharp radial is dropped — browser
+                  compositing turns it into a solid disc.) */}
+              <image
+                href="/infrastructure/env-glow.png"
+                x="-503.2"
+                y="-125.1"
+                width="1932"
+                height="966"
+                preserveAspectRatio="none"
+              />
+            </g>
+            </g>
+
+            {/* the stack: three layers under the cube, in their frame-4
+                pose (the effect states it too, for the morph's sake) */}
+            <g data-cube data-anchor="center" data-md-lift={MD_LIFT} style={{ mixBlendMode: "plus-lighter" }}>
+              {ENV_STACK_Y.map((y) => (
+                <g key={y} data-face transform={`translate(${STACK.x} ${y})`} style={{ opacity: 0.8 }}>
                   <rect
-                    width="90.64"
-                    height="90.64"
+                    width={STACK.size}
+                    height={STACK.size}
                     rx="6"
                     transform="matrix(0.866 0.5 -0.866 0.5 0 0)"
                     fill="#000"
@@ -2490,15 +2426,15 @@ function InfrastructureStage() {
               ))}
             </g>
 
-            {/* frame 4: the cube around the stack, its mark, the legend,
-                and the ENVIRONMENT callouts — three groups so the 3 -> 4
-                entrance can stage them separately, all hidden until then */}
+            {/* frame 4: the cube around the stack with its mark (inside the
+                growing picture), then the legend and the ENVIRONMENT
+                callouts — their own groups, hidden until the entrance lands */}
             {/* every face is a click target for its callout: lid = NETWORK
                 ISOLATION, left = AUTOMATED BACKUP, right = HIGH
                 AVAILABILITY. Each carries its dim skin (the translucent
                 pair) with a lit overlay (the lid's gradient in its own
                 local space) crossfaded by the swap. */}
-            <g data-env-cube data-anchor="center" data-md-lift={MD_LIFT} style={{ opacity: 0, pointerEvents: "none" }}>
+            <g data-env-cube data-anchor="center" data-md-lift={MD_LIFT} style={{ pointerEvents: "none" }}>
               <g
                 data-cube-face="lid"
                 transform={CUBE.lid}
@@ -2637,6 +2573,8 @@ function InfrastructureStage() {
                   <path d="M14.1667 3.33333V16.6667" />
                 </g>
               </g>
+            </g>
+
             </g>
 
             {/* legend — row 1's label swaps per frame (ENVIRONMENT in
@@ -3172,46 +3110,6 @@ function InfrastructureStage() {
               })}
             </g>
 
-            {/* callouts — the middle line doubles as BUILD's in stage 1;
-                the other two are full-width clones parked on top of it,
-                hidden until they ride out with the split */}
-            {CALLOUTS.map((c) => (
-              <g key={c.key}>
-                <line
-                  data-line={c.key}
-                  x1="475"
-                  y1={340}
-                  x2={715}
-                  y2={340}
-                  stroke="#FFFFFF"
-                  strokeOpacity="0.1"
-                  strokeWidth="0.9"
-                  style={c.key === "mid" ? undefined : { opacity: 0 }}
-                />
-                <text
-                  data-label={c.key}
-                  x="715"
-                  y={c.y + 24.5}
-                  textAnchor="end"
-                  fill="#4E4E4E"
-                  fontSize="13"
-                  style={{ fontFamily: "var(--font-geist-mono)", opacity: 0 }}
-                >
-                  {c.label}
-                </text>
-              </g>
-            ))}
-            <text
-              data-build
-              x="715"
-              y="364.5"
-              textAnchor="end"
-              fill="#4E4E4E"
-              fontSize="13"
-              style={{ fontFamily: "var(--font-geist-mono)" }}
-            >
-              BUILD
-            </text>
           </svg>
         </div>
       </div>
