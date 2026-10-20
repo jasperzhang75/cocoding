@@ -301,15 +301,20 @@ export default function AgentsDiagram() {
         aria-hidden
       >
         {/* the light IS the vector lighting up: hairline width, no extra
-            glow layer, emerging from under the Prompt chip */}
+            glow layer, emerging from under the Prompt chip. Dashed to
+            nothing in the markup (0 on, 1 off) so the server HTML and the
+            page before hydration never show the paths lit end to end —
+            they did until 2026-10-20, a flash on every load and a stuck
+            state when a tab's hot reload lost the effect; the effect sets
+            the real dash. */}
         {CONNECTORS.map(({ key, d, transform }) => (
           <g key={key} transform={transform}>
-            <path data-light="connector" d={d} stroke="#4C8BE9" strokeOpacity="0.85" strokeWidth="1.1" />
+            <path data-light="connector" d={d} stroke="#4C8BE9" strokeOpacity="0.85" strokeWidth="1.1" style={{ strokeDasharray: "0 1" }} />
           </g>
         ))}
 
         {VERTICAL_X.map((x) => (
-          <path key={x} data-light="vertical" d={`M ${x} 239 V 298`} stroke="#4C8BE9" strokeOpacity="0.85" strokeWidth="1.1" />
+          <path key={x} data-light="vertical" d={`M ${x} 239 V 298`} stroke="#4C8BE9" strokeOpacity="0.85" strokeWidth="1.1" style={{ strokeDasharray: "0 1" }} />
         ))}
 
         {/* per agent: no stroke at rest. The solid-blue outline is revealed
