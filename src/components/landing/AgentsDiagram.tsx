@@ -19,7 +19,8 @@ import { setLoopPlayState } from "@/lib/use-in-view";
    2026-10-20 and gone here. Each cycle:
    0. (2026-10-20, Jasper: "prompt 这个方块从左到右由快到慢加载完这个蓝色
       filling 然后再向下流出这个光线") the Prompt chip fills from the LEFT
-      — its #4375ED 39% fill and its #4C8BE9 70% stroke sweep in over
+      — its opaque #1F3977 fill (#4375ED 39% for an hour before, 34% +
+      white 6% before that) and its #4C8BE9 70% stroke sweep in over
       PROMPT_T, bursting: an exponential ease-out, most of the width in
       the first tenth of a second and the last few px creeping in (Jasper,
       later that day: "burst 满 ... 最后快满的时候会慢一点"), the text going
@@ -238,7 +239,7 @@ export default function AgentsDiagram() {
           data-prompt-fill
           className="absolute inset-0 rounded-sm opacity-0"
           style={{
-            background: "rgba(67,117,237,0.39)",
+            background: "#1F3977",
             clipPath: "inset(0% 100% 0% 0%)",
           }}
         />
