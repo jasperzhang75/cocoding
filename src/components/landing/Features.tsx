@@ -102,9 +102,14 @@ function Bleed({
 
 /* ---------------------------------------------------------------- card 1 */
 
+/* From the redesign file (bHyNfFfV0ocgVPCHtOyYBp 1063:460, read
+   2026-10-20): the same card as before with the card #080707 (was black),
+   the panel's edge #E0E0E0 13% (was 17%) and BUILDING cap-trimmed in a
+   9.43px row (its cap top on the design's 36; the row was a 17.9px line
+   box before, the caps ~4px low). Everything else matched the nodes. */
 function AgentsCard() {
   return (
-    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.06] bg-black md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
+    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.06] bg-[#080707] md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
       <CardHeader
         leftClass="xl:left-[35px]"
         title="Go faster with parallel agents"
@@ -126,19 +131,19 @@ function AgentsCard() {
         <div
           className="absolute left-[36px] top-[172px] h-[444px] w-[563px] overflow-hidden rounded-tl-lg"
           style={{
-            borderLeft: "0.9px solid rgba(224,224,224,0.17)",
-            borderTop: "0.9px solid rgba(224,224,224,0.17)",
+            borderLeft: "0.9px solid rgba(224,224,224,0.13)",
+            borderTop: "0.9px solid rgba(224,224,224,0.13)",
             background:
               "linear-gradient(90deg, rgba(46,46,46,0.27), rgba(46,46,46,0.27)), linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(90deg, #030303, #030303)",
           }}
         >
           {/* BUILDING header — the mark slowly cycles the Figma gradient
               (#FFFFFF / #ACACAC 25% / #595959) back and forth, "running" */}
-          <div className="absolute left-[35px] top-[35px] flex items-center gap-2 mix-blend-plus-lighter">
+          <div className="absolute left-[35px] top-[35px] flex h-[9.43px] items-center gap-2 mix-blend-plus-lighter">
             <div
               aria-hidden
               data-loop
-              className="building-mark h-[9px] w-[17px]"
+              className="building-mark h-[9.43px] w-[16.56px]"
               style={{
                 maskImage: "url(/features/f1-logo-mark.svg)",
                 maskSize: "100% 100%",
@@ -147,7 +152,7 @@ function AgentsCard() {
               }}
             />
             <p
-              className="bg-clip-text font-mono text-[13px] uppercase leading-[1.375] text-transparent"
+              className="bg-clip-text font-mono text-[13px] uppercase leading-[1.375] text-transparent [text-box-edge:cap_alphabetic] [text-box-trim:trim-both]"
               style={{
                 backgroundImage:
                   "linear-gradient(179.6deg, rgba(196,196,196,0.73) 37.75%, rgba(153,153,153,0.73) 170.01%)",

@@ -147,7 +147,7 @@ export default function TokensCard() {
   return (
     <div
       ref={cardRef}
-      className="order-2 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.06] bg-black md:rounded-none md:rounded-tr-xl md:border-b-0 md:border-l-0 xl:absolute xl:left-[600px] xl:top-0 xl:h-[462px] xl:w-[600px] xl:max-w-none"
+      className="order-2 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.06] bg-[#080707] md:rounded-none md:rounded-tr-xl md:border-b-0 md:border-l-0 xl:absolute xl:left-[600px] xl:top-0 xl:h-[462px] xl:w-[600px] xl:max-w-none"
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="text-body-md text-text-primary xl:text-heading-sm">Less tokens, more builds</p>
@@ -165,17 +165,19 @@ export default function TokensCard() {
           (framer.com-style); see DashboardChart for the layer/mask map */}
       <DashboardChart />
 
-      {/* tooltip — restyled node 17168:8284, everything read off it:
-          fills #0D0E10@64% under a #606060@4% wash; stroke stays the
-          vertical white -> #646464 at 9% (ring below); the two visible
-          drop shadows painted verbatim; Figma background blur 3.5 ==
-          backdrop blur 1.75px. Five hidden shadows omitted as intended. */}
+      {/* tooltip — the redesign file's Frame 2609388 (1063:270, read
+          2026-10-20): a #0A0A0B -> #0F0F0F diagonal at 95% under a
+          #929292@4% wash (it was #0D0E10@64% under #606060@4%); stroke
+          stays the vertical white -> #646464 at 9% (ring below); the two
+          visible drop shadows painted verbatim; Figma background blur 3.5
+          == backdrop blur 1.75px. Five hidden shadows omitted as intended.
+          The card itself is #080707 (was black). */}
       <div
         ref={tipRef}
         className="absolute left-[409px] top-[214px] w-max min-w-[155px] rounded-md px-[18px] py-3 backdrop-blur-[1.75px]"
         style={{
           background:
-            "linear-gradient(0deg, rgba(96,96,96,0.04), rgba(96,96,96,0.04)), linear-gradient(0deg, rgba(13,14,16,0.64), rgba(13,14,16,0.64))",
+            "linear-gradient(0deg, rgba(146,146,146,0.04), rgba(146,146,146,0.04)), linear-gradient(135deg, rgba(10,10,11,0.95), rgba(15,15,15,0.95))",
           boxShadow:
             "0 86px 34px rgba(26,26,26,0.01), 0 134px 38px rgba(26,26,26,0)",
         }}
