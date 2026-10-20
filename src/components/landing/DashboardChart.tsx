@@ -86,7 +86,8 @@ export default function DashboardChart() {
       {/* blue series */}
       <g mask="url(#dc-blue-soft)">
         <g mask="url(#dc-blue-area)">
-          <rect x="-224.7" y="267.7" width="1199.8" height="194.6" fill="#4D74E1" opacity="0.33" filter="url(#dc-blur)" />
+          {/* 60% since 2026-10-20 (Jasper, redesign file 1063:265); 33% before */}
+          <rect x="-224.7" y="267.7" width="1199.8" height="194.6" fill="#4D74E1" opacity="0.6" filter="url(#dc-blur)" />
           <rect x="-224.7" y="267.7" width="1199.8" height="194.6" fill="#FFFFFF" opacity="0.03" filter="url(#dc-blur)" />
         </g>
         <path d={line(BLUE_LINE)} stroke="#FFFFFF" strokeOpacity="0.06" strokeWidth="0.9" />
