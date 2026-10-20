@@ -19,11 +19,13 @@ import { setLoopPlayState } from "@/lib/use-in-view";
    2026-10-20 and gone here. Each cycle:
    0. (2026-10-20, Jasper: "prompt 这个方块从左到右由快到慢加载完这个蓝色
       filling 然后再向下流出这个光线") the Prompt chip fills from the LEFT
-      — its #4375ED 34% + white 6% fill and its #4C8BE9 70% stroke sweep
-      in over PROMPT_T with an ease-out, fast then slow, the end state the
-      redesign file draws (bHyNfFfV0ocgVPCHtOyYBp 1063:507) — and the
-      lights leave as the sweep lands (LIGHTS_AT); the Prompt drains with
-      the agents' blue at the end of the cycle,
+      — its #4375ED 39% fill and its #4C8BE9 70% stroke sweep in over
+      PROMPT_T, bursting: an exponential ease-out, most of the width in
+      the first tenth of a second and the last few px creeping in (Jasper,
+      later that day: "burst 满 ... 最后快满的时候会慢一点"), the text going
+      white, the end state the redesign file draws (bHyNfFfV0ocgVPCHtOyYBp
+      1063:507) — and the lights leave as the sweep lands (LIGHTS_AT); the
+      Prompt drains with the agents' blue at the end of the cycle,
    1. a #4C8BE9/85 light flows from under the Prompt chip down all four
       connectors,
    2. it dwells briefly at each function chip — every branch a slightly
@@ -84,7 +86,8 @@ export default function AgentsDiagram() {
     const promptFill = root.querySelector<HTMLElement>("[data-prompt-fill]");
     const promptBlue = root.querySelector<SVGRectElement>("[data-prompt-blue]");
     const promptClip = root.querySelector<SVGRectElement>("[data-prompt-clip]");
-    if (!promptFill || !promptBlue || !promptClip) return;
+    const promptText = root.querySelector<HTMLElement>("[data-prompt-text]");
+    if (!promptFill || !promptBlue || !promptClip || !promptText) return;
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       // resting state: default gradient strokes only — the travelling
@@ -122,10 +125,13 @@ export default function AgentsDiagram() {
     const HOLD_UNTIL = 3;
     const FADE_T = 1.2;
     const GAP = 3;
-    /* the Prompt's sweep: PROMPT_T long, fast then slow; the lights leave
-       at LIGHTS_AT, as it lands — every later beat sits that much later */
-    const PROMPT_T = 0.6;
+    /* the Prompt's sweep: PROMPT_T long on PROMPT_EASE — expo.out bursts
+       to ~90% in the first 0.25s and creeps the rest; the lights leave at
+       LIGHTS_AT, as it lands — every later beat sits that much later */
+    const PROMPT_T = 0.75;
+    const PROMPT_EASE = "expo.out";
     const LIGHTS_AT = 0.45;
+    const PROMPT_TEXT_REST = "#EDEDED"; // text-text-primary; white while lit
 
     /* One flow cycle — identical every repeat. */
     const makeCycle = () => {
@@ -136,15 +142,16 @@ export default function AgentsDiagram() {
       c.fromTo(
         promptFill,
         { clipPath: "inset(0% 100% 0% 0%)" },
-        { clipPath: "inset(0% 0% 0% 0%)", duration: PROMPT_T, ease: "power3.out" },
+        { clipPath: "inset(0% 0% 0% 0%)", duration: PROMPT_T, ease: PROMPT_EASE },
         0
       );
       c.fromTo(
         promptClip,
         { attr: { width: 0 } },
-        { attr: { width: PROMPT.w + 4 }, duration: PROMPT_T, ease: "power3.out" },
+        { attr: { width: PROMPT.w + 4 }, duration: PROMPT_T, ease: PROMPT_EASE },
         0
       );
+      c.to(promptText, { color: "#FFFFFF", duration: PROMPT_T, ease: PROMPT_EASE }, 0);
       for (let i = 0; i < 4; i++) {
         const b = branch(i);
         const arrive = LIGHTS_AT + CONN_T + DWELL[i] + VERT_T;
@@ -185,6 +192,7 @@ export default function AgentsDiagram() {
       // fills dissipate on their own above; only the blue stroke holds,
       // then drains back to the resting gradient — the Prompt with it
       c.to([...blues, promptFill, promptBlue], { opacity: 0, duration: FADE_T, ease: "power1.inOut" }, LIGHTS_AT + HOLD_UNTIL);
+      c.to(promptText, { color: PROMPT_TEXT_REST, duration: FADE_T, ease: "power1.inOut" }, LIGHTS_AT + HOLD_UNTIL);
       return c;
     };
 
@@ -230,12 +238,11 @@ export default function AgentsDiagram() {
           data-prompt-fill
           className="absolute inset-0 rounded-sm opacity-0"
           style={{
-            background:
-              "linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.06)), linear-gradient(90deg, rgba(67,117,237,0.34), rgba(67,117,237,0.34))",
+            background: "rgba(67,117,237,0.39)",
             clipPath: "inset(0% 100% 0% 0%)",
           }}
         />
-        <span className="relative">Prompt</span>
+        <span data-prompt-text className="relative">Prompt</span>
       </div>
       {[
         { label: "Design", x: 76 },
