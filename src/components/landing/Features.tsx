@@ -118,7 +118,7 @@ function AgentsCard() {
         descWidthClass="xl:w-[332px]"
       />
 
-      <PosterViewport designHeight={610} crop={120} className="xl:absolute xl:inset-0">
+      <PosterViewport bleed designHeight={610} crop={120} className="xl:absolute xl:inset-0">
       <div
         className="absolute inset-0"
         style={mask("/features/f1-mask-outer.svg", "970px 814px", "-223px -69px")}

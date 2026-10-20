@@ -18,11 +18,21 @@ import { cn } from "@/lib/utils";
    Width alone is NOT a safe test: at ~1270-1279px (and ~637-767px) the
    flowed wrapper measures 596-599px, which any near-600 threshold reads
    as "desktop" — it would then drop the explicit height and collapse the
-   poster to zero. */
+   poster to zero.
+
+   `bleed`: the flowed wrapper does not clip. Its top edge otherwise cuts
+   the art's soft glows in a hard line right under the card's copy (Jasper
+   2026-10-20, phone screenshot of cards 2 and 3: "颜色上的问题") — at xl
+   the stage covers the whole card and the glows run out under the copy,
+   so this is what the desktop looks like. The card's own overflow-hidden
+   still clips at its rounded edge. Only for stages whose cropped top
+   band holds nothing but glow: the Security card keeps its pass-code
+   matrix in that band and keeps clipping. */
 
 export default function PosterViewport({
   designHeight,
   crop = 0,
+  bleed = false,
   className,
   children,
 }: {
@@ -30,6 +40,8 @@ export default function PosterViewport({
   designHeight: number;
   /** how much of the design's top to trim on mobile */
   crop?: number;
+  /** let the cropped art run out under the card's copy instead of clipping it */
+  bleed?: boolean;
   className?: string;
   children: ReactNode;
 }) {
@@ -71,7 +83,7 @@ export default function PosterViewport({
   }, [designHeight, crop]);
 
   return (
-    <div ref={wrapRef} className={cn("relative w-full overflow-hidden", className)}>
+    <div ref={wrapRef} data-poster className={cn("relative w-full", !bleed && "overflow-hidden", className)}>
       <div
         ref={stageRef}
         className="absolute left-0 top-0 origin-top-left"

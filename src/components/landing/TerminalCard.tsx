@@ -291,7 +291,7 @@ export default function TerminalCard() {
         </p>
       </div>
 
-      <PosterViewport designHeight={611} crop={150} className="md:mt-auto xl:mt-0 xl:absolute xl:inset-0">
+      <PosterViewport bleed designHeight={611} crop={150} className="md:mt-auto xl:mt-0 xl:absolute xl:inset-0">
       <div
         className="absolute inset-0"
         style={mask("/features/f3-mask-outer.svg", "1010px 811px", "-233px -61px")}

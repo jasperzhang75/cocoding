@@ -241,7 +241,7 @@ export default function TokensCard() {
           chart < tooltip < stats < dashboard label < the two #2E3046 glows,
           which sit ON TOP of everything and tint the whole dashboard. */}
 
-      <PosterViewport designHeight={462} crop={150} className="xl:absolute xl:inset-0">
+      <PosterViewport bleed designHeight={462} crop={150} className="xl:absolute xl:inset-0">
       {/* chart — data-driven inline SVG rebuilt from the Figma vectors
           (framer.com-style); see DashboardChart for the layer/mask map */}
       <DashboardChart />
