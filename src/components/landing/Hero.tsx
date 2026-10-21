@@ -60,7 +60,7 @@ const GAP_MS = 300; // the bare lead stays this long before the next one starts 
 /* the badge's light: its length along the border, the seconds for its one
    lap, and how long after the page arrives it sets off */
 const BEAM = 56;
-const BEAM_LAP = 3;
+const BEAM_LAP = 3.4; // slower round the caps, see BorderLight
 const BEAM_DELAY = 0.6;
 
 function ArrowRight({ className }: { className?: string }) {
