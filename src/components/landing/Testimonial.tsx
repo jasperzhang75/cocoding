@@ -200,21 +200,33 @@ function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
         }}
       />
       </div>
-      <div className="absolute [&>svg]:h-auto [&>svg]:w-full" style={{ left: PAD, top: PAD, width: card.logoW }}>
+      {/* SAFARI AND THE LAYERS OVER THE CANVAS (Jasper 2026-10-21: "在
+          safari 左右切换的时候 mesh 这个卡片上的文字这一层会暗一下再变亮",
+          Chrome fine; measured through safaridriver: the figure's white
+          drops from 237 to 141 for the whole slide and is back the moment
+          the track stops). The logo, the figure, the title and the ring
+          sit over a WebGPU canvas, so at rest Safari composites each as a
+          layer of its own above it; while the track's transform
+          transition runs it drops those overlap layers and paints them
+          into the moving track layer — under the canvas — so they show
+          through the mesh. Asking for a layer outright (will-change)
+          keeps them above it through the slide; the same on the article
+          or on the track did not. A quote card's text has no canvas under
+          it and never had this. */}
+      <div className="absolute will-change-transform [&>svg]:h-auto [&>svg]:w-full" style={{ left: PAD, top: PAD, width: card.logoW }}>
         {card.logo}
       </div>
       {/* Frame 2609437 at 36 / 134: the figure (the display size, 48 at
           386, scaling with the card) and its label */}
-      <div className="absolute top-[34.72cqw]" style={{ left: PAD }}>
+      <div className="absolute top-[34.72cqw] will-change-transform" style={{ left: PAD }}>
         <p className="text-[12.44cqw] leading-none tracking-[-0.05em] text-white/90">{card.stat}</p>
         <p className="mt-1.5 text-body-sm text-[#868686] xl:text-body-md">{card.statLabel}</p>
       </div>
-      <div className="absolute bottom-[8.81cqw] w-[calc(100%-18.65cqw)] max-w-[69.43cqw]" style={{ left: PAD }}>
+      <div className="absolute bottom-[8.81cqw] w-[calc(100%-18.65cqw)] max-w-[69.43cqw] will-change-transform" style={{ left: PAD }}>
         <p className={NAME}>{card.kicker}</p>
         <p className={`${QUOTE} text-white/90`}>{card.title}</p>
       </div>
-      {/* this card's gradient runs steeper and settles by mid-card */}
-      <div aria-hidden className={RING_CLASS} style={RING} />
+      <div aria-hidden className={`${RING_CLASS} will-change-transform`} style={RING} />
     </article>
   );
 }
