@@ -60,19 +60,10 @@ const ringMask: CSSProperties = {
   WebkitMaskComposite: "xor",
 };
 const RING_DIM: CSSProperties = { ...ringMask, background: "rgba(153,153,153,0.063)" };
-/* THE STROKE FOLLOWS THE POINTER (Jasper 2026-10-21: "infrastructure 的边框
-   我需要变成有根据鼠标的动作 linear 有变化"): the lit ring's gradient axis
-   runs through the panel's center toward the pointer anywhere over the
-   section — the bright (white) end faces the pointer, turning the short
-   way round over RING_FOLLOW, and back up (RING_REST) over RING_RETURN
-   once the pointer leaves. The mechanics of the Pro card's ring built and
-   rolled back on Pricing earlier today (9fcf012). Touch devices and
-   reduced motion keep it at rest. */
-const RING_REST = 0; // CSS degrees: the bright end up (0deg points up, clockwise from there)
-const RING_FOLLOW = 0.45; // s to turn after the pointer
-const RING_RETURN = 0.8; // s back to rest
-const ringLit = (deg: number) => `linear-gradient(${deg}deg, rgba(153,153,153,0.063), rgba(255,255,255,0.117))`;
-const RING_LIT: CSSProperties = { ...ringMask, background: ringLit(RING_REST) };
+const RING_LIT: CSSProperties = {
+  ...ringMask,
+  background: "linear-gradient(180deg, rgba(255,255,255,0.117), rgba(153,153,153,0.063))",
+};
 /* how the stroke lights up with the entrance: from RING.at, over RING.t */
 const RING = { t: 1.4, ease: "power1.inOut", at: 0.15 };
 
@@ -475,38 +466,6 @@ function InfrastructureStage() {
   const sectionRef = useRef<HTMLElement>(null);
   const runwayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-
-  // the lit ring turns after the pointer (see RING_FOLLOW)
-  useEffect(() => {
-    const section = sectionRef.current;
-    const panel = panelRef.current;
-    const lit = panel?.querySelector<HTMLElement>("[data-ring-lit]");
-    if (!section || !panel || !lit) return;
-    if (!matchMedia("(hover: hover)").matches || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const a = { deg: RING_REST };
-    let target = RING_REST;
-    const aim = () => {
-      lit.style.background = ringLit(a.deg);
-    };
-    const turnTo = (deg: number, duration: number) => {
-      target += ((((deg - target) % 360) + 540) % 360) - 180; // the short way round
-      gsap.to(a, { deg: target, duration, ease: "power2.out", overwrite: true, onUpdate: aim });
-    };
-    const onMove = (e: PointerEvent) => {
-      const r = panel.getBoundingClientRect();
-      // atan2 is 0 to the right; CSS angles are 0 up, so a quarter turn on
-      turnTo((Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180) / Math.PI + 90, RING_FOLLOW);
-    };
-    const onLeave = () => turnTo(RING_REST, RING_RETURN);
-    section.addEventListener("pointermove", onMove);
-    section.addEventListener("pointerleave", onLeave);
-    return () => {
-      section.removeEventListener("pointermove", onMove);
-      section.removeEventListener("pointerleave", onLeave);
-      gsap.killTweensOf(a);
-      lit.style.background = ringLit(RING_REST);
-    };
-  }, []);
   const svgRef = useRef<SVGSVGElement>(null);
   const activeFaceRef = useRef("lid");
   const frameRef = useRef(4); // which scene frame the cube is showing
