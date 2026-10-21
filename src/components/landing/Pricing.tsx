@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import gsap from "gsap";
 import { HyperText } from "@/components/magicui/hyper-text";
 import { EYEBROW_SCRAMBLE } from "./eyebrow";
 import { AUTH_URL } from "@/lib/links";
@@ -15,14 +16,19 @@ import { AUTH_URL } from "@/lib/links";
    Enterprise. Placeholder content: the switch only flips, the credits
    picker only looks like one.
 
-   Cards: radius 10, a 1px stroke INSIDE. Starter and Enterprise fill
-   #0A0A0A (2026-10-21; nothing before, the page's black showing through)
-   with a white 6% stroke, drawn as an inset shadow so the padding stays
-   exact. Pro fills white 3%, wears a top-to-bottom gradient stroke
-   #69AFFF -> #FFFFFF at 24% (2026-10-21; for a week a 0.8px white 6%
-   line at Jasper's ask, and the first redesign's #4362BA -> #8382A1 at
-   34% before that) and carries Ellipse 21887, the blurred blue glow,
-   centered in the card. Content starts 37 from the top and 32 from the left; the
+   Cards: radius 10, a 1px stroke INSIDE. The plain look — Starter's and
+   Enterprise's in the design — fills #0A0A0A (2026-10-21; nothing before,
+   the page's black showing through) with a white 6% stroke, drawn as an
+   inset shadow so the padding stays exact. The Pro look fills white 3%,
+   wears a gradient stroke #69AFFF -> #FFFFFF at 24% (2026-10-21; for a
+   week a 0.8px white 6% line at Jasper's ask, and the first redesign's
+   #4362BA -> #8382A1 at 34% before that) whose blue end FOLLOWS THE
+   POINTER across the card (Jasper 2026-10-21: "根据鼠标的轨迹出现 linear
+   的变化"; it rests at the top, as drawn), and carries Ellipse 21887, the
+   blurred blue glow, centered in the card. ONE card at a time wears the
+   Pro look — Pro to begin with; a click on another hands it over, its
+   button keeping its own style (Jasper, same day: "另外两个卡片如果点击
+   他会变成 pro 这个卡片的样式，除了底下的 button 样式不变"). See PlanCard. Content starts 37 from the top and 32 from the left; the
    buttons are 318 wide, which leaves 36 on the right, and end 34 above
    the bottom. Buttons: Starter white 10% with the whole button at 60%,
    Pro #4362BA, Enterprise white with #0A0A0A text. The Annual switch sits
@@ -368,34 +374,11 @@ function Credits({ annual, value, onChange }: { annual: boolean; value: CreditPa
 
 /* the Pro card's state: the billing period (Annual on, as the design
    shows the switch) and the credit pack (none) */
-function ProCard() {
+function ProCard({ chosen, onChoose }: { chosen: boolean; onChoose: (id: PlanId) => void }) {
   const [annual, setAnnual] = useState(true);
   const [pack, setPack] = useState<CreditPack>(NO_PACK);
-  const ringId = useId();
   return (
-    <article className={`${CARD} bg-white/[0.03]`}>
-      {/* Ellipse 21887: a 348 x 249 ellipse turned -90°, so a 249 x
-          348 box, centered in the card; radial #18365F -> #316FC5 at
-          43%, LAYER-BLURRED 300 (CSS blur 150), clipped by the card.
-          The design's layer order puts it above the texts; it stays
-          under them here — a glow is a background. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[348px] w-[249px] -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{
-          opacity: 0.43,
-          background: "radial-gradient(closest-side, #18365F 0%, #316FC5 100%)",
-          filter: "blur(150px)",
-        }}
-      />
-      {/* the design's ring: 1px inside, #69AFFF at the top running to white
-          at the bottom, the whole stroke at 24% */}
-      <Hairline radius={10} width={1} opacity={0.24} stroke={`url(#${ringId})`}>
-        <linearGradient id={ringId} x1="0" y1="0" x2="0" y2="1">
-          <stop stopColor="#69AFFF" />
-          <stop offset="1" stopColor="#FFFFFF" />
-        </linearGradient>
-      </Hairline>
+    <PlanCard id="pro" chosen={chosen} onChoose={onChoose}>
       <AnnualSwitch on={annual} onChange={setAnnual} />
       <div className="relative flex grow flex-col">
         <Header plan={PRO} price={<ProPrice annual={annual} pack={pack} />} />
@@ -407,7 +390,7 @@ function ProCard() {
           </div>
         </div>
       </div>
-    </article>
+    </PlanCard>
   );
 }
 
@@ -416,9 +399,128 @@ function ProCard() {
 /* the card box: radius 10, the design's padding (37 top, 32 left, 36 right,
    34 bottom), a column so the buttons can sit at the bottom */
 const CARD = "relative flex flex-col overflow-hidden rounded-[10px] pb-[34px] pl-8 pr-9 pt-[37px] xl:min-h-[586px]";
-/* Starter and Enterprise: #0A0A0A with the 1px white 6% stroke inside */
-const PLAIN_CARD = `${CARD} bg-[#0A0A0A]`;
+/* the plain look's 1px white 6% stroke inside */
 const PLAIN_STROKE: CSSProperties = { boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" };
+
+/* ------------------------------------------------------- the chosen card */
+
+type PlanId = "starter" | "pro" | "enterprise";
+
+/* THE CHOSEN PLAN: one card wears the Pro look — the white 3% fill, the
+   glow, the gradient ring that follows the pointer — and a click on a
+   card (anywhere but its button, link, switch or picker) hands it over;
+   Enter / Space do the same from the keyboard (the cards form a radio
+   group). Pro has it to begin with. The content, the buttons included,
+   is the card's own whichever look it wears. */
+function PlanCard({
+  id,
+  chosen,
+  onChoose,
+  children,
+}: {
+  id: PlanId;
+  chosen: boolean;
+  onChoose: (id: PlanId) => void;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLElement>(null);
+  return (
+    <article
+      ref={ref}
+      role="radio"
+      aria-checked={chosen}
+      tabIndex={0}
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest("a, button, label, [role=listbox]")) return; // the controls keep their jobs
+        onChoose(id);
+      }}
+      onKeyDown={(e) => {
+        if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
+          e.preventDefault();
+          onChoose(id);
+        }
+      }}
+      className={`${CARD} outline-none focus-visible:ring-1 focus-visible:ring-white/20 ${chosen ? "bg-white/[0.03]" : "cursor-pointer bg-[#0A0A0A]"}`}
+      style={chosen ? undefined : PLAIN_STROKE}
+    >
+      {chosen && <Glow />}
+      {chosen && <FollowRing host={ref} />}
+      {children}
+    </article>
+  );
+}
+
+/* Ellipse 21887: a 348 x 249 ellipse turned -90°, so a 249 x 348 box,
+   centered in the card; radial #18365F -> #316FC5 at 43%, LAYER-BLURRED
+   300 (CSS blur 150), clipped by the card. The design's layer order puts
+   it above the texts; it stays under them here — a glow is a background. */
+function Glow() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute left-1/2 top-1/2 h-[348px] w-[249px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+      style={{
+        opacity: 0.43,
+        background: "radial-gradient(closest-side, #18365F 0%, #316FC5 100%)",
+        filter: "blur(150px)",
+      }}
+    />
+  );
+}
+
+/* the Pro look's ring: 1px inside, the design's #69AFFF -> white gradient
+   at 24%, its blue end at the top at rest and, under a hovering pointer,
+   turned to face the pointer — the gradient's axis runs through the
+   card's center toward it, turning the short way round over RING_FOLLOW
+   and back to rest over RING_RETURN once the pointer leaves. Touch
+   devices keep it at rest. */
+const RING_REST = -90; // degrees: the blue end up
+const RING_FOLLOW = 0.45; // s to turn after the pointer
+const RING_RETURN = 0.8; // s back to rest
+function FollowRing({ host }: { host: React.RefObject<HTMLElement | null> }) {
+  const id = useId();
+  const gradRef = useRef<SVGLinearGradientElement>(null);
+  useEffect(() => {
+    const el = host.current;
+    const g = gradRef.current;
+    if (!el || !g || !matchMedia("(hover: hover)").matches) return;
+    const a = { deg: RING_REST };
+    let target = RING_REST;
+    const aim = () => {
+      const r = (a.deg * Math.PI) / 180;
+      const x = 0.5 + 0.5 * Math.cos(r);
+      const y = 0.5 + 0.5 * Math.sin(r);
+      g.setAttribute("x1", String(x));
+      g.setAttribute("y1", String(y));
+      g.setAttribute("x2", String(1 - x));
+      g.setAttribute("y2", String(1 - y));
+    };
+    const turnTo = (deg: number, duration: number) => {
+      target += ((((deg - target) % 360) + 540) % 360) - 180; // the short way round
+      gsap.to(a, { deg: target, duration, ease: "power2.out", overwrite: true, onUpdate: aim });
+    };
+    const onMove = (e: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      turnTo((Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180) / Math.PI, RING_FOLLOW);
+    };
+    const onLeave = () => turnTo(RING_REST, RING_RETURN);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerleave", onLeave);
+    return () => {
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerleave", onLeave);
+      gsap.killTweensOf(a);
+    };
+  }, [host]);
+  return (
+    <Hairline radius={10} width={1} opacity={0.24} stroke={`url(#${id})`}>
+      <linearGradient ref={gradRef} id={id} x1="0.5" y1="0" x2="0.5" y2="1">
+        <stop stopColor="#69AFFF" />
+        <stop offset="1" stopColor="#FFFFFF" />
+      </linearGradient>
+    </Hairline>
+  );
+}
 /* A stroke drawn as an SVG rect over its box: the Pro card's ring (1px,
    the design's #69AFFF -> white gradient at 24%, 2026-10-21; a 0.8px
    white 6% line for the week before, Jasper's) and the credits menu's
@@ -469,6 +571,7 @@ const CTA_BLOCK = "mt-auto pt-10 xl:pt-[59px]";
 /* -------------------------------------------------------------- section */
 
 export default function Pricing() {
+  const [chosen, setChosen] = useState<PlanId>("pro");
   return (
     <section id="pricing" className="px-5 pt-24 md:px-10 xl:pt-[160px]">
       <div className="mx-auto w-full max-w-[1200px]">
@@ -482,24 +585,28 @@ export default function Pricing() {
         {/* Title Case, as the design sets this layer (textCase TITLE) */}
         <h2 className="mt-3 text-heading-lg capitalize text-text-primary xl:text-display">Start for free, scale when ready.</h2>
 
-        <div className="mt-[60px] grid grid-cols-1 gap-[21px] md:grid-cols-3">
-          <article className={PLAIN_CARD} style={PLAIN_STROKE}>
-            <Header plan={STARTER} />
-            <Features items={STARTER.items} />
-            <div className={CTA_BLOCK}>
-              <Cta label={STARTER.cta} kind="starter" href={AUTH_URL} />
+        <div role="radiogroup" aria-label="Plans" className="mt-[60px] grid grid-cols-1 gap-[21px] md:grid-cols-3">
+          <PlanCard id="starter" chosen={chosen === "starter"} onChoose={setChosen}>
+            <div className="relative flex grow flex-col">
+              <Header plan={STARTER} />
+              <Features items={STARTER.items} />
+              <div className={CTA_BLOCK}>
+                <Cta label={STARTER.cta} kind="starter" href={AUTH_URL} />
+              </div>
             </div>
-          </article>
+          </PlanCard>
 
-          <ProCard />
+          <ProCard chosen={chosen === "pro"} onChoose={setChosen} />
 
-          <article className={PLAIN_CARD} style={PLAIN_STROKE}>
-            <Header plan={ENTERPRISE} />
-            <Features items={ENTERPRISE.items} />
-            <div className={CTA_BLOCK}>
-              <Cta label={ENTERPRISE.cta} kind="enterprise" />
+          <PlanCard id="enterprise" chosen={chosen === "enterprise"} onChoose={setChosen}>
+            <div className="relative flex grow flex-col">
+              <Header plan={ENTERPRISE} />
+              <Features items={ENTERPRISE.items} />
+              <div className={CTA_BLOCK}>
+                <Cta label={ENTERPRISE.cta} kind="enterprise" />
+              </div>
             </div>
-          </article>
+          </PlanCard>
         </div>
       </div>
     </section>
