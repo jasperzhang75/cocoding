@@ -1,0 +1,21 @@
+<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:transparent}svg{position:absolute;left:0;top:0;display:block}</style>
+<!-- the two glowing areas of DashboardChart.tsx, exactly as the live SVG
+     drew them (green series at 70% under its soft ellipse, blue under its
+     soft rect, each clipped to the region under its line), lines left out -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 462" width="1200" height="924" fill="none">
+<defs>
+<filter id="b" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="50"/></filter>
+<mask id="gs" maskUnits="userSpaceOnUse"><ellipse cx="307.5" cy="303" rx="224.5" ry="56" fill="#fff" filter="url(#b)"/></mask>
+<mask id="ga" maskUnits="userSpaceOnUse"><path d="M -169 449.9 L -102.4 382 L -13.9 362 L 71.1 317.5 L 157.6 311 L 236.6 311 L 329.6 281 L 438.6 257 L 572 208 L 572 450.4 L -169 450.4 Z" fill="#fff"/></mask>
+<mask id="bs" maskUnits="userSpaceOnUse"><rect x="107" y="238" width="392" height="169" fill="#fff" filter="url(#b)"/></mask>
+<mask id="ba" maskUnits="userSpaceOnUse"><path d="M -80.4 441.4 L 6.9 403.6 L 90.8 365.7 L 183.3 365.7 L 256.9 351.3 L 334 326.6 L 457.3 304.4 L 584 287.4 L 584 462.4 L -80.4 462.4 Z" fill="#fff"/></mask>
+</defs>
+<g opacity="0.7" mask="url(#gs)"><g mask="url(#ga)">
+<rect x="-199.2" y="255.7" width="1148.5" height="194.6" fill="#14AF35" opacity="0.35" filter="url(#b)"/>
+<rect x="-199.2" y="255.7" width="1148.5" height="194.6" fill="#000000" opacity="0.16" filter="url(#b)"/>
+</g></g>
+<g mask="url(#bs)"><g mask="url(#ba)">
+<rect x="-224.7" y="267.7" width="1199.8" height="194.6" fill="#4D74E1" opacity="0.6" filter="url(#b)"/>
+<rect x="-224.7" y="267.7" width="1199.8" height="194.6" fill="#FFFFFF" opacity="0.03" filter="url(#b)"/>
+</g></g>
+</svg>
