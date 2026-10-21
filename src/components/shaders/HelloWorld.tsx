@@ -30,7 +30,7 @@ export default function HelloWorld({
         drift={1}
         seed={36}
         smoothness={5}
-        speed={3.9}
+        speed={1.7}
         stops={[{ color: "#284b9c50", position: 0.1517 }, { color: "#00004570", position: 0.5488 }, { color: "#4f7cab", position: 1 }]}
         swirl={0.31}
         variation={1} />
