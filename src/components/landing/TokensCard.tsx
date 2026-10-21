@@ -228,7 +228,7 @@ export default function TokensCard() {
   return (
     <div
       ref={cardRef}
-      className="order-2 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.06] bg-[#080707] md:rounded-none md:rounded-tr-xl md:border-b-0 md:border-l-0 xl:absolute xl:left-[600px] xl:top-0 xl:h-[462px] xl:w-[600px] xl:max-w-none"
+      className="order-2 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.06] bg-[#0D0D0D] md:rounded-none md:rounded-tr-xl md:border-b-0 md:border-l-0 xl:absolute xl:left-[600px] xl:top-0 xl:h-[462px] xl:w-[600px] xl:max-w-none"
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="text-body-md text-text-primary xl:text-heading-sm">Less tokens, more builds</p>
@@ -253,7 +253,7 @@ export default function TokensCard() {
           white -> #646464 at 9% (ring below); the two visible drop shadows
           painted verbatim; Figma background blur 3.5 == backdrop blur
           1.75px. Five hidden shadows omitted as intended. The card itself
-          is #080707 (was black). */}
+          is #0D0D0D (Jasper 2026-10-21; #080707 the day before, black before that). */}
       <div
         ref={tipRef}
         className="absolute left-[409px] top-[214px] w-max min-w-[155px] rounded-md px-[18px] py-3 backdrop-blur-[1.75px]"
