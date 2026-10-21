@@ -1760,8 +1760,19 @@ function InfrastructureStage() {
          finger lifts followed by the momentum kick is too short a fall to
          qualify; a slow stretch of a drag jitters and does not keep
          falling. (Known residual: a finger that decelerates smoothly for
-         200ms+ and then accelerates reads as a fresh flick.) */
+         200ms+ and then accelerates reads as a fresh flick.)
+
+         THE ARRIVING STREAM (2026-10-21): the gesture that carries the page
+         onto the runway's end used to be spent outright — the 3 -> 4 scrub
+         had been its work. With frame 4 arriving on its own that left the
+         rest of a drag or a flick as dead scroll on every first visit
+         (Jasper: "第一次 scroll 的时候有一小段空转"). Now that stream may
+         take the FIRST step itself: once the hold has settled (no glide),
+         frame 4 has formed (its entrance done) and ARRIVAL_DWELL has
+         passed since the landing, its next real push counts — one step,
+         after which the stream is spent as any other. */
       let gestureUsed = false;
+      let arrival = false; // the hold was taken by a scroll stream that may still take the first step
       let gestureTimer = 0;
       let acc = 0;
       let lastStepAt = 0;
@@ -1773,12 +1784,14 @@ function InfrastructureStage() {
       let runStartAbs = 0; // |delta| at its start
       let riseFrom: number | null = null; // the low a small rise (under PUSH) started from, pending judgement
       const PUSH = 10; // a single event this big is a real push
+      const ARRIVAL_DWELL = 400; // ms on frame 4 before the arriving stream may step
       const TINY = 2;
       const TINY_MS = 150;
       const STEP_THRESH = 30; // dense small events adding up to a step
       const RUN_MS = 200; // how long deltas must have been falling to count as a tail
       const resetGesture = () => {
         gestureUsed = false;
+        arrival = false;
         acc = 0;
         pushOnly = false;
         tinySince = 0;
@@ -1833,7 +1846,8 @@ function InfrastructureStage() {
         captured = true;
         capturedAt = performance.now();
         acc = 0;
-        gestureUsed = true; // the gesture that brought us here is spent
+        gestureUsed = true; // the gesture that brought us here is spent —
+        arrival = true; // — until the hold has settled, see onWheel
         touchGesture();
         // come to rest exactly on the runway's end, whichever side we came from
         settleAtEnd(overshoot);
@@ -1864,6 +1878,7 @@ function InfrastructureStage() {
       /* let the page go; a nudge starts it moving so a single wheel notch
          or key press visibly leaves */
       const release = (nudge = 0) => {
+        arrival = false;
         if (!captured) return;
         captured = false;
         glide?.kill();
@@ -1912,6 +1927,11 @@ function InfrastructureStage() {
         const abs = Math.abs(delta);
         touchGesture();
         const now = performance.now();
+        // the arriving stream takes the first step itself once frame 4 has
+        // settled under it (see the note up top)
+        if (arrival && gestureUsed && !glide && !tl2.isActive() && now - capturedAt >= ARRIVAL_DWELL) {
+          resetGesture(); // this event starts the stepping gesture
+        }
         // the decay run. A rise beyond jitter is judged against the run:
         // a fresh flick re-arms the gesture; a big rise that is not one (the
         // momentum kick) restarts the run; a small rise (a flick's first
@@ -1974,6 +1994,7 @@ function InfrastructureStage() {
         if (!dir) return;
         e.preventDefault();
         touchGesture();
+        if (arrival && gestureUsed && !glide && !tl2.isActive() && performance.now() - capturedAt >= ARRIVAL_DWELL) resetGesture();
         if (gestureUsed) return;
         gestureUsed = true;
         step(dir);
