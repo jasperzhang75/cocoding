@@ -31,18 +31,27 @@ import { NAV_HEIGHT } from "@/lib/layout";
      verbatim — at x372, y311/334.3/351.7, 80% faces. Black fill, stroke =
      A8A8A8 -> 424242 linear at 50%, dashed 1.8/1.8 at 0.9; the group
      composites through Plus lighter.
-   - Panel: 751x679, top corners 10, stroke 0.9 on top/left/right only,
-     painted white -> black at 8%, fill #06080B -> black top to bottom
-     (16990:8244 as of 2026-10-21 — Jasper took the blurred glows off its
-     top "避免波纹状"; black under a 2% #3750C8 wash before).
+   - Panel: 751x679, top corners 10, stroke 0.9 inside on top/left/right
+     only — white 78% at the top running to #999 42% at the bottom, the
+     whole stroke at 22% (16990:8244 as of 2026-10-21; white 8% -> 2.6%
+     before) — which LIGHTS UP as the section arrives: it stands at its
+     dim bottom value and cross-fades to the bright gradient with the
+     entrance (Jasper: "scroll 下来的时候这个边框亮的部分是慢慢点亮的"),
+     see RING. Fill #06080B -> black top to bottom (Jasper took the
+     blurred glows off its top the same day, "避免波纹状"; black under a
+     2% #3750C8 wash before).
      At xl the panel is 600 tall, the art cropped (see XL_PANEL_H).
    - Left column tokens as bound in Figma: Indicator+Accent eyebrow,
      Display h2, Heading/sm titles, Body/md desc at Text/Body 60%. */
 
-const ring: CSSProperties = {
+/* the panel's stroke as a padding + mask ring (0.9px on top/left/right):
+   two of them, CROSS-FADED by the entrance (RING) — the DIM one is the
+   gradient's bottom value all round, the LIT one the design's gradient
+   (white 17.2% -> #999 9.2%, i.e. 78% / 42% at the paint's 22%) — so the
+   bright top edge comes up slowly and the bottom stays as it is (the two
+   stacked would read brighter than the design) */
+const ringMask: CSSProperties = {
   padding: "0.9px 0.9px 0",
-  background:
-    "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.026))",
   maskImage: "linear-gradient(#fff 0 0), linear-gradient(#fff 0 0)",
   maskClip: "content-box, border-box",
   maskComposite: "exclude",
@@ -50,6 +59,13 @@ const ring: CSSProperties = {
   WebkitMaskClip: "content-box, border-box",
   WebkitMaskComposite: "xor",
 };
+const RING_DIM: CSSProperties = { ...ringMask, background: "rgba(153,153,153,0.0924)" };
+const RING_LIT: CSSProperties = {
+  ...ringMask,
+  background: "linear-gradient(180deg, rgba(255,255,255,0.1716), rgba(153,153,153,0.0924))",
+};
+/* how the stroke lights up with the entrance: from RING.at, over RING.t */
+const RING = { t: 1.4, ease: "power1.inOut", at: 0.15 };
 
 /* Seam for part 2 (frames 4-8): the active item will switch and each item
    gets its own scene, so the list is data already. */
@@ -1140,6 +1156,9 @@ function InfrastructureStage() {
       tl2.to(env.pop, { scale: 1, y: 0, duration: POP.t, ease: POP.ease }, 0);
       tl2.to([env.stack, env.cube], { opacity: 1, duration: POP.fadeT, ease: "power2.out" }, 0);
       tl2.to(env.items, { opacity: 1, duration: LEGEND.t, ease: "power1.out" }, LEGEND.at);
+      // the panel's stroke lights up: the dim ring cross-fades to the bright gradient
+      tl2.to(panel.querySelector("[data-ring-dim]"), { opacity: 0, duration: RING.t, ease: RING.ease }, RING.at);
+      tl2.to(panel.querySelector("[data-ring-lit]"), { opacity: 1, duration: RING.t, ease: RING.ease }, RING.at);
       // clicks arm as the entrance lands
       tl2.set([env.callouts, env.cube], { pointerEvents: "auto" });
 
@@ -2329,7 +2348,8 @@ function InfrastructureStage() {
               "linear-gradient(180deg, #06080B, #000)",
           }}
         >
-          <div aria-hidden className="pointer-events-none absolute inset-0 rounded-t-lg" style={ring} />
+          <div data-ring-dim aria-hidden className="pointer-events-none absolute inset-0 rounded-t-lg" style={RING_DIM} />
+          <div data-ring-lit aria-hidden className="pointer-events-none absolute inset-0 rounded-t-lg opacity-0" style={RING_LIT} />
 
           <svg
             ref={svgRef}
