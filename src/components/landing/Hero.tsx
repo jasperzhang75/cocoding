@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
-import { BorderBeam } from "@/components/magicui/border-beam";
+import BorderLight from "./BorderLight";
 
 /* Landing-only values: #3f3f3f/56 badge border, #6A91FC "New" pill (its own
    special blue, intentionally NOT the Accent token), #131516 text on accent,
@@ -12,10 +12,12 @@ import { BorderBeam } from "@/components/magicui/border-beam";
    Opacity variants of system colors use token/NN.
 
    Motion:
-   - the badge's border beam (Magic UI's BorderBeam, 2026-10-21 — the
-     one-time conic sweep it replaces read as not smooth to Jasper): a
-     BEAM-long run of white light circling the pill's 0.7px border once
-     every BEAM_LAP seconds, constant pace, forever
+   - the badge's border light (BorderLight, 2026-10-21): a BEAM-long run
+     of white light round the pill's 0.7px border, once, BEAM_LAP seconds
+     a lap, BEAM_DELAY after the page arrives — dashes on the pill's own
+     outline, so it keeps one pace round the end caps (the one-time conic
+     sweep before it read as not smooth to Jasper, and Magic UI's
+     BorderBeam parked at the caps; see BorderLight.tsx)
    - .prompt-ring-rest / -focus (globals.css): the two strokes cross-fade over
      150ms — resting is a near-invisible 4%, focus the design's flat 12%
    - voice chip: idle is white/61, with input text it goes fully white and the
@@ -55,9 +57,11 @@ const DELETE_MS = 16; // per character deleted (25 before)
 const HOLD_MS = 2000; // a finished prompt stays this long (2200 before)
 const GAP_MS = 300; // the bare lead stays this long before the next one starts (350 before)
 
-/* the badge's beam: its length along the border and the seconds per lap */
+/* the badge's light: its length along the border, the seconds for its one
+   lap, and how long after the page arrives it sets off */
 const BEAM = 56;
-const BEAM_LAP = 4;
+const BEAM_LAP = 3;
+const BEAM_DELAY = 0.6;
 
 function ArrowRight({ className }: { className?: string }) {
   return (
@@ -84,7 +88,7 @@ function AnnouncementBadge() {
   return (
     <div className="relative flex h-8 items-center justify-center gap-2 rounded-full border-[0.7px] border-[#3f3f3f]/56 py-1.5 pl-1.5 pr-2.5">
       {/* one-time attention sweep along the border, then gone */}
-      <BorderBeam size={BEAM} duration={BEAM_LAP} borderWidth={0.7} colorFrom="rgba(255,255,255,0.85)" colorTo="rgba(255,255,255,0.3)" />
+      <BorderLight width={0.7} radius={16} length={BEAM} lap={BEAM_LAP} delay={BEAM_DELAY} />
       <span className="flex h-[22px] items-center justify-center rounded-full bg-[#6A91FC] px-2 text-[12px] leading-[14px] text-[#131516]">
         New
       </span>
