@@ -49,8 +49,9 @@ const CARD_W = 386; // cards are 386 x 481
 const GAP = 20;
 
 /* the 0.9px stroke every card wears INSIDE its edge (600:1892): white at
-   6% at rest, and under a hovering pointer it comes up to the 24% the
-   design's first card shows (Jasper 2026-10-21: "hover 效果也是按照这个来")
+   6% at rest, and under a hovering pointer it comes up to 15% (Jasper
+   2026-10-21: the design's first card shows 24%, "hover 效果也是按照这个来",
+   then "改为 15%")
    — a padding + mask ring whose opacity transitions. (The older file's
    0.7px corner-to-corner gradient at 9% is gone.) */
 const RING: CSSProperties = {
@@ -63,7 +64,7 @@ const RING: CSSProperties = {
   WebkitMaskClip: "content-box, border-box",
   WebkitMaskComposite: "xor",
 };
-const RING_CLASS = "pointer-events-none absolute inset-0 rounded-sm opacity-[0.06] transition-opacity duration-300 group-hover:opacity-[0.24]";
+const RING_CLASS = "pointer-events-none absolute inset-0 rounded-sm opacity-[0.06] transition-opacity duration-300 group-hover:opacity-[0.15]";
 
 /* The photos: the card's own image fill at the design's opacity over
    the page's black — 80% for the OpenAI card, 70% for Notion (600:2052 /
