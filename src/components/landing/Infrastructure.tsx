@@ -33,8 +33,8 @@ import { NAV_HEIGHT } from "@/lib/layout";
      composites through Plus lighter.
    - Panel: 751x679, top corners 10, stroke 0.9 inside on top/left/right
      only — white 78% at the top running to #999 42% at the bottom, the
-     whole stroke at 22% (16990:8244 as of 2026-10-21; white 8% -> 2.6%
-     before) — which LIGHTS UP as the section arrives: it stands at its
+     whole stroke at 20% (Jasper 2026-10-21, over the file's 22%; white
+     8% -> 2.6% before) — which LIGHTS UP as the section arrives: it stands at its
      dim bottom value and cross-fades to the bright gradient with the
      entrance (Jasper: "scroll 下来的时候这个边框亮的部分是慢慢点亮的"),
      see RING. Fill #06080B -> black top to bottom (Jasper took the
@@ -47,7 +47,7 @@ import { NAV_HEIGHT } from "@/lib/layout";
 /* the panel's stroke as a padding + mask ring (0.9px on top/left/right):
    two of them, CROSS-FADED by the entrance (RING) — the DIM one is the
    gradient's bottom value all round, the LIT one the design's gradient
-   (white 17.2% -> #999 9.2%, i.e. 78% / 42% at the paint's 22%) — so the
+   (white 15.6% -> #999 8.4%, i.e. 78% / 42% at the paint's 20%) — so the
    bright top edge comes up slowly and the bottom stays as it is (the two
    stacked would read brighter than the design) */
 const ringMask: CSSProperties = {
@@ -59,10 +59,10 @@ const ringMask: CSSProperties = {
   WebkitMaskClip: "content-box, border-box",
   WebkitMaskComposite: "xor",
 };
-const RING_DIM: CSSProperties = { ...ringMask, background: "rgba(153,153,153,0.0924)" };
+const RING_DIM: CSSProperties = { ...ringMask, background: "rgba(153,153,153,0.084)" };
 const RING_LIT: CSSProperties = {
   ...ringMask,
-  background: "linear-gradient(180deg, rgba(255,255,255,0.1716), rgba(153,153,153,0.0924))",
+  background: "linear-gradient(180deg, rgba(255,255,255,0.156), rgba(153,153,153,0.084))",
 };
 /* how the stroke lights up with the entrance: from RING.at, over RING.t */
 const RING = { t: 1.4, ease: "power1.inOut", at: 0.15 };
