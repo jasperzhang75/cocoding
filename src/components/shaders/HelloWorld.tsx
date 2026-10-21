@@ -26,14 +26,14 @@ export default function HelloWorld({
     <Shader toneMapping="aces" className={className} style={style} onReady={onReady} onUnavailable={onUnavailable}>
       <MeshGradient
         colorSpace="linear"
-        count={2}
+        count={3}
         drift={1}
         seed={36}
         smoothness={5}
         speed={3.9}
-        stops={[{ color: "#284b9c50", position: 0.1517 }, { color: "#00004570", position: 0.5488 }, { color: "#195ea6", position: 1 }]}
+        stops={[{ color: "#284b9c50", position: 0.1517 }, { color: "#00004570", position: 0.5488 }, { color: "#4f7cab", position: 1 }]}
         swirl={0.31}
-        variation={0} />
+        variation={1} />
       <Text
         center={{
           x: 0.5,

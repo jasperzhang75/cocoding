@@ -6,8 +6,8 @@
       "component": "HelloWorld",
       "file": "src/components/shaders/HelloWorld.tsx",
       "framework": "react",
-      "hash": "sha256:1e2294f620e787a870464af3c9f0c16a1f320cbd0ba50ded12310a7aec260d67",
-      "updatedAt": "2026-10-21T18:33:46.926276+00:00",
+      "hash": "sha256:0a56866dd70d803489fb80eac3c50077aae122d15f1bd9d28951e37dcc855086",
+      "updatedAt": "2026-10-21T18:37:04.05984+00:00",
       "installedAt": "2026-10-21T18:17:34.698Z"
     }
   }
