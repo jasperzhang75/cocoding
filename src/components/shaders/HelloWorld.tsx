@@ -9,8 +9,8 @@ import {
 /* installed by `npx shaders install 4744333` (shaders.com, Jasper's "hello
    world", 2026-10-21). Local edit: the root takes a className / style and
    the ready / unavailable callbacks, so a page can size the canvas and
-   keep a stand-in under it — `npx shaders update` will flag this file as
-   edited; re-apply the four props after an update. */
+   keep a stand-in under it — `npx shaders update` flags this file as
+   edited; run it with --force and re-apply the four props after. */
 export default function HelloWorld({
   className,
   style,
@@ -25,14 +25,15 @@ export default function HelloWorld({
   return (
     <Shader toneMapping="aces" className={className} style={style} onReady={onReady} onUnavailable={onUnavailable}>
       <MeshGradient
-        count={6}
+        colorSpace="linear"
+        count={2}
         drift={1}
         seed={36}
-        smoothness={4.83}
-        speed={8.6}
-        stops={[{ color: "#0f121f", position: 0.1517 }, { color: "#080880", position: 0.5488 }, { color: "#007fff", position: 1 }]}
+        smoothness={5}
+        speed={3.4}
+        stops={[{ color: "#6c91f910", position: 0.1517 }, { color: "#00004570", position: 0.5488 }, { color: "#007fff", position: 1 }]}
         swirl={0.31}
-        variation={0.42} />
+        variation={0} />
       <Text
         center={{
           x: 0.5,
@@ -45,7 +46,11 @@ export default function HelloWorld({
         text="hello world"
         visible={false} />
       <CursorRipples
-        visible={false} />
+        chromaticSplit={0.4}
+        decay={7.5}
+        intensity={0.5}
+        radius={0.2}
+        visible={true} />
       <Glass
         aberration={0.25}
         center={{
