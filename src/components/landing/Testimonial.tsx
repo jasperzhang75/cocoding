@@ -1,12 +1,26 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode, TouchEvent } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { HyperText } from "@/components/magicui/hyper-text";
 import { EYEBROW_SCRAMBLE } from "./eyebrow";
 import { NotionLogo, OpenAILogo, RampLogo } from "./testimonial-logos";
 import { onArrival } from "./on-arrival";
+
+/* THE MESH (Jasper 2026-10-21: `npx shaders install 4744333`, "add this
+   mesh to the blue card in testimonial as background"): his shaders.com
+   shader "hello world" — a six-point MeshGradient in #0f121f / #080880 /
+   #007fff, drifting — installed by the CLI as
+   src/components/shaders/HelloWorld.tsx and worn by the study card as its
+   background. It renders through WebGPU, so: loaded on the client only
+   and only while the card is in view (the loop holds six study cards —
+   six live canvases would be six GPU contexts), never under reduced
+   motion or without WebGPU; until it reports ready, and wherever it
+   cannot run, the design's two blurred glows stand in, so the card
+   never goes flat. */
+const Mesh = dynamic(() => import("@/components/shaders/HelloWorld"), { ssr: false });
 
 /* TESTIMONIAL (Figma yFciEPejue3E2xhstXF0Wu 16798:8090). A row of
    386 x 481 cards, 20px apart, that slides one card per arrow press
@@ -146,8 +160,29 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
 }
 
 function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
+  const ref = useRef<HTMLElement>(null);
+  const [inView, setInView] = useState(false);
+  const [meshOn, setMeshOn] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !("gpu" in navigator) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        setInView(entry.isIntersecting);
+        if (!entry.isIntersecting) setMeshOn(false); // unmounted below: the glows come back
+      },
+      { rootMargin: "120px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   return (
-    <article className={`${CARD_CLASS} group bg-[#090A0E]`}>
+    <article ref={ref} className={`${CARD_CLASS} group bg-[#090A0E]`}>
+      {inView && (
+        <Mesh className="absolute inset-0 size-full" onReady={() => setMeshOn(true)} onUnavailable={() => setMeshOn(false)} />
+      )}
+      {/* the glows: the stand-in, fading out once the mesh is drawing */}
+      <div aria-hidden className={`absolute inset-0 transition-opacity duration-700 ${meshOn ? "opacity-0" : "opacity-100"}`}>
       {/* Ellipse 21888 / 21891 as the design draws them (16798:8285 /
           8286, read 2026-10-12): two 289 x 206 ellipses, #18365F ->
           #245292 -> #316FC5 at 52%, LAYER-BLURRED 300 (CSS blur 150) —
@@ -177,6 +212,7 @@ function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
           filter: "blur(38.86cqw)",
         }}
       />
+      </div>
       <div className="absolute [&>svg]:h-auto [&>svg]:w-full" style={{ left: PAD, top: PAD, width: card.logoW }}>
         {card.logo}
       </div>
