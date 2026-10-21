@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
+import { BorderBeam } from "@/components/magicui/border-beam";
 
 /* Landing-only values: #3f3f3f/56 badge border, #6A91FC "New" pill (its own
    special blue, intentionally NOT the Accent token), #131516 text on accent,
@@ -11,7 +12,10 @@ import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
    Opacity variants of system colors use token/NN.
 
    Motion:
-   - .badge-sweep (globals.css): one-time border light sweep on first load
+   - the badge's border beam (Magic UI's BorderBeam, 2026-10-21 — the
+     one-time conic sweep it replaces read as not smooth to Jasper): a
+     BEAM-long run of white light circling the pill's 0.7px border once
+     every BEAM_LAP seconds, constant pace, forever
    - .prompt-ring-rest / -focus (globals.css): the two strokes cross-fade over
      150ms — resting is a near-invisible 4%, focus the design's flat 12%
    - voice chip: idle is white/61, with input text it goes fully white and the
@@ -45,11 +49,15 @@ const PROMPT_TAILS = [
   "recipe app that plans my week...",
   "landing page for my coffee brand...",
 ];
-const TYPE_MS = 55; // per character typed, plus up to TYPE_JITTER
-const TYPE_JITTER = 40; // ms of randomness per character, so it reads as typing
-const DELETE_MS = 25; // per character deleted
-const HOLD_MS = 2200; // a finished prompt stays this long
-const GAP_MS = 350; // the bare lead stays this long before the next one starts
+const TYPE_MS = 34; // per character typed, plus up to TYPE_JITTER (55 + 40 until 2026-10-21, Jasper: "更快一点")
+const TYPE_JITTER = 26; // ms of randomness per character, so it reads as typing
+const DELETE_MS = 16; // per character deleted (25 before)
+const HOLD_MS = 2000; // a finished prompt stays this long (2200 before)
+const GAP_MS = 300; // the bare lead stays this long before the next one starts (350 before)
+
+/* the badge's beam: its length along the border and the seconds per lap */
+const BEAM = 56;
+const BEAM_LAP = 4;
 
 function ArrowRight({ className }: { className?: string }) {
   return (
@@ -76,7 +84,7 @@ function AnnouncementBadge() {
   return (
     <div className="relative flex h-8 items-center justify-center gap-2 rounded-full border-[0.7px] border-[#3f3f3f]/56 py-1.5 pl-1.5 pr-2.5">
       {/* one-time attention sweep along the border, then gone */}
-      <div aria-hidden className="badge-sweep pointer-events-none absolute inset-0 rounded-full" />
+      <BorderBeam size={BEAM} duration={BEAM_LAP} borderWidth={0.7} colorFrom="rgba(255,255,255,0.85)" colorTo="rgba(255,255,255,0.3)" />
       <span className="flex h-[22px] items-center justify-center rounded-full bg-[#6A91FC] px-2 text-[12px] leading-[14px] text-[#131516]">
         New
       </span>
