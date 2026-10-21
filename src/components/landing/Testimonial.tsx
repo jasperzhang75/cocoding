@@ -22,7 +22,9 @@ import { onArrival } from "./on-arrival";
    never goes flat. */
 const Mesh = dynamic(() => import("@/components/shaders/HelloWorld"), { ssr: false });
 
-/* TESTIMONIAL (Figma yFciEPejue3E2xhstXF0Wu 16798:8090). A row of
+/* TESTIMONIAL (Figma yFciEPejue3E2xhstXF0Wu 16798:8090; the photos and
+   the strokes per the redesign file bHyNfFfV0ocgVPCHtOyYBp 600:1892 —
+   Jasper settled on it on 2026-10-21 after a day of either). A row of
    386 x 481 cards, 20px apart, that slides one card per arrow press
    (prev / next; the design's reset arrow was dropped) and loops without
    end;
@@ -37,58 +39,43 @@ const Mesh = dynamic(() => import("@/components/shaders/HelloWorld"), { ssr: fal
 const CARD_W = 386; // cards are 386 x 481
 const GAP = 20;
 
-/* the 0.7px hairline every card wears, INSIDE its edge: a gradient from
-   the card's own light grey at the top-left corner to #636363 toward the
-   bottom-right, painted at 9% (Figma: strokeAlign INSIDE, paint opacity
-   0.09, gradientTransform corner to corner). It is NOT there at rest: it
-   fades in under a hovering pointer (HAIRLINE_CLASS; Jasper 2026-10-21:
-   "鼠标放上去 hover 渐隐出现描边"). */
-const HAIRLINE_CLASS = "pointer-events-none absolute inset-0 rounded-sm opacity-0 transition-opacity duration-300 group-hover:opacity-[0.09]";
-const hairline = (top: string, angle = "142deg", end = "100%"): CSSProperties => ({
-  padding: "0.7px",
-  background: `linear-gradient(${angle}, ${top} 0%, #636363 ${end})`,
+/* the 0.9px stroke every card wears INSIDE its edge (600:1892): white at
+   6% at rest, and under a hovering pointer it comes up to the 24% the
+   design's first card shows (Jasper 2026-10-21: "hover 效果也是按照这个来")
+   — a padding + mask ring whose opacity transitions. (The older file's
+   0.7px corner-to-corner gradient at 9% is gone.) */
+const RING: CSSProperties = {
+  padding: "0.9px",
+  background: "#FFFFFF",
   maskImage: "linear-gradient(#fff 0 0), linear-gradient(#fff 0 0)",
   maskClip: "content-box, border-box",
   maskComposite: "exclude",
   WebkitMaskImage: "linear-gradient(#fff 0 0), linear-gradient(#fff 0 0)",
   WebkitMaskClip: "content-box, border-box",
   WebkitMaskComposite: "xor",
-});
+};
+const RING_CLASS = "pointer-events-none absolute inset-0 rounded-sm opacity-[0.06] transition-opacity duration-300 group-hover:opacity-[0.24]";
 
-/* The photo sits under a soft elliptical mask in the design: the image
-   group is masked by "Ellipse 21897", an ellipse with a horizontal
-   gradient whose alpha runs 88% -> 100% -> 73% (OpenAI, 332.6 x 532.2 at
-   115 / -42.7 in the card) or 100% -> 100% -> 75% (Notion, 293.1 x 572.6
-   at 218.4 / -68), layer-blurred 300 — so the face shows near fully and
-   the card's edges fall away softly. Jasper brightened those alphas on
-   2026-10-21 (they ran 0 -> 100 -> 0 before, the face at ~45%: "之前那
-   个太灰了"). Each mask is rendered once from that very geometry
-   (scripts/testimonial-masks) and worn as a CSS alpha mask. */
-const photoMask = (name: string): CSSProperties => ({
-  maskImage: `url(/testimonials/mask-${name}.png)`,
-  maskSize: "100% 100%",
-  maskRepeat: "no-repeat",
-  WebkitMaskImage: `url(/testimonials/mask-${name}.png)`,
-  WebkitMaskSize: "100% 100%",
-  WebkitMaskRepeat: "no-repeat",
-});
+/* The photos: the card's own image fill at the design's opacity over
+   the page's black — 80% for the OpenAI card, 70% for Notion (600:2052 /
+   600:2079) — nothing else, no mask, no fill under them. (The older
+   file masked them under a blurred ellipse; that version — masks
+   rendered from the design's rotated ellipses — is in commit 56b2665.) */
 
 /* logoW: the logo's design width over the card's 386, in cqw — so it
    scales with the card (111 / 96 / 82 wide at 386) */
 type Card =
-  | { kind: "quote"; logo: ReactNode; logoW: string; photo: string; mask: string; name: string; text: string; top: string; fill: string }
-  | { kind: "study"; logo: ReactNode; logoW: string; stat: string; statLabel: string; kicker: string; title: string; top: string };
+  | { kind: "quote"; logo: ReactNode; logoW: string; photo: string; photoOpacity: number; name: string; text: string }
+  | { kind: "study"; logo: ReactNode; logoW: string; stat: string; statLabel: string; kicker: string; title: string };
 
 const openai: Card = {
   kind: "quote",
   logo: <OpenAILogo />,
   logoW: "28.76cqw",
   photo: "/testimonials/quote-openai-hd.png",
-  mask: "openai",
+  photoOpacity: 0.8,
   name: "Gabriel Peal, Frontend Developer",
   text: "“ It's the first AI tool that doesn't feel like a toy. ”",
-  top: "#BEBEBE",
-  fill: "rgba(255,255,255,0.02)",
 };
 const ramp: Card = {
   kind: "study",
@@ -98,18 +85,15 @@ const ramp: Card = {
   statLabel: "Learner satisfaction",
   kicker: "Case study",
   title: "How Ramp builds next-generation payment tools",
-  top: "#DFDFDF",
 };
 const notion: Card = {
   kind: "quote",
   logo: <NotionLogo />,
-  logoW: "21.24cqw",
+  logoW: "23.83cqw", // 92 wide — the wordmark overruns the design's 82 frame
   photo: "/testimonials/quote-notion-hd.png",
-  mask: "notion",
+  photoOpacity: 0.7,
   name: "Gabriel Peal, Backend Developer",
   text: "“ Cocoding built a dashboard that actually looks good.”",
-  top: "#A6A6A6",
-  fill: "rgba(255,255,255,0.03)",
 };
 const CARDS: Card[] = [openai, ramp, notion, openai, ramp, notion];
 
@@ -135,14 +119,14 @@ const QUOTE = "mt-1.5 text-body-md xl:text-[1.25rem] xl:leading-[1.375] xl:track
 
 function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
   return (
-    <article className={`${CARD_CLASS} group`} style={{ background: card.fill }}>
+    <article className={`${CARD_CLASS} group`}>
       <Image
         src={card.photo}
         alt=""
         fill
         sizes="(min-width: 1280px) 386px, (min-width: 768px) 33vw, 84vw"
         className="object-cover"
-        style={photoMask(card.mask)}
+        style={{ opacity: card.photoOpacity }}
       />
       <div className="absolute [&>svg]:h-auto [&>svg]:w-full" style={{ left: PAD, top: PAD, width: card.logoW }}>
         {card.logo}
@@ -154,7 +138,7 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
         <p className={NAME}>{card.name}</p>
         <p className={`${QUOTE} text-text-primary`}>{card.text}</p>
       </div>
-      <div aria-hidden className={HAIRLINE_CLASS} style={hairline(card.top)} />
+      <div aria-hidden className={RING_CLASS} style={RING} />
     </article>
   );
 }
@@ -227,7 +211,7 @@ function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
         <p className={`${QUOTE} text-white/90`}>{card.title}</p>
       </div>
       {/* this card's gradient runs steeper and settles by mid-card */}
-      <div aria-hidden className={HAIRLINE_CLASS} style={hairline(card.top, "146deg", "55%")} />
+      <div aria-hidden className={RING_CLASS} style={RING} />
     </article>
   );
 }
