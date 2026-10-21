@@ -15,11 +15,11 @@ import { NAV_HEIGHT } from "@/lib/layout";
 /* Infrastructure — the isometric story (Figma 16990:8066 and on),
    driven by scroll. The section arrives straight at frame 4 — the
    ENVIRONMENT cube: the whole panel comes up from dark as it rises into
-   place, and the legend and callouts surface once it is all in view, as
-   the runway under the stuck stage begins; at the runway's end the hold
-   takes over and gestures step the later frames. Both are bound directly
-   to the section's position in the viewport — scroll stops, the drawing
-   stops; scroll back up, it rewinds. (Until 2026-10-20 three stages came
+   place (bound to scroll), and halfway in the cube springs up into it,
+   the legend and the callouts hopping in after it (timed — modelled on
+   the Loom of column.com's Bank Accounts card Jasper sent, 2026-10-21);
+   at the runway's end the hold takes over and gestures step the later
+   frames. (Until 2026-10-20 three stages came
    first — a block of three isometric layers splitting under FRONTEND /
    BACKEND / DATABASE callouts and settling into the stack — then, for an
    afternoon, the cube grew in with the scroll; Jasper: "去除 1-3 帧",
@@ -82,14 +82,24 @@ const ITEMS: { key: string; title: string; desc?: string; open?: boolean }[] = [
 const STACK = { x: 372, size: 65.8 };
 const ENV_STACK_Y = [351.7, 334.3, 311];
 
-/* THE ENTRANCE (Jasper 2026-10-20, Figma 16990:8066): the whole panel
+/* THE ENTRANCE (Jasper 2026-10-20/21, Figma 16990:8066, and the Loom of
+   column.com's Bank Accounts card he sent as the model): the whole panel
    comes up from dark — its opacity follows the panel's rise from the
-   viewport's bottom edge to where the stage sticks, through FADE_EASE
-   (mostly lit by halfway, settling as it arrives) — and the legend and
-   the callouts surface over the first LEGEND_OVER of the runway, once
-   the panel is all in view. */
+   viewport's bottom edge to where the stage sticks, through FADE_EASE —
+   and once the panel is ENTER_AT of the way in, a TIMED entrance plays:
+   the cube and its stack ([data-pop]) spring in — POP.from -> 1 about the
+   cube's center (POP_ORIGIN, the cube-group's center in the 751x679
+   space; layoutPanel moves it with the layout) and up by POP.rise,
+   overshooting a touch (POP.ease) while they fade in over POP.fadeT —
+   then, from LEGEND.at, the legend's two rows and the three callouts hop
+   in one after another (LEGEND.stagger apart) with the same kind of
+   spring. It rewinds once the panel has left below the viewport, so it
+   plays again on the next arrival. */
 const FADE_EASE = "power2.out";
-const LEGEND_OVER = 0.4;
+const ENTER_AT = 0.5;
+const POP = { from: 0.86, rise: 18, t: 0.75, ease: "back.out(1.6)", fadeT: 0.4 };
+const POP_ORIGIN = { x: 374.8, y: 347.1 };
+const LEGEND = { rise: 14, t: 0.55, ease: "back.out(1.5)", stagger: 0.07, at: 0.3 };
 
 /* THE TABLET PANEL (md, 768-1279; Figma bHyNfFfV0ocgVPCHtOyYBp 1166:917,
    1166:1019, 1168:1080, 1165:742). Two columns again, the panel 344 wide
@@ -922,6 +932,11 @@ function InfrastructureStage() {
         svg.querySelectorAll<SVGElement>(sel).forEach((el) => {
           el.style.display = on ? "" : "none";
         });
+      // the entrance springs the cube in about its center — where that
+      // is in this layout (centered, lifted at md like its groups)
+      gsap.set(svg.querySelector("[data-pop]"), {
+        svgOrigin: `${POP_ORIGIN.x + dxC} ${POP_ORIGIN.y - (narrow ? MD_LIFT : 0)}`,
+      });
       // the cube frames' callouts: three around the cube at xl; at md one
       // centered block beneath it — the lit face's label and description
       // (the resting gray labels and the hairlines are not drawn)
@@ -1083,21 +1098,29 @@ function InfrastructureStage() {
       // morph states these values as its fromTo starts)
       faces.forEach((f, i) => gsap.set(f, { x: STACK.x, y: ENV_STACK_Y[i], opacity: 0.8 }));
 
-      /* THE ENTRANCE'S SECOND HALF — the legend and the callouts surface
-         over the first LEGEND_OVER of the runway, once the panel (lit by
-         apply() as it rose) is all in view; a pure function of scroll, so
-         scrolling up takes them away again. The one-shot side effects
-         (the mark flicker, building the morph) live in land(), not here. */
+      /* THE ENTRANCE (timed; the constants up top): the cube and its stack
+         spring in, then the legend's rows and the callouts hop in one
+         after another. Played by apply() once the panel is ENTER_AT in,
+         rewound once it has left below. Its one-shot side effects (the
+         mark flicker, building the morph) live in land(), not here. */
       const env = {
         cube: svg.querySelector("[data-env-cube]"),
-        legend: svg.querySelector("[data-env-legend]"),
         callouts: svg.querySelector("[data-env-callouts]"),
+        pop: svg.querySelector("[data-pop]"),
+        items: [
+          ...Array.from(svg.querySelectorAll("[data-legend-row]")),
+          ...Array.from(svg.querySelectorAll("[data-co-item]")),
+        ],
       };
+      gsap.set(env.pop, { scale: POP.from, y: POP.rise, opacity: 0 }); // its svgOrigin: layoutPanel
+      gsap.set(env.items, { y: LEGEND.rise, opacity: 0 });
       const tl2 = gsap.timeline({ paused: true });
-      tl2.to(env.legend, { opacity: 1, duration: LEGEND_OVER, ease: "power1.out" }, 0);
-      tl2.to(env.callouts, { opacity: 1, duration: LEGEND_OVER, ease: "power1.out" }, 0);
-      // clicks arm only once the entrance lands; scrubbing back re-disarms them
-      tl2.set([env.callouts, env.cube], { pointerEvents: "auto" }, 0.99);
+      tl2.to(env.pop, { scale: 1, y: 0, duration: POP.t, ease: POP.ease }, 0);
+      tl2.to(env.pop, { opacity: 1, duration: POP.fadeT, ease: "power2.out" }, 0);
+      tl2.to(env.items, { y: 0, duration: LEGEND.t, ease: LEGEND.ease, stagger: LEGEND.stagger }, LEGEND.at);
+      tl2.to(env.items, { opacity: 1, duration: LEGEND.t * 0.6, ease: "power1.out", stagger: LEGEND.stagger }, LEGEND.at);
+      // clicks arm as the entrance lands
+      tl2.set([env.callouts, env.cube], { pointerEvents: "auto" });
 
       /* The 4 -> 5 transition (SCALABILITY): built lazily on first use so
          the left column's description heights are measured fresh. Timed
@@ -1586,12 +1609,13 @@ function InfrastructureStage() {
         stepToCube(cur as 6 | 8, target as 4 | 5, instant);
       };
       /* ---------- SCROLL-DRIVEN NAVIGATION ----------
-         Frame 4's entrance is scrubbed: the panel lights up as it rises
-         to the viewport's center (apply() sets its opacity), the legend
-         and callouts come over the start of the RUNWAY the stage stays
-         stuck for (tl2) — pure functions of scroll position, so scrolling
-         up rewinds them. The scrub runs only while frame 4 is the base:
-         at 5/6/8 the runway is inert and the panel keeps its frame
+         Frame 4's entrance: the panel lights up as it rises to the
+         viewport's center (apply() sets its opacity from scroll), and
+         halfway in the timed entrance (tl2: the cube springs in, the
+         legend and callouts hop in after it) plays, rewinding once the
+         panel has left below. The RUNWAY the stage stays stuck for is
+         the hold's approach. All of it runs only while frame 4 is the
+         base: at 5/6/8 the runway is inert and the panel keeps its frame
          wherever the page goes.
 
          EVERY pass is walked frame by frame. Whenever the page crosses the
@@ -1612,7 +1636,13 @@ function InfrastructureStage() {
       const fadeEase = gsap.parseEase(FADE_EASE);
 
       let captured = false;
-      let landed = false; // frame 4 formed (tl2 at 1)
+      let landed = false; // frame 4 formed (the runway's end reached)
+      let entered = false; // the entrance has been started
+      const enter = () => {
+        if (entered) return;
+        entered = true;
+        tl2.play(0);
+      };
       let lastOvershoot = NaN; // where the page stood against the runway's end last time
       let lastTravel = NaN; // and its travel, with the time, for the speed of approach
       let lastAt = 0;
@@ -1638,7 +1668,7 @@ function InfrastructureStage() {
          much of it the page can reach today — the section is the page's
          last block, so the story clamps to the deepest scroll available
          and the clamp retires as later sections add room. `scrub` is the
-         share of it the legend's scrub reads. */
+         stretch whose end forms frame 4 and captures. */
       const geometry = () => {
         const vh = window.innerHeight;
         const room = Math.max(0, document.documentElement.scrollHeight - vh - window.scrollY);
@@ -1983,11 +2013,18 @@ function InfrastructureStage() {
         const base4 = frameRef.current === 4;
         const g = geometry();
         if (base4) {
-          // the panel comes up from dark as it rises (not under reduced
-          // motion, where it simply stands lit)
+          const rise = clamp01((r0 - r.top) / Math.max(r0 - r1, 1));
+          // not under reduced motion, where the panel simply stands lit
           if (!reduced) {
-            const rise = clamp01((r0 - r.top) / Math.max(r0 - r1, 1));
+            // the panel comes up from dark as it rises
             gsap.set(panel, { opacity: fadeEase(rise) });
+            // the entrance plays once the panel is ENTER_AT in, and
+            // rewinds once the panel has left below the viewport
+            if (rise >= ENTER_AT) enter();
+            else if (rise <= 0 && entered) {
+              entered = false;
+              tl2.pause(0);
+            }
           }
           const p = clamp01(g.travel / g.scrub);
           /* the last two pixels of the scrub count as its end. Browsers
@@ -1998,10 +2035,9 @@ function InfrastructureStage() {
              (Jasper, Safari, 2026-09-07). Within the tolerance the scrub
              snaps to 1 so the frame is exactly whole. */
           if (p >= 1 - 2 / g.scrub) {
-            if (tl2.progress() !== 1) tl2.progress(1);
+            enter(); // a jump straight to the end still plays it
             if (!landed) land();
           } else {
-            tl2.progress(p);
             if (landed) unland();
             // a morph still running under a scrub that has moved on (frame 4
             // reached by stepping back while never landed here) would repaint
@@ -2109,6 +2145,7 @@ function InfrastructureStage() {
       };
 
       if (reduced) {
+        entered = true;
         tl2.progress(1);
         land();
         return;
@@ -2368,6 +2405,10 @@ function InfrastructureStage() {
             </g>
             </g>
 
+            {/* THE PICTURE THAT SPRINGS IN (the entrance, in the effect): the
+                stack and the cube, scaled about the cube's center, lifted
+                and faded by tl2 — unseen until it plays */}
+            <g data-pop style={{ opacity: 0 }}>
             {/* the stack: three layers under the cube, in their frame-4
                 pose (the effect states it too, for the morph's sake) */}
             <g data-cube data-anchor="center" data-md-lift={MD_LIFT} style={{ mixBlendMode: "plus-lighter" }}>
@@ -2559,61 +2600,68 @@ function InfrastructureStage() {
               </g>
             </g>
 
-            {/* legend — row 1's label swaps per frame (ENVIRONMENT in
-                frame 4, INFRASTRUCTURE from frame 5 on) */}
-            <g data-env-legend style={{ opacity: 0 }}>
-              <rect x="36" y="36" width="28" height="28" rx="8" fill="#617CCE" fillOpacity="0.1" />
-              <text
-                data-legend-env
-                x="76"
-                y="53.5"
-                fill="#4E4E4E"
-                fontSize="13"
-                style={{ fontFamily: "var(--font-geist-mono)" }}
-              >
-                ENVIRONMENT
-              </text>
-              <text
-                data-legend-infra
-                x="76"
-                y="53.5"
-                fill="#4E4E4E"
-                fontSize="13"
-                style={{ fontFamily: "var(--font-geist-mono)", opacity: 0 }}
-              >
-                INFRASTRUCTURE
-              </text>
-              <rect
-                x="36"
-                y="88"
-                width="28"
-                height="28"
-                rx="4"
-                fill="none"
-                stroke="#A8A8A8"
-                strokeOpacity="0.5"
-                strokeWidth="0.9"
-                strokeDasharray="2 2"
-              />
-              <text
-                x="76"
-                y="105.5"
-                fill="#4E4E4E"
-                fontSize="13"
-                style={{ fontFamily: "var(--font-geist-mono)" }}
-              >
-                BUILD
-              </text>
             </g>
 
-            {/* interactive callouts — pointer events stay off until the
-                entrance finishes (a .set near the end of tl2) */}
-            <g data-env-callouts style={{ opacity: 0, pointerEvents: "none" }}>
+            {/* legend — row 1's label swaps per frame (ENVIRONMENT in
+                frame 4, INFRASTRUCTURE from frame 5 on) */}
+            <g data-env-legend>
+              <g data-legend-row style={{ opacity: 0 }}>
+                <rect x="36" y="36" width="28" height="28" rx="8" fill="#617CCE" fillOpacity="0.1" />
+                <text
+                  data-legend-env
+                  x="76"
+                  y="53.5"
+                  fill="#4E4E4E"
+                  fontSize="13"
+                  style={{ fontFamily: "var(--font-geist-mono)" }}
+                >
+                  ENVIRONMENT
+                </text>
+                <text
+                  data-legend-infra
+                  x="76"
+                  y="53.5"
+                  fill="#4E4E4E"
+                  fontSize="13"
+                  style={{ fontFamily: "var(--font-geist-mono)", opacity: 0 }}
+                >
+                  INFRASTRUCTURE
+                </text>
+              </g>
+              <g data-legend-row style={{ opacity: 0 }}>
+                <rect
+                  x="36"
+                  y="88"
+                  width="28"
+                  height="28"
+                  rx="4"
+                  fill="none"
+                  stroke="#A8A8A8"
+                  strokeOpacity="0.5"
+                  strokeWidth="0.9"
+                  strokeDasharray="2 2"
+                />
+                <text
+                  x="76"
+                  y="105.5"
+                  fill="#4E4E4E"
+                  fontSize="13"
+                  style={{ fontFamily: "var(--font-geist-mono)" }}
+                >
+                  BUILD
+                </text>
+              </g>
+            </g>
+
+            {/* interactive callouts — each hops in on its own (the
+                entrance); pointer events stay off until it finishes (the
+                .set at the end of tl2) */}
+            <g data-env-callouts style={{ pointerEvents: "none" }}>
               {ENV_CALLOUTS.map((c) => {
                 const lx = c.anchor === "end" ? c.x2 : c.x1;
                 const active = c.key === "ni";
                 return (
-                  <g key={c.key}>
+                  <g key={c.key} data-co-item style={{ opacity: 0 }}>
                     <line
                       data-co-line={c.key}
                       x1={c.x1}
