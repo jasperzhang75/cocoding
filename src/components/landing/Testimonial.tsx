@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { CSSProperties, ReactNode, TouchEvent } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -14,13 +14,22 @@ import { onArrival } from "./on-arrival";
    shader "hello world" — a six-point MeshGradient in #0f121f / #080880 /
    #007fff, drifting — installed by the CLI as
    src/components/shaders/HelloWorld.tsx and worn by the study card as its
-   background. It renders through WebGPU, so: loaded on the client only
-   and only while the card is in view (the loop holds six study cards —
-   six live canvases would be six GPU contexts), never under reduced
-   motion or without WebGPU; until it reports ready, and wherever it
-   cannot run, the design's two blurred glows stand in, so the card
-   never goes flat. */
+   background. It renders through WebGPU, so: loaded on the client only,
+   never under reduced motion or without WebGPU; until it reports ready,
+   and wherever it cannot run, the design's two blurred glows stand in,
+   so the card never goes flat. Every study card in the loop keeps its
+   own canvas (the library pauses the ones off screen itself): mounting
+   them only in view made the slider's settle jump — which swaps in
+   another copy of the card — start a fresh canvas each time, and the
+   card went dark for a beat (Jasper 2026-10-21: "mesh 那张卡片会暗一下然后
+   又亮起来"). */
 const Mesh = dynamic(() => import("@/components/shaders/HelloWorld"), { ssr: false });
+/* may the mesh run here: WebGPU present and motion not reduced — false on
+   the server, read once on the client (an external-store read, so no
+   state is set from an effect) */
+const noSubscribe = () => () => {};
+const canMesh = () => "gpu" in navigator && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+const useCanMesh = () => useSyncExternalStore(noSubscribe, canMesh, () => false);
 
 /* TESTIMONIAL (Figma yFciEPejue3E2xhstXF0Wu 16798:8090; the photos and
    the strokes per the redesign file bHyNfFfV0ocgVPCHtOyYBp 600:1892 —
@@ -151,25 +160,11 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
 }
 
 function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
-  const ref = useRef<HTMLElement>(null);
-  const [inView, setInView] = useState(false);
-  const [meshOn, setMeshOn] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !("gpu" in navigator) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        setInView(entry.isIntersecting);
-        if (!entry.isIntersecting) setMeshOn(false); // unmounted below: the glows come back
-      },
-      { rootMargin: "120px" }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+  const mesh = useCanMesh();
+  const [meshOn, setMeshOn] = useState(false); // has it reported ready
   return (
-    <article ref={ref} className={`${CARD_CLASS} group bg-[#090A0E]`}>
-      {inView && (
+    <article className={`${CARD_CLASS} group bg-[#090A0E]`}>
+      {mesh && (
         <Mesh className="absolute inset-0 size-full" onReady={() => setMeshOn(true)} onUnavailable={() => setMeshOn(false)} />
       )}
       {/* the glows: the stand-in, fading out once the mesh is drawing */}
