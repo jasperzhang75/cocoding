@@ -15,11 +15,11 @@ import { NAV_HEIGHT } from "@/lib/layout";
 /* Infrastructure — the isometric story (Figma 16990:8066 and on),
    driven by scroll. The section arrives straight at frame 4 — the
    ENVIRONMENT cube: the whole panel comes up from dark as it rises into
-   place (bound to scroll), and halfway in the cube springs up into it,
-   the legend and the callouts hopping in after it (timed — modelled on
-   the Loom of column.com's Bank Accounts card Jasper sent, 2026-10-21);
-   at the runway's end the hold takes over and gestures step the later
-   frames. (Until 2026-10-20 three stages came
+   place (bound to scroll), and halfway in the cube springs up into it
+   (timed — modelled on the Loom of column.com's Bank Accounts card Jasper
+   sent, 2026-10-21), the legend and the callouts fading in after it and
+   the lid's mark flickering awake as it lands; at the runway's end the
+   hold takes over and gestures step the later frames. (Until 2026-10-20 three stages came
    first — a block of three isometric layers splitting under FRONTEND /
    BACKEND / DATABASE callouts and settling into the stack — then, for an
    afternoon, the cube grew in with the scroll; Jasper: "去除 1-3 帧",
@@ -32,9 +32,9 @@ import { NAV_HEIGHT } from "@/lib/layout";
      A8A8A8 -> 424242 linear at 50%, dashed 1.8/1.8 at 0.9; the group
      composites through Plus lighter.
    - Panel: 751x679, top corners 10, stroke 0.9 on top/left/right only,
-     painted white -> black at 8%, fill = black under a 2% #3750C8 wash;
-     Ellipse 21903, a blurred blue band along its top edge, lights it in
-     every frame (the design's "光晕", 2026-10-20).
+     painted white -> black at 8%, fill #06080B -> black top to bottom
+     (16990:8244 as of 2026-10-21 — Jasper took the blurred glows off its
+     top "避免波纹状"; black under a 2% #3750C8 wash before).
      At xl the panel is 600 tall, the art cropped (see XL_PANEL_H).
    - Left column tokens as bound in Figma: Indicator+Accent eyebrow,
      Display h2, Heading/sm titles, Body/md desc at Text/Body 60%. */
@@ -91,15 +91,18 @@ const ENV_STACK_Y = [351.7, 334.3, 311];
    cube's center (POP_ORIGIN, the cube-group's center in the 751x679
    space; layoutPanel moves it with the layout) and up by POP.rise,
    overshooting a touch (POP.ease) while they fade in over POP.fadeT —
-   then, from LEGEND.at, the legend's two rows and the three callouts hop
-   in one after another (LEGEND.stagger apart) with the same kind of
-   spring. It rewinds once the panel has left below the viewport, so it
-   plays again on the next arrival. */
+   then, from LEGEND.at, the legend and the callouts simply fade in over
+   LEGEND.t, as frame 5's callouts do (Jasper 2026-10-21: "按照 scalability
+   那个直接渐隐出现 不用弹跳了"), and as the entrance completes the lid's
+   mark flickers awake — one motion with the arrival, not a second one at
+   the runway's end ("不用用两次 scroll 给他分开"). It rewinds once the
+   panel has left below the viewport, so it plays again on the next
+   arrival. */
 const FADE_EASE = "power2.out";
 const ENTER_AT = 0.5;
 const POP = { from: 0.86, rise: 18, t: 0.75, ease: "back.out(1.6)", fadeT: 0.4 };
 const POP_ORIGIN = { x: 374.8, y: 347.1 };
-const LEGEND = { rise: 14, t: 0.55, ease: "back.out(1.5)", stagger: 0.07, at: 0.3 };
+const LEGEND = { t: 0.35, at: 0.45 };
 
 /* THE TABLET PANEL (md, 768-1279; Figma bHyNfFfV0ocgVPCHtOyYBp 1166:917,
    1166:1019, 1168:1080, 1165:742). Two columns again, the panel 344 wide
@@ -377,12 +380,6 @@ const TILES8 = [
 const G_MARK =
   "M11.1704 2.521C7.79434 2.521 4.84359 4.38275 3.45301 7.185C2.84223 8.36414 2.52344 9.67268 2.52344 11.0006C2.52344 12.3286 2.84223 13.6371 3.45301 14.8162C4.84359 17.6176 7.79434 19.4793 11.1704 19.4793C13.4988 19.4793 15.4971 18.7212 16.8941 17.4407C19.1711 15.4487 19.8137 12.3082 19.3306 9.47666C19.3215 9.4234 19.2939 9.37505 19.2526 9.34017C19.2114 9.30528 19.1591 9.28609 19.1051 9.286H11.1704C11.1096 9.286 11.0514 9.31014 11.0084 9.35312C10.9654 9.39609 10.9413 9.45438 10.9413 9.51516V12.5677C10.9413 12.6942 11.0439 12.7968 11.1704 12.7968H15.5411C15.3889 13.4752 14.9113 14.3982 13.9965 15.0179L13.9892 15.0225C13.3613 15.4827 12.3988 15.8035 11.1704 15.8035C8.47909 15.8035 6.33501 13.5531 6.33501 10.9177C6.33501 8.36658 8.60101 6.11433 11.1704 6.11433C12.7013 6.11433 13.6638 6.74041 14.3137 7.29683C14.3571 7.334 14.4129 7.35357 14.4701 7.35171C14.5272 7.34984 14.5816 7.32667 14.6226 7.28675L16.9858 4.97675C17.0085 4.95459 17.0263 4.92797 17.0382 4.89855C17.0501 4.86914 17.0557 4.83758 17.0548 4.80587C17.0538 4.77416 17.0463 4.74299 17.0327 4.71434C17.0191 4.68568 16.9997 4.66017 16.9757 4.63941C15.5008 3.36708 13.507 2.521 11.1704 2.521Z";
 
-/* Figma's Vector 24 — the stage-3 wash at the top of the panel: a blob at
-   9% #2D69B7 with a white 26% hairline, layer-blurred 60.6 (feGaussianBlur
-   stdDeviation = radius / 2), flipped into place by its node transform.
-   Its path and blur are now a pre-rendered raster, public/infrastructure/
-   wash.png — see scripts/infra-glows (2026-09-08, phones stuttered
-   re-running the filter). */
 
 /* The design's grain is generated, not painted: a Figma shader plugin
    whose recipe the designer handed over. Ported here as a one-time canvas
@@ -1099,10 +1096,10 @@ function InfrastructureStage() {
       faces.forEach((f, i) => gsap.set(f, { x: STACK.x, y: ENV_STACK_Y[i], opacity: 0.8 }));
 
       /* THE ENTRANCE (timed; the constants up top): the cube and its stack
-         spring in, then the legend's rows and the callouts hop in one
-         after another. Played by apply() once the panel is ENTER_AT in,
-         rewound once it has left below. Its one-shot side effects (the
-         mark flicker, building the morph) live in land(), not here. */
+         spring in, then the legend and the callouts fade in, and as it
+         completes the lid's mark flickers awake. Played by apply() once
+         the panel is ENTER_AT in, rewound once it has left below. The
+         morph is built in land(), at the runway's end. */
       const env = {
         cube: svg.querySelector("[data-env-cube]"),
         stack: svg.querySelector("[data-cube]"),
@@ -1121,12 +1118,18 @@ function InfrastructureStage() {
          不透明的"). Faded on its own, the stack still adds to the panel. */
       gsap.set(env.pop, { scale: POP.from, y: POP.rise }); // its svgOrigin: layoutPanel
       gsap.set([env.stack, env.cube], { opacity: 0 });
-      gsap.set(env.items, { y: LEGEND.rise, opacity: 0 });
-      const tl2 = gsap.timeline({ paused: true });
+      gsap.set(env.items, { opacity: 0 });
+      const tl2 = gsap.timeline({
+        paused: true,
+        // the mark flickers awake the moment the picture has arrived
+        onComplete: () => {
+          settleMarks(4, "lid");
+          flickerMark();
+        },
+      });
       tl2.to(env.pop, { scale: 1, y: 0, duration: POP.t, ease: POP.ease }, 0);
       tl2.to([env.stack, env.cube], { opacity: 1, duration: POP.fadeT, ease: "power2.out" }, 0);
-      tl2.to(env.items, { y: 0, duration: LEGEND.t, ease: LEGEND.ease, stagger: LEGEND.stagger }, LEGEND.at);
-      tl2.to(env.items, { opacity: 1, duration: LEGEND.t * 0.6, ease: "power1.out", stagger: LEGEND.stagger }, LEGEND.at);
+      tl2.to(env.items, { opacity: 1, duration: LEGEND.t, ease: "power1.out" }, LEGEND.at);
       // clicks arm as the entrance lands
       tl2.set([env.callouts, env.cube], { pointerEvents: "auto" });
 
@@ -1620,8 +1623,8 @@ function InfrastructureStage() {
          Frame 4's entrance: the panel lights up as it rises to the
          viewport's center (apply() sets its opacity from scroll), and
          halfway in the timed entrance (tl2: the cube springs in, the
-         legend and callouts hop in after it) plays, rewinding once the
-         panel has left below. The RUNWAY the stage stays stuck for is
+         legend and callouts fade in after it, the mark flickers as it
+         lands) plays, rewinding once the panel has left below. The RUNWAY the stage stays stuck for is
          the hold's approach. All of it runs only while frame 4 is the
          base: at 5/6/8 the runway is inert and the panel keeps its frame
          wherever the page goes.
@@ -1689,8 +1692,6 @@ function InfrastructureStage() {
          built now, while its start values are what is on screen */
       const land = () => {
         landed = true;
-        settleMarks(4, "lid");
-        flickerMark();
         ensureTl3();
       };
       /* frame 4 is being left upward by the scrub. Anything still
@@ -2032,6 +2033,8 @@ function InfrastructureStage() {
             else if (rise <= 0 && entered) {
               entered = false;
               tl2.pause(0);
+              flickerRef.current?.kill();
+              settleMarks(4, "lid");
             }
           }
           const p = clamp01(g.travel / g.scrub);
@@ -2290,7 +2293,7 @@ function InfrastructureStage() {
           className="relative mt-10 h-[679px] w-full overflow-hidden rounded-t-lg md:mt-0 md:w-[min(751px,calc(100%-344px))] md:shrink-0 xl:absolute xl:left-[449px] xl:top-[7px] xl:h-[600px] xl:w-[751px]"
           style={{
             background:
-              "linear-gradient(0deg, rgba(55,80,200,0.02), rgba(55,80,200,0.02)), #000",
+              "linear-gradient(180deg, #06080B, #000)",
           }}
         >
           <div aria-hidden className="pointer-events-none absolute inset-0 rounded-t-lg" style={ring} />
@@ -2351,26 +2354,6 @@ function InfrastructureStage() {
                 <ellipse cx="368.5" cy="370.5" rx="162.5" ry="177.5" />
               </clipPath>
             </defs>
-
-            {/* the panel's wash — Ellipse 21903 (Figma 17576:8596, read
-                2026-10-20): a 900 x 61 ellipse at 381 / 10.5, #5D7ABE 37%,
-                layer-blurred 150 — a band of light along the panel's top
-                edge, as a raster over its filter region (scripts/
-                infra-glows/wash.html prints it). Under everything and in
-                EVERY frame — it is the panel's, not the cube's: Jasper,
-                "他的目的是提亮的". */}
-            <g data-anchor="center">
-              <g data-wash>
-                <image
-                  href="/infrastructure/wash.png"
-                  x="-294"
-                  y="-245"
-                  width="1350"
-                  height="511"
-                  preserveAspectRatio="none"
-                />
-              </g>
-            </g>
 
             {/* the halo grain — kept but hidden: neither in nor under the
                 cube group read well in review. The generator stays for a
@@ -2662,9 +2645,9 @@ function InfrastructureStage() {
               </g>
             </g>
 
-            {/* interactive callouts — each hops in on its own (the
-                entrance); pointer events stay off until it finishes (the
-                .set at the end of tl2) */}
+            {/* interactive callouts — each fades in with the entrance;
+                pointer events stay off until it finishes (the .set at the
+                end of tl2) */}
             <g data-env-callouts style={{ pointerEvents: "none" }}>
               {ENV_CALLOUTS.map((c) => {
                 const lx = c.anchor === "end" ? c.x2 : c.x1;
