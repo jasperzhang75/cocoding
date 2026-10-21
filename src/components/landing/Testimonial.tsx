@@ -26,11 +26,13 @@ const GAP = 20;
 /* the 0.7px hairline every card wears, INSIDE its edge: a gradient from
    the card's own light grey at the top-left corner to #636363 toward the
    bottom-right, painted at 9% (Figma: strokeAlign INSIDE, paint opacity
-   0.09, gradientTransform corner to corner) */
+   0.09, gradientTransform corner to corner). It is NOT there at rest: it
+   fades in under a hovering pointer (HAIRLINE_CLASS; Jasper 2026-10-21:
+   "鼠标放上去 hover 渐隐出现描边"). */
+const HAIRLINE_CLASS = "pointer-events-none absolute inset-0 rounded-sm opacity-0 transition-opacity duration-300 group-hover:opacity-[0.09]";
 const hairline = (top: string, angle = "142deg", end = "100%"): CSSProperties => ({
   padding: "0.7px",
   background: `linear-gradient(${angle}, ${top} 0%, #636363 ${end})`,
-  opacity: 0.09,
   maskImage: "linear-gradient(#fff 0 0), linear-gradient(#fff 0 0)",
   maskClip: "content-box, border-box",
   maskComposite: "exclude",
@@ -39,17 +41,28 @@ const hairline = (top: string, angle = "142deg", end = "100%"): CSSProperties =>
   WebkitMaskComposite: "xor",
 });
 
-/* The photo sits under a soft elliptical mask in the design (a 300-blur
-   gradient ellipse masks the image group), which is what makes the card
-   read dark: the face shows at ~45% in the middle, the edges fall to
-   ~10%. A radial mask with those stops. */
-const PHOTO_MASK =
-  "radial-gradient(farthest-corner at 58% 46%, rgba(0,0,0,0.46) 0%, rgba(0,0,0,0.33) 35%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0.1) 100%)";
+/* The photo sits under a soft elliptical mask in the design: the image
+   group is masked by "Ellipse 21897", an ellipse with a horizontal
+   gradient whose alpha runs 88% -> 100% -> 73% (OpenAI, 332.6 x 532.2 at
+   115 / -42.7 in the card) or 100% -> 100% -> 75% (Notion, 293.1 x 572.6
+   at 218.4 / -68), layer-blurred 300 — so the face shows near fully and
+   the card's edges fall away softly. Jasper brightened those alphas on
+   2026-10-21 (they ran 0 -> 100 -> 0 before, the face at ~45%: "之前那
+   个太灰了"). Each mask is rendered once from that very geometry
+   (scripts/testimonial-masks) and worn as a CSS alpha mask. */
+const photoMask = (name: string): CSSProperties => ({
+  maskImage: `url(/testimonials/mask-${name}.png)`,
+  maskSize: "100% 100%",
+  maskRepeat: "no-repeat",
+  WebkitMaskImage: `url(/testimonials/mask-${name}.png)`,
+  WebkitMaskSize: "100% 100%",
+  WebkitMaskRepeat: "no-repeat",
+});
 
 /* logoW: the logo's design width over the card's 386, in cqw — so it
    scales with the card (111 / 96 / 82 wide at 386) */
 type Card =
-  | { kind: "quote"; logo: ReactNode; logoW: string; photo: string; name: string; text: string; top: string; fill: string }
+  | { kind: "quote"; logo: ReactNode; logoW: string; photo: string; mask: string; name: string; text: string; top: string; fill: string }
   | { kind: "study"; logo: ReactNode; logoW: string; stat: string; statLabel: string; kicker: string; title: string; top: string };
 
 const openai: Card = {
@@ -57,6 +70,7 @@ const openai: Card = {
   logo: <OpenAILogo />,
   logoW: "28.76cqw",
   photo: "/testimonials/quote-openai-hd.png",
+  mask: "openai",
   name: "Gabriel Peal, Frontend Developer",
   text: "“ It's the first AI tool that doesn't feel like a toy. ”",
   top: "#BEBEBE",
@@ -77,6 +91,7 @@ const notion: Card = {
   logo: <NotionLogo />,
   logoW: "21.24cqw",
   photo: "/testimonials/quote-notion-hd.png",
+  mask: "notion",
   name: "Gabriel Peal, Backend Developer",
   text: "“ Cocoding built a dashboard that actually looks good.”",
   top: "#A6A6A6",
@@ -106,14 +121,14 @@ const QUOTE = "mt-1.5 text-body-md xl:text-[1.25rem] xl:leading-[1.375] xl:track
 
 function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
   return (
-    <article className={CARD_CLASS} style={{ background: card.fill }}>
+    <article className={`${CARD_CLASS} group`} style={{ background: card.fill }}>
       <Image
         src={card.photo}
         alt=""
         fill
         sizes="(min-width: 1280px) 386px, (min-width: 768px) 33vw, 84vw"
         className="object-cover"
-        style={{ maskImage: PHOTO_MASK, WebkitMaskImage: PHOTO_MASK }}
+        style={photoMask(card.mask)}
       />
       <div className="absolute [&>svg]:h-auto [&>svg]:w-full" style={{ left: PAD, top: PAD, width: card.logoW }}>
         {card.logo}
@@ -125,14 +140,14 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
         <p className={NAME}>{card.name}</p>
         <p className={`${QUOTE} text-text-primary`}>{card.text}</p>
       </div>
-      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-sm" style={hairline(card.top)} />
+      <div aria-hidden className={HAIRLINE_CLASS} style={hairline(card.top)} />
     </article>
   );
 }
 
 function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
   return (
-    <article className={`${CARD_CLASS} bg-[#090A0E]`}>
+    <article className={`${CARD_CLASS} group bg-[#090A0E]`}>
       {/* Ellipse 21888 / 21891 as the design draws them (16798:8285 /
           8286, read 2026-10-12): two 289 x 206 ellipses, #18365F ->
           #245292 -> #316FC5 at 52%, LAYER-BLURRED 300 (CSS blur 150) —
@@ -176,7 +191,7 @@ function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
         <p className={`${QUOTE} text-white/90`}>{card.title}</p>
       </div>
       {/* this card's gradient runs steeper and settles by mid-card */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-sm" style={hairline(card.top, "146deg", "55%")} />
+      <div aria-hidden className={HAIRLINE_CLASS} style={hairline(card.top, "146deg", "55%")} />
     </article>
   );
 }
