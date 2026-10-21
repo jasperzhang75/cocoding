@@ -1865,8 +1865,16 @@ function InfrastructureStage() {
         captured = true;
         capturedAt = performance.now();
         acc = 0;
-        gestureUsed = true; // the gesture that brought us here is spent —
-        arrival = true; // — until the hold has settled, see onWheel
+        /* The gesture that brought us here is spent — unless frame 4 was
+           already standing whole when it began: then the runway's few
+           pixels were all it did, and it is a step the user meant (Jasper
+           2026-10-21, the first visit: "立方体弹跳出现之后 scroll 到
+           scalability 直接有一个 scroll 的手势空挡"). Mid-entrance, or
+           arriving at another frame from below, it is spent until the hold
+           has settled (see onWheel's arrival rule). */
+        const formed = frameRef.current === 4 && entered && !tl2.isActive();
+        gestureUsed = !formed;
+        arrival = !formed;
         touchGesture();
         // come to rest exactly on the runway's end, whichever side we came from
         settleAtEnd(overshoot);
