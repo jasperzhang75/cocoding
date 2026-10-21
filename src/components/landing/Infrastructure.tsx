@@ -189,9 +189,13 @@ const ENV_CALLOUTS = [
 ];
 
 /* The RUNWAY: the stage sticks at the viewport's center while this much
-   extra scroll passes underneath it, and that scroll drives the last leg
-   of frame 4's entrance (see the effect's navigation section). */
-const RUNWAY = 500;
+   extra scroll passes underneath it before the hold captures the page at
+   its end (see the effect's navigation section). It was 500px while the
+   3 -> 4 scrub lived on it; with the entrance timed (2026-10-21) that
+   stretch was dead scroll on every first arrival (Jasper: "空 scroll"),
+   so it is now just long enough for the crossing to be seen. Mirrored in
+   globals.css (.infra-runway). */
+const RUNWAY = 120;
 
 /* Frame 4 (ENVIRONMENT, Figma 17205:87852): the cube around the stack, the
    ambient glow, the legend and three callouts. All values off the nodes:
@@ -930,9 +934,15 @@ function InfrastructureStage() {
           el.style.display = on ? "" : "none";
         });
       // the entrance springs the cube in about its center — where that
-      // is in this layout (centered, lifted at md like its groups)
+      // is in this layout (centered, lifted at md like its groups).
+      // smoothOrigin OFF: GSAP otherwise keeps the group where it LOOKS
+      // when the origin moves — and before the entrance it stands scaled
+      // down, so a layout change then (a window narrowed from the tablet
+      // width, a phone turned) left it offset for good once it had
+      // grown: Jasper's off-center cube on mobile, 2026-10-21.
       gsap.set(svg.querySelector("[data-pop]"), {
         svgOrigin: `${POP_ORIGIN.x + dxC} ${POP_ORIGIN.y - (narrow ? MD_LIFT : 0)}`,
+        smoothOrigin: false,
       });
       // the cube frames' callouts: three around the cube at xl; at md one
       // centered block beneath it — the lit face's label and description
@@ -1613,6 +1623,7 @@ function InfrastructureStage() {
         const cur = frameRef.current;
         if (target === cur) return;
         if (cur === 4 && !landed) return; // frame 4 not formed yet (see apply's tolerance)
+        if (cur === 4 && tl2.isActive()) tl2.progress(1); // a step mid-entrance lands it first
         if (cur === 4 && target === 5) return stepTo5();
         if (cur === 5 && target === 4) return stepBack4();
         if (target === 6) return stepTo6(cur as 4 | 5 | 8, instant);
@@ -2131,7 +2142,8 @@ function InfrastructureStage() {
          comes to the runway's end first — the scrub completing on the
          way — then the frame plays. */
       goToFrameRef.current = (target) => {
-        if (tl2.isActive() || target === frameRef.current) return;
+        if (target === frameRef.current) return;
+        if (tl2.isActive()) tl2.progress(1); // a click mid-entrance lands it first
         const instant = interrupt();
         if (reduced) return goTo(target, instant);
         if (bandsOn()) {

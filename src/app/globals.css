@@ -242,7 +242,8 @@ body {
    reduced motion. */
 /* the Infrastructure runway, before its effect measures anything: the
    same numbers the JS sets (layoutPanel), so the page is the same length
-   from the first paint. --runway: the 500px scrub, plus on touch four
+   from the first paint. --runway: the 120px approach to the hold (500
+   while the 3 -> 4 scrub lived on it, until 2026-10-21), plus on touch four
    bands of clamp(320, 70svh, 700) and the stage's centering offset (the
    stage is 679 tall from md; a phone's is taller, hence the max(0)).
    --stick-top: the stage centered when it fits, else its bottom on the
@@ -252,7 +253,7 @@ body {
    2026-10-15), never so low that the bottom leaves the viewport — the
    same formulas as stickTop() in Infrastructure.tsx. */
 .infra-runway {
-  --runway: 500px;
+  --runway: 120px;
   --stick-top: min(100svh - 679px, (100svh + var(--nav-height) - 679px) / 2);
 }
 @media (min-width: 80rem) {
@@ -262,7 +263,7 @@ body {
 }
 @media (hover: none) and (prefers-reduced-motion: no-preference) {
   .infra-runway {
-    --runway: calc(500px + 4 * clamp(320px, 70svh, 700px) + max(0px, min(100svh - 679px, (100svh + var(--nav-height) - 679px) / 2)));
+    --runway: calc(120px + 4 * clamp(320px, 70svh, 700px) + max(0px, min(100svh - 679px, (100svh + var(--nav-height) - 679px) / 2)));
   }
 }
 
