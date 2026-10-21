@@ -95,7 +95,14 @@ const notion: Card = {
   name: "Gabriel Peal, Backend Developer",
   text: "“ Cocoding built a dashboard that actually looks good.”",
 };
-const CARDS: Card[] = [openai, ramp, notion, openai, ramp, notion];
+/* the second half of the loop: the same three cards with two other
+   people (Jasper 2026-10-21: "剩下几张图换些人"), portraits generated to
+   match the first two — an office, a medium shot, soft window light —
+   with Figma's image model (928 x 1152, in the redesign file as nodes
+   1312:62 and 1313:62). Placeholder names and quotes as before. */
+const openaiB: Card = { ...openai, photo: "/testimonials/quote-openai-b-hd.jpg" };
+const notionB: Card = { ...notion, photo: "/testimonials/quote-notion-b-hd.jpg" };
+const CARDS: Card[] = [openai, ramp, notion, openaiB, ramp, notionB];
 
 /* ---------------------------------------------------------------- cards */
 
