@@ -8,7 +8,9 @@ import { EYEBROW_SCRAMBLE } from "./eyebrow";
 import { NotionLogo, OpenAILogo, RampLogo } from "./testimonial-logos";
 import { onArrival } from "./on-arrival";
 
-/* TESTIMONIAL (Figma yFciEPejue3E2xhstXF0Wu 16798:8090). A row of
+/* TESTIMONIAL (Figma yFciEPejue3E2xhstXF0Wu 16798:8090; the photo
+   treatment and the strokes from the redesign file bHyNfFfV0ocgVPCHtOyYBp
+   600:1892 since 2026-10-21). A row of
    386 x 481 cards, 20px apart, that slides one card per arrow press
    (prev / next; the design's reset arrow was dropped) and loops without
    end;
@@ -23,44 +25,44 @@ import { onArrival } from "./on-arrival";
 const CARD_W = 386; // cards are 386 x 481
 const GAP = 20;
 
-/* the 0.7px hairline every card wears, INSIDE its edge: a gradient from
-   the card's own light grey at the top-left corner to #636363 toward the
-   bottom-right, painted at 9% (Figma: strokeAlign INSIDE, paint opacity
-   0.09, gradientTransform corner to corner) */
-const hairline = (top: string, angle = "142deg", end = "100%"): CSSProperties => ({
-  padding: "0.7px",
-  background: `linear-gradient(${angle}, ${top} 0%, #636363 ${end})`,
-  opacity: 0.09,
+/* the 0.9px stroke every card wears INSIDE its edge (600:1892): white at
+   6% at rest, and under a hovering pointer it comes up to the 24% the
+   design's first card shows (Jasper 2026-10-21: "如果卡片被鼠标 hover 是会
+   渐隐出现第一张卡片的 stroke") — a padding + mask ring whose opacity
+   transitions. (Until then a 0.7px corner-to-corner gradient at 9%, from
+   the older file.) */
+const RING: CSSProperties = {
+  padding: "0.9px",
+  background: "#FFFFFF",
   maskImage: "linear-gradient(#fff 0 0), linear-gradient(#fff 0 0)",
   maskClip: "content-box, border-box",
   maskComposite: "exclude",
   WebkitMaskImage: "linear-gradient(#fff 0 0), linear-gradient(#fff 0 0)",
   WebkitMaskClip: "content-box, border-box",
   WebkitMaskComposite: "xor",
-});
+};
+const RING_CLASS = "pointer-events-none absolute inset-0 rounded-sm opacity-[0.06] transition-opacity duration-300 group-hover:opacity-[0.24]";
 
-/* The photo sits under a soft elliptical mask in the design (a 300-blur
-   gradient ellipse masks the image group), which is what makes the card
-   read dark: the face shows at ~45% in the middle, the edges fall to
-   ~10%. A radial mask with those stops. */
-const PHOTO_MASK =
-  "radial-gradient(farthest-corner at 58% 46%, rgba(0,0,0,0.46) 0%, rgba(0,0,0,0.33) 35%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0.1) 100%)";
+/* The photos: the card's own image fill at the design's opacity over
+   the page's black — 80% for the OpenAI card, 70% for Notion (600:2052 /
+   600:2079) — nothing else. The older file masked them under a blurred
+   ellipse down to ~45% at the face and ~10% at the edges, which Jasper
+   found too grey (2026-10-21: "之前那个太灰了"). */
 
 /* logoW: the logo's design width over the card's 386, in cqw — so it
    scales with the card (111 / 96 / 82 wide at 386) */
 type Card =
-  | { kind: "quote"; logo: ReactNode; logoW: string; photo: string; name: string; text: string; top: string; fill: string }
-  | { kind: "study"; logo: ReactNode; logoW: string; stat: string; statLabel: string; kicker: string; title: string; top: string };
+  | { kind: "quote"; logo: ReactNode; logoW: string; photo: string; photoOpacity: number; name: string; text: string }
+  | { kind: "study"; logo: ReactNode; logoW: string; stat: string; statLabel: string; kicker: string; title: string };
 
 const openai: Card = {
   kind: "quote",
   logo: <OpenAILogo />,
   logoW: "28.76cqw",
   photo: "/testimonials/quote-openai-hd.png",
+  photoOpacity: 0.8,
   name: "Gabriel Peal, Frontend Developer",
   text: "“ It's the first AI tool that doesn't feel like a toy. ”",
-  top: "#BEBEBE",
-  fill: "rgba(255,255,255,0.02)",
 };
 const ramp: Card = {
   kind: "study",
@@ -70,17 +72,15 @@ const ramp: Card = {
   statLabel: "Learner satisfaction",
   kicker: "Case study",
   title: "How Ramp builds next-generation payment tools",
-  top: "#DFDFDF",
 };
 const notion: Card = {
   kind: "quote",
   logo: <NotionLogo />,
-  logoW: "21.24cqw",
+  logoW: "23.83cqw", // 92 wide — the wordmark overruns the design's 82 frame
   photo: "/testimonials/quote-notion-hd.png",
+  photoOpacity: 0.7,
   name: "Gabriel Peal, Backend Developer",
   text: "“ Cocoding built a dashboard that actually looks good.”",
-  top: "#A6A6A6",
-  fill: "rgba(255,255,255,0.03)",
 };
 const CARDS: Card[] = [openai, ramp, notion, openai, ramp, notion];
 
@@ -106,14 +106,14 @@ const QUOTE = "mt-1.5 text-body-md xl:text-[1.25rem] xl:leading-[1.375] xl:track
 
 function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
   return (
-    <article className={CARD_CLASS} style={{ background: card.fill }}>
+    <article className={`${CARD_CLASS} group`}>
       <Image
         src={card.photo}
         alt=""
         fill
         sizes="(min-width: 1280px) 386px, (min-width: 768px) 33vw, 84vw"
         className="object-cover"
-        style={{ maskImage: PHOTO_MASK, WebkitMaskImage: PHOTO_MASK }}
+        style={{ opacity: card.photoOpacity }}
       />
       <div className="absolute [&>svg]:h-auto [&>svg]:w-full" style={{ left: PAD, top: PAD, width: card.logoW }}>
         {card.logo}
@@ -125,14 +125,14 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
         <p className={NAME}>{card.name}</p>
         <p className={`${QUOTE} text-text-primary`}>{card.text}</p>
       </div>
-      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-sm" style={hairline(card.top)} />
+      <div aria-hidden className={RING_CLASS} style={RING} />
     </article>
   );
 }
 
 function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
   return (
-    <article className={`${CARD_CLASS} bg-[#090A0E]`}>
+    <article className={`${CARD_CLASS} group bg-[#090A0E]`}>
       {/* Ellipse 21888 / 21891 as the design draws them (16798:8285 /
           8286, read 2026-10-12): two 289 x 206 ellipses, #18365F ->
           #245292 -> #316FC5 at 52%, LAYER-BLURRED 300 (CSS blur 150) —
@@ -175,8 +175,7 @@ function StudyCard({ card }: { card: Extract<Card, { kind: "study" }> }) {
         <p className={NAME}>{card.kicker}</p>
         <p className={`${QUOTE} text-white/90`}>{card.title}</p>
       </div>
-      {/* this card's gradient runs steeper and settles by mid-card */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-sm" style={hairline(card.top, "146deg", "55%")} />
+      <div aria-hidden className={RING_CLASS} style={RING} />
     </article>
   );
 }
