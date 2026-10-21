@@ -7,18 +7,22 @@ import { EYEBROW_SCRAMBLE } from "./eyebrow";
 import { AUTH_URL } from "@/lib/links";
 
 /* PRICING, redesigned (Figma bHyNfFfV0ocgVPCHtOyYBp 4:8 in "MacBook Air -
-   34", read 2026-10-12; was yFciEPejue3E2xhstXF0Wu 16660:18869). Eyebrow,
-   48px heading in Title Case (the design's textCase TITLE), and three
-   SEPARATE 386 x 586 cards 21 apart — no longer one shared hairline box:
-   Starter | Pro | Enterprise. Placeholder content: the switch only flips,
-   the credits picker only looks like one.
+   34", read 2026-10-12, then its successor yFciEPejue3E2xhstXF0Wu
+   17584:8606 — the same frame moved back into the main file — read
+   2026-10-21; was 16660:18869 at first). Eyebrow, 48px heading in Title
+   Case (the design's textCase TITLE), and three SEPARATE 386 x 586 cards
+   21 apart — no longer one shared hairline box: Starter | Pro |
+   Enterprise. Placeholder content: the switch only flips, the credits
+   picker only looks like one.
 
-   Cards: radius 10, a 1px stroke INSIDE, white 6% on all three (Pro since
-   Jasper 2026-10-15 — the design's top-to-bottom gradient #4362BA 43% ->
-   #8382A1 40% at paint opacity 34% before), drawn as inset shadows so the
-   padding stays exact. Pro fills
-   white 3% and carries Ellipse 21887, the blurred blue glow, now centered
-   in the card. Content starts 37 from the top and 32 from the left; the
+   Cards: radius 10, a 1px stroke INSIDE. Starter and Enterprise fill
+   #0A0A0A (2026-10-21; nothing before, the page's black showing through)
+   with a white 6% stroke, drawn as an inset shadow so the padding stays
+   exact. Pro fills white 3%, wears a top-to-bottom gradient stroke
+   #69AFFF -> #FFFFFF at 24% (2026-10-21; for a week a 0.8px white 6%
+   line at Jasper's ask, and the first redesign's #4362BA -> #8382A1 at
+   34% before that) and carries Ellipse 21887, the blurred blue glow,
+   centered in the card. Content starts 37 from the top and 32 from the left; the
    buttons are 318 wide, which leaves 36 on the right, and end 34 above
    the bottom. Buttons: Starter white 10% with the whole button at 60%,
    Pro #4362BA, Enterprise white with #0A0A0A text. The Annual switch sits
@@ -367,6 +371,7 @@ function Credits({ annual, value, onChange }: { annual: boolean; value: CreditPa
 function ProCard() {
   const [annual, setAnnual] = useState(true);
   const [pack, setPack] = useState<CreditPack>(NO_PACK);
+  const ringId = useId();
   return (
     <article className={`${CARD} bg-white/[0.03]`}>
       {/* Ellipse 21887: a 348 x 249 ellipse turned -90°, so a 249 x
@@ -383,7 +388,14 @@ function ProCard() {
           filter: "blur(150px)",
         }}
       />
-      <Hairline radius={10} />
+      {/* the design's ring: 1px inside, #69AFFF at the top running to white
+          at the bottom, the whole stroke at 24% */}
+      <Hairline radius={10} width={1} opacity={0.24} stroke={`url(#${ringId})`}>
+        <linearGradient id={ringId} x1="0" y1="0" x2="0" y2="1">
+          <stop stopColor="#69AFFF" />
+          <stop offset="1" stopColor="#FFFFFF" />
+        </linearGradient>
+      </Hairline>
       <AnnualSwitch on={annual} onChange={setAnnual} />
       <div className="relative flex grow flex-col">
         <Header plan={PRO} price={<ProPrice annual={annual} pack={pack} />} />
@@ -404,32 +416,49 @@ function ProCard() {
 /* the card box: radius 10, the design's padding (37 top, 32 left, 36 right,
    34 bottom), a column so the buttons can sit at the bottom */
 const CARD = "relative flex flex-col overflow-hidden rounded-[10px] pb-[34px] pl-8 pr-9 pt-[37px] xl:min-h-[586px]";
-/* Starter and Enterprise: the 1px white 6% stroke inside */
+/* Starter and Enterprise: #0A0A0A with the 1px white 6% stroke inside */
+const PLAIN_CARD = `${CARD} bg-[#0A0A0A]`;
 const PLAIN_STROKE: CSSProperties = { boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" };
-/* Pro: a 0.8px white 6% stroke inside (Jasper 2026-10-15: white 8%, then
-   6%, then 0.8px wide; the design's #4362BA -> #8382A1 gradient ring at
-   34% before). An SVG stroke: at 2x, inset box-shadows (Safari) and
+/* A stroke drawn as an SVG rect over its box: the Pro card's ring (1px,
+   the design's #69AFFF -> white gradient at 24%, 2026-10-21; a 0.8px
+   white 6% line for the week before, Jasper's) and the credits menu's
+   0.8px white 6% hairline (Jasper 2026-10-15: its 1px white 10% border
+   "也要变细和变淡"). Why an SVG: at 2x, inset box-shadows (Safari) and
    padding-mask rings (both engines) snap 0.8px to two full device pixels
    — the same as 1px — while an SVG stroke draws one full and one 60%
    pixel in Chromium and WebKit alike (measured 2026-10-15). The <svg>
-   covers the card exactly (an offset <svg> gets snapped to device pixels,
-   which pushed half the stroke out of the card); the RECT is inset 0.4px
-   by CSS geometry (x / y / width / height as properties, so calc() works)
-   and its stroke straddles that line, covering the box's outer 0.8px at
-   any size; rx is the box's radius less 0.4. An overlay above everything
-   in its box — on the Pro card, above the blue glow, which would paint
-   over the card's own border. The credits menu wears the same (Jasper
-   2026-10-15: its 1px white 10% border "也要变细和变淡"). */
-function Hairline({ radius }: { radius: number }) {
+   covers the box exactly (an offset <svg> gets snapped to device pixels,
+   which pushed half the stroke out of the card); the RECT is inset by
+   half the width through CSS geometry (x / y / width / height as
+   properties, so calc() works) and its stroke straddles that line,
+   covering the box's outer `width` at any size; rx is the box's radius
+   less that half. An overlay above everything in its box — on the Pro
+   card, above the blue glow, which would paint over the card's own
+   border. `children` go into <defs> (the Pro ring's gradient). */
+function Hairline({
+  radius,
+  width = 0.8,
+  opacity = 0.06,
+  stroke = "#FFFFFF",
+  children,
+}: {
+  radius: number;
+  width?: number;
+  opacity?: number;
+  stroke?: string;
+  children?: React.ReactNode;
+}) {
+  const half = width / 2;
   return (
     <svg aria-hidden className="pointer-events-none absolute inset-0 size-full">
+      {children && <defs>{children}</defs>}
       <rect
-        rx={radius - 0.4}
+        rx={radius - half}
         fill="none"
-        stroke="#FFFFFF"
-        strokeOpacity="0.06"
-        strokeWidth="0.8"
-        className="[x:0.4px] [y:0.4px] h-[calc(100%-0.8px)] w-[calc(100%-0.8px)]"
+        stroke={stroke}
+        strokeOpacity={opacity}
+        strokeWidth={width}
+        style={{ x: `${half}px`, y: `${half}px`, width: `calc(100% - ${width}px)`, height: `calc(100% - ${width}px)` }}
       />
     </svg>
   );
@@ -454,7 +483,7 @@ export default function Pricing() {
         <h2 className="mt-3 text-heading-lg capitalize text-text-primary xl:text-display">Start for free, scale when ready.</h2>
 
         <div className="mt-[60px] grid grid-cols-1 gap-[21px] md:grid-cols-3">
-          <article className={CARD} style={PLAIN_STROKE}>
+          <article className={PLAIN_CARD} style={PLAIN_STROKE}>
             <Header plan={STARTER} />
             <Features items={STARTER.items} />
             <div className={CTA_BLOCK}>
@@ -464,7 +493,7 @@ export default function Pricing() {
 
           <ProCard />
 
-          <article className={CARD} style={PLAIN_STROKE}>
+          <article className={PLAIN_CARD} style={PLAIN_STROKE}>
             <Header plan={ENTERPRISE} />
             <Features items={ENTERPRISE.items} />
             <div className={CTA_BLOCK}>
