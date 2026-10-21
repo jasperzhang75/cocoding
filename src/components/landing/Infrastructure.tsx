@@ -1105,6 +1105,7 @@ function InfrastructureStage() {
          mark flicker, building the morph) live in land(), not here. */
       const env = {
         cube: svg.querySelector("[data-env-cube]"),
+        stack: svg.querySelector("[data-cube]"),
         callouts: svg.querySelector("[data-env-callouts]"),
         pop: svg.querySelector("[data-pop]"),
         items: [
@@ -1112,11 +1113,18 @@ function InfrastructureStage() {
           ...Array.from(svg.querySelectorAll("[data-co-item]")),
         ],
       };
-      gsap.set(env.pop, { scale: POP.from, y: POP.rise, opacity: 0 }); // its svgOrigin: layoutPanel
+      /* the fade rides on the stack and the cube THEMSELVES, never on the
+         wrapper: an opacity on the wrapper isolates it, and inside an
+         isolated group the stack's plus-lighter has only transparency to
+         add to — its black faces came through as solid black squares all
+         through the entrance (Jasper 2026-10-21: "中间的三个部分是黑色的
+         不透明的"). Faded on its own, the stack still adds to the panel. */
+      gsap.set(env.pop, { scale: POP.from, y: POP.rise }); // its svgOrigin: layoutPanel
+      gsap.set([env.stack, env.cube], { opacity: 0 });
       gsap.set(env.items, { y: LEGEND.rise, opacity: 0 });
       const tl2 = gsap.timeline({ paused: true });
       tl2.to(env.pop, { scale: 1, y: 0, duration: POP.t, ease: POP.ease }, 0);
-      tl2.to(env.pop, { opacity: 1, duration: POP.fadeT, ease: "power2.out" }, 0);
+      tl2.to([env.stack, env.cube], { opacity: 1, duration: POP.fadeT, ease: "power2.out" }, 0);
       tl2.to(env.items, { y: 0, duration: LEGEND.t, ease: LEGEND.ease, stagger: LEGEND.stagger }, LEGEND.at);
       tl2.to(env.items, { opacity: 1, duration: LEGEND.t * 0.6, ease: "power1.out", stagger: LEGEND.stagger }, LEGEND.at);
       // clicks arm as the entrance lands
@@ -2406,12 +2414,13 @@ function InfrastructureStage() {
             </g>
 
             {/* THE PICTURE THAT SPRINGS IN (the entrance, in the effect): the
-                stack and the cube, scaled about the cube's center, lifted
-                and faded by tl2 — unseen until it plays */}
-            <g data-pop style={{ opacity: 0 }}>
+                stack and the cube, scaled about the cube's center and lifted
+                by tl2 — which fades the two of them, not this wrapper (see
+                the effect: an opacity here would isolate the stack's blend) */}
+            <g data-pop>
             {/* the stack: three layers under the cube, in their frame-4
                 pose (the effect states it too, for the morph's sake) */}
-            <g data-cube data-anchor="center" data-md-lift={MD_LIFT} style={{ mixBlendMode: "plus-lighter" }}>
+            <g data-cube data-anchor="center" data-md-lift={MD_LIFT} style={{ mixBlendMode: "plus-lighter", opacity: 0 }}>
               {ENV_STACK_Y.map((y) => (
                 <g key={y} data-face transform={`translate(${STACK.x} ${y})`} style={{ opacity: 0.8 }}>
                   <rect
@@ -2459,7 +2468,7 @@ function InfrastructureStage() {
                 AVAILABILITY. Each carries its dim skin (the translucent
                 pair) with a lit overlay (the lid's gradient in its own
                 local space) crossfaded by the swap. */}
-            <g data-env-cube data-anchor="center" data-md-lift={MD_LIFT} style={{ pointerEvents: "none" }}>
+            <g data-env-cube data-anchor="center" data-md-lift={MD_LIFT} style={{ opacity: 0, pointerEvents: "none" }}>
               <g
                 data-cube-face="lid"
                 transform={CUBE.lid}
