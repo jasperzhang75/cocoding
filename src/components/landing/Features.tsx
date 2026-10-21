@@ -103,14 +103,14 @@ function Bleed({
 /* ---------------------------------------------------------------- card 1 */
 
 /* From the redesign file (bHyNfFfV0ocgVPCHtOyYBp 1063:460, read
-   2026-10-20): the same card as before with the card #0D0D0D (Jasper 2026-10-21; #080707 from 2026-10-20, black before),
+   2026-10-20): the same card as before with the card #080707 (was black),
    the panel's edge #E0E0E0 17% (Jasper's call, over the file's 13%) and
    BUILDING cap-trimmed in a
    9.43px row (its cap top on the design's 36; the row was a 17.9px line
    box before, the caps ~4px low). Everything else matched the nodes. */
 function AgentsCard() {
   return (
-    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.06] bg-[#0D0D0D] md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
+    <div data-agents-card className="order-1 relative w-full max-w-[600px] overflow-hidden rounded-md border border-white/[0.06] bg-[#080707] md:rounded-none md:rounded-tl-xl md:border-b-0 xl:absolute xl:left-0 xl:top-0 xl:h-[610px] xl:w-[600px] xl:max-w-none">
       <CardHeader
         leftClass="xl:left-[35px]"
         title="Go faster with parallel agents"

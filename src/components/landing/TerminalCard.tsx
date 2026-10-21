@@ -34,7 +34,7 @@ import PosterViewport from "./PosterViewport";
    state.
 
    From the redesign file (bHyNfFfV0ocgVPCHtOyYBp 1063:535, read
-   2026-10-20): the card is #0D0D0D (Jasper 2026-10-21; #080707 from 2026-10-20, black before), the outer mask Rectangle
+   2026-10-20): the card is #080707 (was black), the outer mask Rectangle
    2615 is 610 wide (was 580; export 1010 x 811) and the panel's lower
    #3A4780 glow (Ellipse 21890 at 80/206) is hidden. The rest matched.
    The panel's edge is #E0E0E0 17% — Jasper's call over the file's 13%. */
@@ -282,7 +282,7 @@ export default function TerminalCard() {
   return (
     <div
       ref={rootRef}
-      className="order-3 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.06] bg-[#0D0D0D] md:grow md:rounded-none md:rounded-br-xl md:border-l-0 xl:block xl:grow-0 xl:absolute xl:left-[600px] xl:top-[462px] xl:h-[611px] xl:w-[600px] xl:max-w-none"
+      className="order-3 relative flex w-full max-w-[600px] flex-col overflow-hidden rounded-md border border-white/[0.06] bg-[#080707] md:grow md:rounded-none md:rounded-br-xl md:border-l-0 xl:block xl:grow-0 xl:absolute xl:left-[600px] xl:top-[462px] xl:h-[611px] xl:w-[600px] xl:max-w-none"
     >
       <div className="flex flex-col gap-3 px-7 pb-6 pt-8 xl:absolute xl:left-[36px] xl:top-[35px] xl:w-[496px] xl:p-0">
         <p className="text-body-md text-text-primary xl:text-heading-sm">Error auto-fix as you move forward</p>
