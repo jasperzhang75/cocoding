@@ -41,8 +41,8 @@ import UnicornScene from "./UnicornScene";
      an evening; white 8% -> 2.6% before) — which LIGHTS UP as the section arrives: it stands at its
      dim bottom value and cross-fades to the bright gradient with the
      entrance (Jasper: "scroll 下来的时候这个边框亮的部分是慢慢点亮的"),
-     see RING. Fill #050505, the design's (17205:88091, 2026-10-22; #06080B ->
-     black before, and Jasper took the
+     see RING. Fill rgba(6,16,36,.8) -> rgba(0,0,0,.8), the design's (16990:8066,
+     2026-10-23; #06080B -> black before, and Jasper took the
      blurred glows off its top the same day, "避免波纹状"; black under a
      2% #3750C8 wash before).
      At xl the panel is 600 tall, the art cropped (see XL_PANEL_H).
@@ -2446,10 +2446,11 @@ function InfrastructureStage() {
           ref={panelRef}
           className="relative mt-10 h-[679px] w-full overflow-hidden rounded-t-lg md:mt-0 md:w-[min(751px,calc(100%-344px))] md:shrink-0 xl:absolute xl:left-[449px] xl:top-[7px] xl:h-[600px] xl:w-[751px]"
           style={{
-            // the design's fill (yFciEPejue3E2xhstXF0Wu 17205:88091, panel 17205:88269,
-            // 2026-10-22): flat #050505. Before that evening: #06080B -> black, a flat
-            // #060C12 for an hour, then 17205:88030's #020A12 -> black.
-            background: "#050505",
+            // the design's fill (yFciEPejue3E2xhstXF0Wu 16990:8066, panel 16990:8244,
+            // 2026-10-23): rgba(6,16,36,.8) -> rgba(0,0,0,.8) top to bottom, over
+            // the page's #010101. Before: #06080B -> black, #060C12 for an hour,
+            // 17205:88030's #020A12 -> black, then 17205:88091's flat #050505.
+            background: "linear-gradient(180deg, rgba(6,16,36,0.8), rgba(0,0,0,0.8))",
           }}
         >
           {/* THE AMBIENT: the Unicorn Studio scene (a dark, slowly breathing

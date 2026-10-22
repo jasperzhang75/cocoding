@@ -15,8 +15,8 @@
       "component": "SapphirePearl",
       "file": "src/components/shaders/SapphirePearl.tsx",
       "framework": "react",
-      "hash": "sha256:24db38dfc74fb064959d68f9c4188d51cbf6f7e13087de0737b7c4f44293f0a6",
-      "updatedAt": "2026-10-22T17:01:53.23632+00:00",
+      "hash": "sha256:9fe14af0287e837c4484f4d319d2b78f7f6ecdd5a072dd2b840f3ed95e411c21",
+      "updatedAt": "2026-10-22T19:30:31.728541+00:00",
       "installedAt": "2026-10-22T09:31:18.039Z"
     }
   }
