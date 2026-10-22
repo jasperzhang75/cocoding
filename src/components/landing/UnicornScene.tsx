@@ -13,17 +13,36 @@ import { loadSdk, onFirstFrame, type Scene } from "./unicorn";
    scene is created only once the host is within a viewport of the screen
    (an observer here, not the SDK's lazyLoad, so the hero's first-frame
    logic applies), so a scene far down the page costs nothing while the
-   top is being read; dpi 1.5 like the hero, fps per scene. Reduced
+   top is being read; dpi 1.5 like the hero by default, and a scene may
+   ask for a lighter canvas on touch devices (`dpiTouch`: a phone's GPU
+   renders every pass at that pixel ratio, and a soft blob needs no 3x
+   sharpness — Jasper 2026-10-22: "infrastructure 部分的动画有点卡 尤其是到了
+   integration 部分"); fps per scene. `?noscene` in the URL loads no scene
+   at all, for telling a scene's cost apart on a device by hand. Reduced
    motion: nothing loads, the parent's own fill stays. */
 
 const NEAR = "100% 0px"; // start a viewport early
 
-export default function UnicornScene({ projectId, fps = 60, className = "" }: { projectId: string; fps?: number; className?: string }) {
+export default function UnicornScene({
+  projectId,
+  fps = 60,
+  dpi = 1.5,
+  dpiTouch,
+  className = "",
+}: {
+  projectId: string;
+  fps?: number;
+  dpi?: number;
+  dpiTouch?: number; // on a coarse-pointer device (phone, tablet) instead of dpi
+  className?: string;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (new URLSearchParams(location.search).has("noscene")) return;
+    const pixelRatio = dpiTouch !== undefined && matchMedia("(pointer: coarse)").matches ? dpiTouch : dpi;
     let scene: Scene | null = null;
     let cancelPoll = () => {};
     let gone = false;
@@ -34,7 +53,7 @@ export default function UnicornScene({ projectId, fps = 60, className = "" }: { 
             element: host,
             projectId,
             production: false, // fresh from the bucket every load (see HeroBackground, 1.)
-            dpi: 1.5,
+            dpi: pixelRatio,
             fps,
             lazyLoad: false,
             interactivity: { mouse: { disableMobile: true } },
@@ -70,7 +89,7 @@ export default function UnicornScene({ projectId, fps = 60, className = "" }: { 
       cancelPoll();
       scene?.destroy?.();
     };
-  }, [projectId, fps]);
+  }, [projectId, fps, dpi, dpiTouch]);
 
   return (
     <div

@@ -2467,12 +2467,13 @@ function InfrastructureStage() {
               the plates came out solid black (Jasper's screenshot; reproduced
               in real Safari through safaridriver, not in Playwright WebKit).
               The plates are stroke-only now, no blend (see the stack). */}
-          <UnicornScene projectId="WIhcj80o8FwPISYReyoz" fps={30} />
+          <UnicornScene projectId="WIhcj80o8FwPISYReyoz" fps={30} dpiTouch={1} />
           <div data-ring-dim aria-hidden className="pointer-events-none absolute inset-0 rounded-t-lg" style={RING_DIM} />
           <div data-ring-lit aria-hidden className="pointer-events-none absolute inset-0 rounded-t-lg opacity-0" style={RING_LIT} />
 
           <svg
             ref={svgRef}
+            data-infra-art
             viewBox="0 0 751 679"
             className="absolute inset-0 size-full"
             fill="none"

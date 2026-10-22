@@ -304,3 +304,16 @@ body {
     transition: none;
   }
 }
+
+/* THE INFRASTRUCTURE ART (Infrastructure.tsx, [data-infra-art]): every frame
+   4-8 lives in the one SVG and the ones not showing sit at opacity 0 — GSAP's
+   and React's inline style. WebKit still walks and buffers transparent
+   groups when it repaints the SVG, which it does on every frame of a
+   transition (the SVG has no layers of its own), and a phone repaints it at
+   3x. Hidden outright, they cost nothing. The attribute selector matches the
+   exact "opacity: 0;" both write; anything tweening away from 0 stops
+   matching on its first tick. (Jasper 2026-10-22: "infrastructure 部分的动画
+   有点卡 尤其是到了 integration 部分".) */
+[data-infra-art] [style*="opacity: 0;"] {
+  visibility: hidden;
+}
