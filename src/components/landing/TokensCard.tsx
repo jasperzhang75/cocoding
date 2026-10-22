@@ -125,7 +125,8 @@ export default function TokensCard() {
     if (!solid || !edge || !grad) return;
     const REVEAL_FROM = -60; // the feather's right end at the chart's left edge: nothing shows
     const REVEAL_TO = 620; // past the right edge: everything
-    const REVEAL_T = 2.0; // 1.6 until 2026-10-20 ("稍微慢一点")
+    const REVEAL_T = 2.4; // 1.6 until 2026-10-20, 2.0 until 2026-10-22 ("稍微慢一点" both times)
+    const REVEAL_DELAY = 0.35; // s after the card is seen before it starts (2026-10-22: "出现的时间还要再稍微晚一点")
     const REVEAL_EASE = "expo.out"; // the burst: most of the way in the first 0.3s, the tail creeping
     const set = (p: number) => {
       solid.setAttribute("width", String(p + 300));
@@ -148,7 +149,7 @@ export default function TokensCard() {
         if (!entry.isIntersecting) return;
         if (entry.intersectionRatio < REVEAL_SEEN && entry.boundingClientRect.top >= 0) return;
         io.disconnect();
-        tween = gsap.to(state, { p: REVEAL_TO, duration: REVEAL_T, ease: REVEAL_EASE, onUpdate: () => set(state.p) });
+        tween = gsap.to(state, { p: REVEAL_TO, duration: REVEAL_T, delay: REVEAL_DELAY, ease: REVEAL_EASE, onUpdate: () => set(state.p) });
       },
       { threshold: [0, 0.5, REVEAL_SEEN] }
     );

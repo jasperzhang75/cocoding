@@ -416,9 +416,12 @@ function ProCard() {
 /* the card box: radius 10, the design's padding (37 top, 32 left, 36 right,
    34 bottom), a column so the buttons can sit at the bottom */
 const CARD = "relative flex flex-col overflow-hidden rounded-[10px] pb-[34px] pl-8 pr-9 pt-[37px] xl:min-h-[586px]";
-/* Starter and Enterprise: #0A0A0A with the 1px white 6% stroke inside */
-const PLAIN_CARD = `${CARD} bg-[#0A0A0A]`;
-const PLAIN_STROKE: CSSProperties = { boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)" };
+/* Starter and Enterprise: #0A0A0A with the 1px white 6% stroke inside,
+   which comes up to 12% under the pointer (Jasper 2026-10-22: "鼠标放到除
+   pro 以外的两个卡片上他也要边框微微变白"), over 300ms both ways. Both
+   values sit in the class literal: Tailwind only generates what it can
+   read from the source, so no constant can be interpolated here. */
+const PLAIN_CARD = `${CARD} bg-[#0A0A0A] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] transition-shadow duration-300 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]`;
 /* A stroke drawn as an SVG rect over its box: the Pro card's ring (1px,
    the design's #69AFFF -> white gradient at 24%, 2026-10-21; a 0.8px
    white 6% line for the week before, Jasper's) and the credits menu's
@@ -483,7 +486,7 @@ export default function Pricing() {
         <h2 className="mt-3 text-heading-lg capitalize text-text-primary xl:text-display">Start for free, scale when ready.</h2>
 
         <div className="mt-[60px] grid grid-cols-1 gap-[21px] md:grid-cols-3">
-          <article className={PLAIN_CARD} style={PLAIN_STROKE}>
+          <article className={PLAIN_CARD}>
             <Header plan={STARTER} />
             <Features items={STARTER.items} />
             <div className={CTA_BLOCK}>
@@ -493,7 +496,7 @@ export default function Pricing() {
 
           <ProCard />
 
-          <article className={PLAIN_CARD} style={PLAIN_STROKE}>
+          <article className={PLAIN_CARD}>
             <Header plan={ENTERPRISE} />
             <Features items={ENTERPRISE.items} />
             <div className={CTA_BLOCK}>
