@@ -1,22 +1,24 @@
 "use client";
 
 import Image from "next/image";
-import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import PosterViewport from "./PosterViewport";
 import { setLoopPlayState } from "@/lib/use-in-view";
-import { useCanMesh } from "@/lib/use-can-mesh";
 
-/* THE BLUE FIELD AS A MESH (Jasper 2026-10-22: "Security 那张卡片 背景的蓝色
-   可以换成这个 npx shaders install 4744455 试试 其他的光晕 闪动的密码还有锁
-   都不变 就变背景 做一版我看看"): his shaders.com "Sapphire Pearl" (navy ->
-   #4B82FA 50% -> near-white, oklch, swirl -0.11) drawn across the card
-   under everything, and the pair of blur-250 glows — the blue field until
-   now — fade out once it reports ready; without WebGPU (or with motion
-   reduced) they stay, as before. The breathing edge, the codes, the
-   shield and the toggle are untouched. */
-const Mesh = dynamic(() => import("@/components/shaders/SapphirePearl"), { ssr: false });
+/* THE BLUE FIELD AS FIGMA'S OWN RENDER (Jasper 2026-10-22, after four rounds
+   of his shaders.com "Sapphire Pearl" mesh on this card: "我把 features 里
+   Security 背景从 figma 里导出了 你替换这个 shaders 看是不是效果好一点"):
+   public/features/f4-field.webp, the card's background exported from
+   Figma at 2000 x 1547 (the card's own 600 x 464 aspect, blue at the
+   edges, the dark heart low in the middle), covering the card under
+   everything. It replaces both the mesh and the pair of blur-250 glow
+   SVGs it had replaced (the export is that composition flattened); the
+   glows' below-xl placement effect went with them — at cover the heart
+   lands within ~15px of where the glows put it on a phone. The breathing
+   edge, the codes, the shield and the toggle are untouched. The mesh
+   component (src/components/shaders/SapphirePearl.tsx) stays installed
+   in case he wants it back. */
 
 /* Card 4 — built-in security, now interactive. Two states, both read from
    Figma (ON: 16629:18699, OFF: 17175:8667):
@@ -48,10 +50,6 @@ const CELLS: Array<[number, number]> = [
   [-54, 446], [101, 446], [256, 446], [411, 446],
 ];
 
-/* the glow pair's box in the card's design space (600 x 464): Frame
-   2609391's two blur-250 ellipses, as the xl classes place them */
-const GLOW_BOX = { x: -99, y: 77, w: 789, h: 523 };
-
 /* the code field while hidden: masked out everywhere (see applyMask) */
 const HIDDEN_MASK = "linear-gradient(transparent, transparent)";
 
@@ -64,9 +62,6 @@ const randCode = () =>
 export default function SecurityCard() {
   const [on, setOn] = useState(true);
   const rootRef = useRef<HTMLDivElement>(null);
-  const glowRef = useRef<HTMLDivElement>(null);
-  const mesh = useCanMesh();
-  const [meshOn, setMeshOn] = useState(false); // the mesh has reported ready
   const breatheRef = useRef<HTMLDivElement>(null);
   const grayShieldRef = useRef<HTMLDivElement>(null);
   const greenShieldRef = useRef<HTMLImageElement>(null);
@@ -100,53 +95,6 @@ export default function SecurityCard() {
     matrixRef.current
       ?.querySelectorAll("[data-code]")
       .forEach((el) => (el.textContent = randCode()));
-  }, []);
-
-  /* BELOW XL THE GLOWS FOLLOW THE PICTURE (Jasper 2026-10-16: "暗处的中心
-     是在文字的上方的 ... 让人觉得那个文字没有居中"). They stay card-level
-     (the poster's top crop would clip them) but are placed where the
-     scaled, cropped poster puts the design's glow box — so the dark heart
-     between the two ellipses lands where it does on desktop, 62% down the
-     code field, not at its top edge as when they simply covered the card
-     (2-7% on phones and tablets). Read off the code layer's own box (the
-     poster stage, as scaled and shifted by PosterViewport); at xl the
-     classes hold the design's geometry and the inline box is cleared. */
-  useEffect(() => {
-    const card = rootRef.current;
-    const glow = glowRef.current;
-    const stage = matrixRef.current;
-    if (!card || !glow || !stage) return;
-    const xl = window.matchMedia("(min-width: 1280px)");
-    let raf = 0;
-    const place = () => {
-      raf = 0;
-      if (xl.matches) {
-        glow.removeAttribute("style");
-        return;
-      }
-      const c = card.getBoundingClientRect();
-      const s = stage.getBoundingClientRect();
-      const k = s.width / 600;
-      Object.assign(glow.style, {
-        left: `${s.left - c.left - card.clientLeft + GLOW_BOX.x * k}px`,
-        top: `${s.top - c.top - card.clientTop + GLOW_BOX.y * k}px`,
-        width: `${GLOW_BOX.w * k}px`,
-        height: `${GLOW_BOX.h * k}px`,
-        translate: "none",
-      });
-    };
-    const schedule = () => {
-      if (!raf) raf = requestAnimationFrame(place);
-    };
-    schedule();
-    const ro = new ResizeObserver(schedule);
-    ro.observe(card);
-    xl.addEventListener("change", schedule);
-    return () => {
-      ro.disconnect();
-      xl.removeEventListener("change", schedule);
-      cancelAnimationFrame(raf);
-    };
   }, []);
 
   // pause the breathing shimmer (and any active scramble) while off-screen
@@ -244,31 +192,10 @@ export default function SecurityCard() {
           "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
       }}
     >
-      {/* the mesh (see Mesh above): the whole card, under everything */}
-      {mesh && (
-        <Mesh className="absolute inset-0 size-full" onReady={() => setMeshOn(true)} onUnavailable={() => setMeshOn(false)} />
-      )}
-      {/* the pair of blur-250 glows — the card's blue field, the stand-in
-          once the mesh draws. Card-level (not
-          in the poster) so the mobile top-crop can't clip them: at xl they
-          sit at the design geometry; below it they follow the scaled poster
-          (see the effect above) — the classes' centered, card-covering box
-          only holds until it runs. Pinned to its own compositor layer so
-          the blurred SVGs rasterize once and stay put while the states
-          animate. */}
-      <div
-        aria-hidden
-        className={`pointer-events-none absolute inset-0 overflow-hidden rounded-md will-change-transform transition-opacity duration-700 md:rounded-none md:rounded-bl-xl xl:overflow-visible ${meshOn ? "opacity-0" : "opacity-100"}`}
-      >
-        <div ref={glowRef} className="absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 xl:left-[-99px] xl:top-[77px] xl:h-[523px] xl:w-[789px] xl:translate-x-0 xl:translate-y-0">
-          {(["/features/f4-glow-a.svg", "/features/f4-glow-b.svg"] as const).map((src) => (
-            <div key={src} className="absolute inset-0">
-              <div className="absolute" style={{ inset: "-47.8% -31.69%" }}>
-                <Image src={src} alt="" fill className="max-w-none" />
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* the blue field: Figma's render of the card's background, covering
+          the card under everything (see the note above) */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-md md:rounded-none md:rounded-bl-xl">
+        <Image src="/features/f4-field.webp" alt="" fill sizes="(min-width: 1280px) 600px, 100vw" className="object-cover" />
       </div>
 
       {/* relative: in flow below xl it must still paint above the glows (a
