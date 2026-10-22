@@ -217,6 +217,18 @@ const ENV_CALLOUTS = [
    so it is now just long enough for the crossing to be seen. Mirrored in
    globals.css (.infra-runway). */
 const RUNWAY = 120;
+/* The LANDING: this much more scroll past the runway's end with the stage
+   STILL stuck, the picture unchanged. Safari (and iOS) scrolls on its
+   scrolling thread ahead of the scroll events the main thread sees — by a
+   frame or three of a flick, a hundred-odd pixels while the stage's heavy
+   frames run — so when the crossing was seen the screen was already past
+   the end: the stage had come unstuck and risen, and the hold's pull back
+   to the end showed as a blink and a halt (Jasper 2026-10-22, "劫持
+   scrolling 的时候 他都会闪一下卡一下", phone and desktop Safari alike).
+   With the stage stuck through the landing that pull moves nothing
+   visible. Leaving downward jumps over it (see release), so it is never
+   scrolled through. Mirrored in globals.css (.infra-runway). */
+const LANDING = 400;
 
 /* Frame 4 (ENVIRONMENT, Figma 17205:87852): the cube around the stack, the
    ambient glow, the legend and three callouts. All values off the nodes:
@@ -1036,7 +1048,7 @@ function InfrastructureStage() {
       // the page is the same length before this runs.
       const top = stickTop();
       runway.style.setProperty("--stick-top", `${top}px`);
-      runway.style.setProperty("--runway", `${runwayLen()}px`);
+      runway.style.setProperty("--runway", `${runwayLen() + LANDING}px`);
       relayout();
     };
     layoutPanel();
@@ -1990,6 +2002,12 @@ function InfrastructureStage() {
         lastOvershoot = NaN;
         lastTravel = NaN;
         armed = false;
+        // leaving downward: over the landing in one step — the stage is
+        // stuck across it, so the picture is the same at its end
+        if (nudge > 0) {
+          const toEnd = runwayLen() + LANDING - geometry().travel;
+          if (toEnd > 0) pageScrollTo(pageY() + toEnd);
+        }
         unlockPage();
         document.documentElement.style.overflow = "";
         document.documentElement.style.paddingRight = "";
@@ -2014,7 +2032,7 @@ function InfrastructureStage() {
           // 8-down leaves onward — unless the page has nowhere further to go
           // yet (this is its last block until Pricing lands), then the stage
           // simply stays held; 4-up leaves and the scrub rewinds with it
-          if (dir > 0 && geometry().room <= 1) return;
+          if (dir > 0 && geometry().room <= LANDING + 1) return;
           return release(dir * 100);
         }
         goTo(target, interrupt());
@@ -3288,7 +3306,7 @@ function InfrastructureStage() {
 
         </div>
       </div>
-      {/* the runway itself: the stage stays stuck while this much scrolls under it */}
+      {/* the runway itself, and the landing after it: the stage stays stuck while this much scrolls under it */}
       <div aria-hidden className="h-(--runway)" />
       </div>
       </div>

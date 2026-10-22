@@ -223,9 +223,9 @@ body {
 /* the Infrastructure runway, before its effect measures anything: the
    same numbers the JS sets (layoutPanel), so the page is the same length
    from the first paint. --runway: the 120px approach to the hold (500
-   while the 3 -> 4 scrub lived on it, until 2026-10-21), plus on touch four
-   bands of clamp(320, 70svh, 700) and the stage's centering offset (the
-   stage is 679 tall from md; a phone's is taller, hence the max(0)).
+   while the 3 -> 4 scrub lived on it, until 2026-10-21) plus the 400px
+   landing past it that keeps the stage stuck while Safari's scrolling
+   thread runs ahead of the hold (RUNWAY + LANDING in Infrastructure.tsx).
    --stick-top: the stage centered when it fits, else its bottom on the
    viewport's; at xl the panel — 600 tall there (XL_PANEL_H in
    Infrastructure.tsx), 7 down in the 607 stage — centered.
@@ -233,7 +233,7 @@ body {
    2026-10-15), never so low that the bottom leaves the viewport — the
    same formulas as stickTop() in Infrastructure.tsx. */
 .infra-runway {
-  --runway: 120px;
+  --runway: 520px;
   /* a phone: the open item 16px under the nav bar (its block is the
      stage's top: its margin collapses through); md: the stage centered
      under the bar (see stickTop) */
