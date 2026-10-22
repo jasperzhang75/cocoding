@@ -1,10 +1,22 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import PosterViewport from "./PosterViewport";
 import { setLoopPlayState } from "@/lib/use-in-view";
+import { useCanMesh } from "@/lib/use-can-mesh";
+
+/* THE BLUE FIELD AS A MESH (Jasper 2026-10-22: "Security 那张卡片 背景的蓝色
+   可以换成这个 npx shaders install 4744455 试试 其他的光晕 闪动的密码还有锁
+   都不变 就变背景 做一版我看看"): his shaders.com "Sapphire Pearl" (navy ->
+   #4B82FA 50% -> near-white, oklch, swirl -0.11) drawn across the card
+   under everything, and the pair of blur-250 glows — the blue field until
+   now — fade out once it reports ready; without WebGPU (or with motion
+   reduced) they stay, as before. The breathing edge, the codes, the
+   shield and the toggle are untouched. */
+const Mesh = dynamic(() => import("@/components/shaders/SapphirePearl"), { ssr: false });
 
 /* Card 4 — built-in security, now interactive. Two states, both read from
    Figma (ON: 16629:18699, OFF: 17175:8667):
@@ -53,6 +65,8 @@ export default function SecurityCard() {
   const [on, setOn] = useState(true);
   const rootRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
+  const mesh = useCanMesh();
+  const [meshOn, setMeshOn] = useState(false); // the mesh has reported ready
   const breatheRef = useRef<HTMLDivElement>(null);
   const grayShieldRef = useRef<HTMLDivElement>(null);
   const greenShieldRef = useRef<HTMLImageElement>(null);
@@ -230,14 +244,22 @@ export default function SecurityCard() {
           "linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02)), linear-gradient(90deg, #000, #000)",
       }}
     >
-      {/* the pair of blur-250 glows — the card's blue field. Card-level (not
+      {/* the mesh (see Mesh above): the whole card, under everything */}
+      {mesh && (
+        <Mesh className="absolute inset-0 size-full" onReady={() => setMeshOn(true)} onUnavailable={() => setMeshOn(false)} />
+      )}
+      {/* the pair of blur-250 glows — the card's blue field, the stand-in
+          once the mesh draws. Card-level (not
           in the poster) so the mobile top-crop can't clip them: at xl they
           sit at the design geometry; below it they follow the scaled poster
           (see the effect above) — the classes' centered, card-covering box
           only holds until it runs. Pinned to its own compositor layer so
           the blurred SVGs rasterize once and stay put while the states
           animate. */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-md will-change-transform md:rounded-none md:rounded-bl-xl xl:overflow-visible">
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute inset-0 overflow-hidden rounded-md will-change-transform transition-opacity duration-700 md:rounded-none md:rounded-bl-xl xl:overflow-visible ${meshOn ? "opacity-0" : "opacity-100"}`}
+      >
         <div ref={glowRef} className="absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 xl:left-[-99px] xl:top-[77px] xl:h-[523px] xl:w-[789px] xl:translate-x-0 xl:translate-y-0">
           {(["/features/f4-glow-a.svg", "/features/f4-glow-b.svg"] as const).map((src) => (
             <div key={src} className="absolute inset-0">

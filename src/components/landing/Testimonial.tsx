@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCanMesh } from "@/lib/use-can-mesh";
 import type { CSSProperties, ReactNode, TouchEvent } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -27,9 +28,6 @@ const Mesh = dynamic(() => import("@/components/shaders/HelloWorld"), { ssr: fal
 /* may the mesh run here: WebGPU present and motion not reduced — false on
    the server, read once on the client (an external-store read, so no
    state is set from an effect) */
-const noSubscribe = () => () => {};
-const canMesh = () => "gpu" in navigator && !matchMedia("(prefers-reduced-motion: reduce)").matches;
-const useCanMesh = () => useSyncExternalStore(noSubscribe, canMesh, () => false);
 
 /* TESTIMONIAL (Figma yFciEPejue3E2xhstXF0Wu 16798:8090; the photos and
    the strokes per the redesign file bHyNfFfV0ocgVPCHtOyYBp 600:1892 —
