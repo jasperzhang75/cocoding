@@ -840,13 +840,17 @@ function InfrastructureStage() {
     const stage = runway.firstElementChild as HTMLElement;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     /* INPUT MODES. The stage sticks while a runway scrolls under it, at
-       every width. A hovering pointer is CAPTURED at the runway's end and
-       steps frames by gesture (see the navigation block); touch reads the
-       frames off scroll BANDS instead. */
+       every width, and the page is CAPTURED at the runway's end: a wheel
+       gesture, a key or a swipe steps one frame (see the navigation
+       block). Touch used to read the frames off scroll BANDS under the
+       page's own scrolling instead (until 2026-10-22): a flick's momentum
+       crossed two or three bands at once, and even one step per swipe
+       with a settle could not keep a hard flick from carrying the section
+       away — Jasper: "似乎是劫持不够完全 一定是 scroll 一次就只向下走一个 tab
+       必须卡死这一点". So touch holds like a pointer now: the root
+       unscrollable, every touchmove cancelled, one step per swipe. */
     const xlMq = window.matchMedia("(min-width: 1280px)");
-    const hoverMq = window.matchMedia("(hover: hover)");
-    const captureOn = () => hoverMq.matches && !reduced;
-    const bandsOn = () => !hoverMq.matches && !reduced;
+    const captureOn = () => !reduced;
     /* where the stage sticks (its `top`): xl centers the panel; the
        narrow layouts center the whole stage when it fits the viewport,
        otherwise rest the panel's bottom on the viewport's bottom and the
@@ -866,25 +870,8 @@ function InfrastructureStage() {
       const h = stage.offsetHeight;
       return Math.min(vh - h, (vh + NAV_HEIGHT - h) / 2);
     };
-    /* a band is 70% of the viewport's height (320-700px), fixed for a
-       viewport width so a browser bar sliding away mid-scroll cannot move
-       the boundaries */
-    let band = 0;
-    let bandAt = 0;
-    const bandLen = () => {
-      if (window.innerWidth !== bandAt) {
-        bandAt = window.innerWidth;
-        band = Math.round(Math.min(700, Math.max(320, window.innerHeight * 0.7)));
-      }
-      return band;
-    };
-    /* the runway's length: the 3 -> 4 scrub, plus four bands when they run
-       and a TAIL of TAIL_BANDS more past the last, where frame 8 holds: a
-       flick's momentum past a step runs out under the stuck stage instead
-       of carrying the section away (see ONE STEP PER SWIPE). The CSS
-       default in globals.css (.infra-runway, hover: none) mirrors this. */
-    const TAIL_BANDS = 3;
-    const runwayLen = () => (bandsOn() ? RUNWAY + (4 + TAIL_BANDS) * bandLen() : RUNWAY);
+    /* the runway's length: the 3 -> 4 scrub (the hold takes over at its end) */
+    const runwayLen = () => RUNWAY;
     let relayout: () => void = () => {};
     /* THE CARD ROWS (frames 6/7). Authored at a 55px pitch for the 751
        panel. On a narrower one the pitch closes up first, down to 44px
@@ -937,7 +924,7 @@ function InfrastructureStage() {
          classic scrollbar (a mouse plugged in) fires resize when the hold
          toggles the root's overflow, so: only when something that feeds
          the layout has changed. */
-      const key = `${xlMq.matches}|${hoverMq.matches}|${panel.clientWidth}|${window.innerHeight}|${stage.offsetHeight}`;
+      const key = `${xlMq.matches}|${panel.clientWidth}|${window.innerHeight}|${stage.offsetHeight}`;
       if (key === laidOutFor) return;
       laidOutFor = key;
       const narrow = !xlMq.matches; // the phone/tablet panel: as wide as its column, the art re-placed
@@ -1028,16 +1015,13 @@ function InfrastructureStage() {
       layoutCards(W);
       // the stage sticks at --stick-top while the runway — the spacer
       // after it — scrolls under it. A centered stage stops the page's end
-      // short of the runway's end by its offset: bands add it (capture
-      // clamps to what is reachable instead, see geometry). Both values
-      // have CSS defaults (.infra-runway in globals.css) built from the
-      // same formulas, so the page is the same length before this runs:
-      // it used to be up to 2.8k px shorter until hydration, and a fast
-      // scroll right after load was thrown back into the section when
-      // the page grew above it.
+      // short of the runway's end by its offset: capture clamps to what is
+      // reachable instead (see geometry). Both values have CSS defaults
+      // (.infra-runway in globals.css) built from the same formulas, so
+      // the page is the same length before this runs.
       const top = stickTop();
       runway.style.setProperty("--stick-top", `${top}px`);
-      runway.style.setProperty("--runway", `${runwayLen() + (bandsOn() ? Math.max(0, top) : 0)}px`);
+      runway.style.setProperty("--runway", `${runwayLen()}px`);
       relayout();
     };
     layoutPanel();
@@ -1681,8 +1665,8 @@ function InfrastructureStage() {
          frame and keeps the page held — it first brings the stage to the
          runway's end (the scrub completing on the way) — so the exits are
          still 4-up and 8-down. Dragging the scrollbar away releases, and
-         the next crossing of the end captures again. Hovering pointers
-         only; touch reads BANDS instead (below); reduced motion never
+         the next crossing of the end captures again. Touch steps the same
+         way, one swipe one frame (see onTouchMove); reduced motion never
          captures. */
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
       const fadeEase = gsap.parseEase(FADE_EASE);
@@ -2037,8 +2021,35 @@ function InfrastructureStage() {
         gestureUsed = true;
         step(dir);
       }
+      /* TOUCH (2026-10-22): a swipe is one touch — finger down to finger
+         up — and steps once, as soon as it has travelled TOUCH_STEP; the
+         rest of it, and any flick, moves nothing (cancelled, and the root
+         unscrollable). A swipe that began before the hold took the page
+         (the one that brought it here) is spent: its first move was not
+         cancelled, so the page scrolls on it until the root stops it, and
+         its remaining travel is not read. The listener for touchstart is
+         always on (capture phase, so no handler on the art can hide it);
+         touchmove joins at capture. */
+      const TOUCH_STEP = 30; // px of swipe that make a step
+      let touchY0 = 0; // where the swipe began
+      let touchAt = 0; // when
+      let touchStepped = false;
+      function onTouchStart(e: TouchEvent) {
+        touchY0 = e.touches[0].clientY;
+        touchAt = performance.now();
+        touchStepped = false;
+      }
       function onTouchMove(e: TouchEvent) {
-        if (captured) e.preventDefault();
+        if (!captured) return;
+        e.preventDefault();
+        if (touchStepped || touchAt < capturedAt) return;
+        const dy = touchY0 - e.touches[0].clientY; // finger up = the page down = +1
+        if (Math.abs(dy) < TOUCH_STEP) return;
+        const now = performance.now();
+        if (now - lastStepAt < 250) return;
+        touchStepped = true;
+        lastStepAt = now;
+        step(dy > 0 ? 1 : -1);
       }
 
       /* glide the page so the stage's travel into the runway is `to`;
@@ -2063,91 +2074,6 @@ function InfrastructureStage() {
         f?.();
       };
 
-      /* BANDS (touch). Past the scrub the runway is four bands of one
-         BAND each: frame 4 holds through the first, then 5, 6, 8. Nothing
-         is held — the page scrolls freely and the frame follows the band
-         the stage is in, one step at a time in either direction. A
-         boundary has a dead zone of ±15% of a band around it, so resting
-         on one never flaps. A title tap switches at once and glides the
-         page to that frame's band; the bands sleep during the glide.
-         ONE STEP PER SWIPE (Jasper 2026-10-22: "mobile 上的 scroll 经常容易
-         一个 scroll 就从 productionready 跳到 intergration ... 一个 scroll 只能
-         切换一个 tab"): a flick's momentum crosses two or three bands, and
-         the bands used to walk the frame over each of them. Now a swipe —
-         finger down to the end of the momentum after it, or any scroll
-         stream broken by SWIPE_QUIET of silence — steps the frame once at
-         most; and once the page has come to rest inside the runway (no
-         finger down) it glides to the frame's band center, unseen, since
-         the stage is stuck through the runway, so the next swipe starts
-         from the middle of a band with a whole band to cross. Past the last
-         band the runway runs on for TAIL_BANDS (frame 8 holding) so an
-         overshoot stays under the stuck stage: a swipe that stepped settles
-         back to its frame's band center; a downward swipe from frame 8 that
-         ends in the tail glides on to the runway's end, so the next one
-         leaves the section with its whole momentum; an upward one from
-         the end settles into frame 8's band. A swipe that carries the page
-         out of the runway is let go. A touch during a glide ends the glide. */
-      const BAND_FRAMES = [4, 5, 6, 8];
-      const DEAD = 0.15;
-      const SWIPE_QUIET = 400; // ms without a scroll event: the swipe is over (a finger down ends one at once; a long frame mid-momentum must not)
-      const SETTLE_AFTER = 150; // ms after the last scroll event before the page is settled
-      let swipeStepped = false; // this swipe has had its step
-      let swipeAt = 0; // the swipe's last scroll event
-      let swipeFrom = 0; // the travel the swipe began at (its direction)
-      let touching = false; // a finger is down
-      let settleTimer = 0;
-      const settle = () => {
-        if (arriving || touching || !bandsOn() || !landed) return;
-        const i = BAND_FRAMES.indexOf(frameRef.current);
-        if (i < 0) return;
-        const g = geometry();
-        if (g.travel < 0 || g.travel > g.runwayLen) return; // out of the runway: let go
-        const pos = (g.travel - RUNWAY) / bandLen();
-        const inTail = pos >= BAND_FRAMES.length;
-        const leaving = inTail && !swipeStepped && g.travel >= swipeFrom; // frame 8, swiped on down
-        const to = leaving ? g.runwayLen : RUNWAY + (i + 0.5) * bandLen();
-        if (Math.abs(g.travel - to) <= 2) return;
-        scrollToTravel(to, () => {});
-      };
-      const settleLater = () => {
-        window.clearTimeout(settleTimer);
-        settleTimer = window.setTimeout(settle, SETTLE_AFTER);
-      };
-      const bands = (travel: number) => {
-        if (arriving) return;
-        const now = performance.now();
-        if (now - swipeAt > SWIPE_QUIET) {
-          swipeStepped = false; // a new swipe
-          swipeFrom = travel;
-        }
-        swipeAt = now;
-        settleLater();
-        const i = BAND_FRAMES.indexOf(frameRef.current);
-        if (i < 0 || (i === 0 && !landed)) return;
-        const pos = (travel - RUNWAY) / bandLen();
-        if (pos < -DEAD) {
-          // above the bands the scrub owns the stage: it must show frame 4
-          if (i > 0) goTo(4, interrupt());
-          return;
-        }
-        if (swipeStepped) return;
-        const next = pos >= i + 1 + DEAD ? i + 1 : pos < i - DEAD ? i - 1 : i;
-        if (next === i || next < 0 || next >= BAND_FRAMES.length) return;
-        goTo(BAND_FRAMES[next], interrupt());
-        if (frameRef.current === BAND_FRAMES[next]) swipeStepped = true;
-      };
-      const onBandTouchStart = () => {
-        touching = true;
-        swipeStepped = false; // a finger down is a new swipe, momentum or not
-        swipeFrom = geometry().travel;
-        swipeAt = performance.now();
-        window.clearTimeout(settleTimer);
-        if (arriving) arrived(); // a glide the finger has stopped
-      };
-      const onBandTouchEnd = () => {
-        touching = false;
-        settleLater(); // momentum, if any, keeps pushing it back
-      };
 
       const apply = () => {
         const { r, r1, r0 } = pinTarget();
@@ -2199,7 +2125,6 @@ function InfrastructureStage() {
           lastAt = performance.now();
           return;
         }
-        if (bandsOn()) return bands(g.travel);
         if (captured) {
           if (glide) return; // our own glide to the end is what is moving the page
           // The wheel events already dispatched when the hold began keep
@@ -2267,18 +2192,6 @@ function InfrastructureStage() {
         if (tl2.isActive()) tl2.progress(1); // a click mid-entrance lands it first
         const instant = interrupt();
         if (reduced) return goTo(target, instant);
-        if (bandsOn()) {
-          // switch now — or, before frame 4 has formed, when the glide
-          // lands (the scrub forms it on the way) — and glide to the
-          // frame's band; a glide cut short leaves the bands to settle it
-          goTo(target, instant);
-          const to = RUNWAY + (BAND_FRAMES.indexOf(target) + 0.5) * bandLen();
-          scrollToTravel(to, () => {
-            if (frameRef.current !== target) goTo(target, interrupt());
-            bands(geometry().travel);
-          });
-          return;
-        }
         const go = () => {
           if (captureOn()) capture(geometry().overshoot);
           goTo(target, instant);
@@ -2301,18 +2214,14 @@ function InfrastructureStage() {
         listening = true;
         window.addEventListener("scroll", apply, { passive: true });
         window.addEventListener("resize", apply, { passive: true });
-        window.addEventListener("touchstart", onBandTouchStart, { passive: true });
-        window.addEventListener("touchend", onBandTouchEnd, { passive: true });
-        window.addEventListener("touchcancel", onBandTouchEnd, { passive: true });
+        window.addEventListener("touchstart", onTouchStart, { passive: true, capture: true });
       };
       const off = () => {
         if (!listening) return;
         listening = false;
         window.removeEventListener("scroll", apply);
         window.removeEventListener("resize", apply);
-        window.removeEventListener("touchstart", onBandTouchStart);
-        window.removeEventListener("touchend", onBandTouchEnd);
-        window.removeEventListener("touchcancel", onBandTouchEnd);
+        window.removeEventListener("touchstart", onTouchStart, { capture: true });
       };
 
       apply();
@@ -2335,7 +2244,6 @@ function InfrastructureStage() {
         release();
         window.clearTimeout(gestureTimer);
         window.clearTimeout(arriveTimer);
-        window.clearTimeout(settleTimer);
       };
     }, svg);
 

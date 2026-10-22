@@ -241,13 +241,6 @@ body {
     --stick-top: min(50svh + var(--nav-height) / 2 - 307px, 100svh - 607px);
   }
 }
-@media (hover: none) and (prefers-reduced-motion: no-preference) {
-  .infra-runway {
-    /* four bands of frames and a tail of three (TAIL_BANDS in Infrastructure) */
-    --runway: calc(120px + 7 * clamp(320px, 70svh, 700px) + max(0px, min(100svh - 679px, (100svh + var(--nav-height) - 679px) / 2)));
-  }
-}
-
 /* the footer wordmark's size: 250/1200 of its container — the viewport
    less the footer's side padding (px-5 below md, px-10 from md), 1200 at
    most — 250px at the design's width. The clipper, the footer and the
