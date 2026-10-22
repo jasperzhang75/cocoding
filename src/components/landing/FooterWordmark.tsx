@@ -69,12 +69,28 @@ import { useEffect, useRef } from "react";
       size, so what it slides over is never on screen.
       Touch (Jasper 2026-09-08, "mobile 上向上拉他下半部分不显示"): a drag
       that STARTS at the page's end and moves up is ours — its first
-      touchmove is cancelled, so the platform's bounce never starts for
-      that gesture (WebKit only honours a cancel on a gesture's first
-      move, so a swipe that reaches the end mid-flight still bounces the
-      platform's way; the next drag pulls) — and the lift follows the
-      finger through the same band (GIVE_TOUCH, iOS's 0.55: a finger
-      travels far) into the same spring; letting go springs back. A drag down with nothing lifted is left to the platform. */
+      touchmove is cancelled — and the lift follows the finger through
+      the same band (GIVE_TOUCH, iOS's 0.55: a finger travels far) into
+      the same spring; letting go springs back. A drag down with nothing
+      lifted is left to the platform.
+      THE ONE BOUNCE (2026-10-22, Jasper: "拖动始终很奇怪 不像是自然的有惯
+      性的 ... 被拖上来然后又回弹回去 ... 流畅感优先"): until now the
+      platform's own rubber band ran UNDER all this — a trackpad or a
+      finger at the end bounced the whole page the platform's way while
+      the footer bounced its own way on top, two springs with two
+      timings, and on a phone a swipe reaching the end mid-flight got
+      the platform's bounce (no lower half) where a drag got ours. The
+      root's overscroll-behavior is none now (globals.css), so this is
+      the page's only bounce, and it covers what the platform used to:
+      ARRIVING WITH SPEED — a flick whose momentum carries the page to
+      the end with no wheel stream behind it (a finger's flick; wheel
+      momentum already feeds the push event by event) leaves a push of
+      ARRIVAL ms of its arriving speed, so it lifts and springs back
+      like the platform's bounce did; and a finger that reaches the end
+      mid-drag is taken from there (the page simply stops under it
+      otherwise). The reveal fade (1.) was suspected and is innocent:
+      its opacity only moves with scroll events and reads 1 whenever the
+      footer is lifted. */
 
 const BAND_VH = 0.8; // the band's limit: the lift tends to this share of the viewport's height and never reaches it
 const GIVE = 0.8; // how much of the wheel's first pixels the footer follows (the slope at rest)
@@ -88,6 +104,8 @@ const LET_GO = 90; // ms without a push
 const STIFFNESS = 1200; // the spring toward the target, 1/s² (ω ≈ 35: on the finger within ~0.1s)
 const ZETA_UP = 0.7; // damping ratio rising: quick, a hair of overshoot
 const ZETA_DOWN = 0.9; // damping ratio returning: a soft landing
+const ARRIVAL = 150; // ms — a flick arriving at the end keeps pushing for this long of its speed (1 px/ms -> a 150px push)
+const ARRIVAL_MIN = 0.3; // px/ms — slower arrivals (a drag easing to a stop) leave no push
 
 export default function FooterWordmark() {
   const boxRef = useRef<HTMLDivElement>(null);
@@ -134,6 +152,7 @@ export default function FooterWordmark() {
     let runDown = 0; // strictly decreasing deltas in a row, at the end
     let released = false; // let go: the rest of this stream is momentum
     let touchY0 = 0; // where a drag at the end began
+    let touching = false; // a finger is down
     let touchPulling = false; // this drag is ours
     let touchTarget = 0; // the lift the finger asks for (px)
     let pull = 0; // the spring's position (px up)
@@ -218,11 +237,21 @@ export default function FooterWordmark() {
     };
     const onTouchStart = (e: TouchEvent) => {
       touchY0 = e.touches[0].clientY;
+      touching = true;
       touchPulling = atEnd();
     };
     const onTouchMove = (e: TouchEvent) => {
-      if (!touchPulling) return;
-      const d = touchY0 - e.touches[0].clientY; // finger up = positive
+      const y = e.touches[0].clientY;
+      if (!touchPulling) {
+        // a drag that reaches the end mid-gesture: the page stops under
+        // the finger (the platform's bounce is off), so take it from here
+        if (atEnd() && y < touchY0) {
+          touchPulling = true;
+          touchY0 = y;
+        }
+        return;
+      }
+      const d = touchY0 - y; // finger up = positive
       if (d <= 0 && pull < 0.5) {
         touchPulling = false; // a drag down from rest: the platform scrolls
         return;
@@ -232,6 +261,7 @@ export default function FooterWordmark() {
       start();
     };
     const onTouchEnd = () => {
+      touching = false;
       touchPulling = false;
       touchTarget = 0; // let go: the spring returns
       start();
@@ -241,8 +271,32 @@ export default function FooterWordmark() {
     addEventListener("touchend", onTouchEnd);
     addEventListener("touchcancel", onTouchEnd);
 
+    /* 3. arriving at the end with speed (see THE ONE BOUNCE): a flick's
+       momentum, with no wheel stream behind it and no finger down */
+    let scrollY0 = window.scrollY;
+    let scrollT0 = performance.now();
+    let vPrev = 0; // the speed over the interval before the last: the last step into the end is cut short by the end itself
+    let wasAtEnd = atEnd();
+    const onScroll = () => {
+      const t = performance.now();
+      const v = (window.scrollY - scrollY0) / Math.max(1, t - scrollT0); // px/ms, down positive
+      scrollY0 = window.scrollY;
+      scrollT0 = t;
+      const end = atEnd();
+      const speed = Math.max(v, vPrev);
+      vPrev = v;
+      if (end && !wasAtEnd && speed >= ARRIVAL_MIN && !touching && t - lastAt > LET_GO) {
+        push += speed * ARRIVAL;
+        pushedAt = t;
+        start();
+      }
+      wasAtEnd = end;
+    };
+    addEventListener("scroll", onScroll, { passive: true });
+
     return () => {
       removeEventListener("scroll", light);
+      removeEventListener("scroll", onScroll);
       removeEventListener("resize", light);
       removeEventListener("wheel", onWheel);
       removeEventListener("touchstart", onTouchStart);

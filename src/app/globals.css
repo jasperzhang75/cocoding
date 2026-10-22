@@ -84,6 +84,15 @@
    its gutter. No effect with overlay scrollbars. */
 html {
   scrollbar-gutter: stable;
+  /* THE PAGE'S END IS THE FOOTER'S (2026-10-22, Jasper: the footer's pull
+     "不像是自然的有惯性的 ... 被拖上来然后又回弹回去"): the platform's own
+     rubber band at the bottom was running UNDER the footer's pull — two
+     springs with two timings, the footer bouncing against the page — so
+     the root no longer bounces at either end. The footer's pull
+     (FooterWordmark) is the page's one bounce, and it now also catches a
+     flick's momentum and a finger that reaches the end mid-drag; the top
+     simply stops. */
+  overscroll-behavior-y: none;
 }
 
 /* the pinned nav bar's height — NAV_HEIGHT in src/lib/layout.ts */
