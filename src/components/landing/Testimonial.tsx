@@ -135,13 +135,17 @@ const QUOTE = "mt-1.5 text-body-md xl:text-[1.25rem] xl:leading-[1.375] xl:track
 function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
   return (
     <article className={`${CARD_CLASS} group`}>
+      {/* the photo comes up from dark as the row arrives (Jasper 2026-10-22:
+          "划到这个 section 图片有一个从暗到明的动画"): rise-on-arrival to its
+          design opacity (80% / 70%, the --lit), on the row's onArrival mark
+          like the study card's glows — 1.6s ease, see globals.css */}
       <Image
         src={card.photo}
         alt=""
         fill
         sizes="(min-width: 1280px) 386px, (min-width: 768px) 33vw, 84vw"
-        className="object-cover"
-        style={{ opacity: card.photoOpacity }}
+        className="rise-on-arrival object-cover"
+        style={{ "--lit": card.photoOpacity } as CSSProperties}
       />
       <div className="absolute [&>svg]:h-auto [&>svg]:w-full" style={{ left: PAD, top: PAD, width: card.logoW }}>
         {card.logo}
