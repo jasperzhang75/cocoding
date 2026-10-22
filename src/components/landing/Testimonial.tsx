@@ -231,17 +231,25 @@ function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
           />
         )}
       </div>
-      <div className="absolute [&>svg]:h-auto [&>svg]:w-full" style={{ left: PAD, top: PAD, width: card.logoW }}>
+      {/* the overlays (logo, words, ring) ask for layers of their own, as in
+          StudyCard: the clip makes the photo wrapper a composited layer at
+          80% / 70%, and while the track slides Safari folds un-layered
+          overlays into the track's layer — UNDER that wrapper — so the words
+          read dimmed through the photo for the whole slide (Jasper
+          2026-10-23: "safari 的 Testimonial ... 左右切换的时候 文字层会暗一下";
+          real Safari: 237 at rest, 113-138 mid-slide; 237 throughout with
+          will-change). */}
+      <div className="absolute will-change-transform [&>svg]:h-auto [&>svg]:w-full" style={{ left: PAD, top: PAD, width: card.logoW }}>
         {card.logo}
       </div>
       {/* Frame 2609435: 36 from the left, 308 wide, its bottom 36 above
           the card's — anchored there so a narrower card's extra line
           grows upward */}
-      <div className="absolute w-[calc(100%-18.65cqw)] max-w-[79.8cqw]" style={{ left: PAD, bottom: PAD }}>
+      <div className="absolute w-[calc(100%-18.65cqw)] max-w-[79.8cqw] will-change-transform" style={{ left: PAD, bottom: PAD }}>
         <p className={NAME}>{card.name}</p>
         <p className={`${QUOTE} text-text-primary`}>{card.text}</p>
       </div>
-      <div aria-hidden className={RING_CLASS} style={RING} />
+      <div aria-hidden className={`${RING_CLASS} will-change-transform`} style={RING} />
     </article>
   );
 }
