@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useCanMesh } from "@/lib/use-can-mesh";
-import type { CSSProperties, ReactNode, TouchEvent } from "react";
+import type { CSSProperties, PointerEvent, ReactNode, TouchEvent } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { HyperText } from "@/components/magicui/hyper-text";
@@ -73,7 +73,7 @@ const RING_CLASS = "pointer-events-none absolute inset-0 rounded-sm opacity-[0.0
 /* logoW: the logo's design width over the card's 386, in cqw — so it
    scales with the card (111 / 96 / 82 wide at 386) */
 type Card =
-  | { kind: "quote"; logo: ReactNode; logoW: string; photo: string; photoOpacity: number; name: string; text: string }
+  | { kind: "quote"; logo: ReactNode; logoW: string; photo: string; photoOpacity: number; video?: string; name: string; text: string }
   | { kind: "study"; logo: ReactNode; logoW: string; stat: string; statLabel: string; kicker: string; title: string };
 
 const openai: Card = {
@@ -82,6 +82,7 @@ const openai: Card = {
   logoW: "28.76cqw",
   photo: "/testimonials/quote-openai-hd.png",
   photoOpacity: 0.8,
+  video: "/testimonials/speak-openai.mp4",
   name: "Gabriel Peal, Frontend Developer",
   text: "“ It's the first AI tool that doesn't feel like a toy. ”",
 };
@@ -100,16 +101,32 @@ const notion: Card = {
   logoW: "23.83cqw", // 92 wide — the wordmark overruns the design's 82 frame
   photo: "/testimonials/quote-notion-hd.png",
   photoOpacity: 0.7,
+  video: "/testimonials/speak-notion.mp4",
   name: "Gabriel Peal, Backend Developer",
   text: "“ Cocoding built a dashboard that actually looks good.”",
 };
 /* the second half of the loop: the same three cards with two other
-   people (Jasper 2026-10-21: "剩下几张图换些人"), portraits generated to
-   match the first two — an office, a medium shot, soft window light —
-   with Figma's image model (928 x 1152, in the redesign file as nodes
-   1312:62 and 1313:62). Placeholder names and quotes as before. */
-const openaiB: Card = { ...openai, photo: "/testimonials/quote-openai-b-hd.jpg" };
-const notionB: Card = { ...notion, photo: "/testimonials/quote-notion-b-hd.jpg" };
+   people (Jasper 2026-10-21: "剩下几张图换些人"). Both portraits were
+   redone 2026-10-22 as tight head-and-shoulders shots with a blurred
+   office behind, like the first two (Jasper: "都是大头像 背景虚 ...
+   去 ai 味"), and are taken from his redesign file, node 1327:62, which
+   sets their FACING: the woman (Nano Banana Pro, candid-interview
+   prompt) is mirrored there to look right, into the row; the man (same
+   model, then Magnific's skin enhancer in its "transform to real" mode
+   for pores and stubble) looks left. THE CROP IS THE DESIGN'S (Jasper:
+   "我 figma 里的 design 是有特意放大图片的 你按照我 figma 1:1 放图片"): there
+   each photo sits enlarged inside the 386 x 480 card — the woman at
+   120.8% of it, shifted up 15.5%; the man at 125.8%, shifted left 8.7%
+   and up 18.5% — so the files hold exactly that visible region, cut
+   from the source at those percentages (scratchpad script design-crop
+   .js in the memory note), 1444 x 1796 and 1544 x 1920, and object-cover
+   shows them whole; the clips were generated from the same cut, so they
+   match 1:1. The Notion card's photo is 90% there, hence the override.
+   New file names, because the browser, Next's image optimizer and
+   Vercel's image CDN all cache by URL and kept serving the old photo
+   under the old one. Placeholder names and quotes as before. */
+const openaiB: Card = { ...openai, photo: "/testimonials/quote-openai-b-crop.jpg", video: "/testimonials/speak-openai-b.mp4" };
+const notionB: Card = { ...notion, photo: "/testimonials/quote-notion-b-crop.jpg", photoOpacity: 0.9, video: "/testimonials/speak-notion-b.mp4" };
 const CARDS: Card[] = [openai, ramp, notion, openaiB, ramp, notionB];
 
 /* ---------------------------------------------------------------- cards */
@@ -132,21 +149,88 @@ const PAD = "9.33cqw"; // the design's 36
 const NAME = "text-body-xs text-text-body xl:text-body-sm";
 const QUOTE = "mt-1.5 text-body-md xl:text-[1.25rem] xl:leading-[1.375] xl:tracking-[-0.012em]";
 
+/* THE TALKING HEAD (Jasper 2026-10-22: "给 Testimonial 的图片都生成一段简短的
+   人物 speak 的视频 鼠标放上去的时候他在播放"): a short clip of the person
+   speaking, made from the photo, laid over it and seen only while a mouse
+   (or pen) rests on the card — never on touch, never under reduced
+   motion. Muted: a hover is no user gesture, so the browser would refuse
+   sound anyway. Nothing loads before the first hover (preload none). The
+   clip's first frame is the photo, so it fades in over the still without
+   a seam — once it is actually playing (onPlaying), not on the hover, or
+   a clip still loading would flash blank. When it ends, or the pointer
+   leaves, it fades back to the still, rewinds once hidden, and starts
+   again if the pointer is still there: a loop that breathes through the
+   still instead of cutting from the last frame to the first. The still
+   and the clip share one wrapper that carries the design opacity (the
+   rise-on-arrival), so the crossfade inside it keeps the card's
+   brightness — a clip at 80% laid over a photo at 80% would have
+   brightened it.
+   THE CLIP'S FRAME: the clips (Magnific, OmniHuman) come 3:4 (1248 x
+   1664), and the model centre-crops a wider photo's width, which would
+   have left the clip a 7% zoom over the still, or 3% strips with a seam.
+   So each photo was mirror-extended top and bottom to exactly 3:4
+   before generation (sharp, see the memory note), and a clip's first
+   frame holds the whole photo between two thin mirrored bands;
+   object-cover on the 386:481 card crops those bands back off, and the
+   clip's pixels land on the still's — verified frame against photo. */
 function QuoteCard({ card }: { card: Extract<Card, { kind: "quote" }> }) {
+  const video = useRef<HTMLVideoElement>(null);
+  const hovered = useRef(false);
+  const [showing, setShowing] = useState(false); // the clip is playing and faded in
+  const play = () => {
+    const v = video.current;
+    if (!v || !hovered.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    v.play().catch(() => {}); // refused or interrupted: the still stays
+  };
+  const onEnter = (e: PointerEvent) => {
+    if (e.pointerType === "touch") return;
+    hovered.current = true;
+    play();
+  };
+  const onLeave = () => {
+    hovered.current = false;
+    video.current?.pause();
+    setShowing(false);
+  };
+  // the fade ran out: hidden again, so rewind — and go again if the pointer stayed
+  const onFade = () => {
+    const v = video.current;
+    if (!v || showing) return;
+    v.currentTime = 0;
+    play();
+  };
   return (
-    <article className={`${CARD_CLASS} group`}>
+    <article className={`${CARD_CLASS} group`} onPointerEnter={onEnter} onPointerLeave={onLeave}>
       {/* the photo comes up from dark as the row arrives (Jasper 2026-10-22:
           "划到这个 section 图片有一个从暗到明的动画"): rise-on-arrival to its
           design opacity (80% / 70%, the --lit), on the row's onArrival mark
           like the study card's glows — 1.6s ease, see globals.css */}
-      <Image
-        src={card.photo}
-        alt=""
-        fill
-        sizes="(min-width: 1280px) 386px, (min-width: 768px) 33vw, 84vw"
-        className="rise-on-arrival object-cover"
-        style={{ "--lit": card.photoOpacity } as CSSProperties}
-      />
+      <div className="rise-on-arrival absolute inset-0" style={{ "--lit": card.photoOpacity } as CSSProperties}>
+        <Image
+          src={card.photo}
+          alt=""
+          fill
+          sizes="(min-width: 1280px) 386px, (min-width: 768px) 33vw, 84vw"
+          className="object-cover"
+        />
+        {card.video && (
+          <video
+            ref={video}
+            src={card.video}
+            muted
+            playsInline
+            preload="none"
+            disablePictureInPicture
+            disableRemotePlayback
+            aria-hidden
+            tabIndex={-1}
+            onPlaying={() => setShowing(true)}
+            onEnded={() => setShowing(false)}
+            onTransitionEnd={onFade}
+            className={`absolute inset-0 size-full object-cover transition-opacity duration-500 ease-out ${showing ? "opacity-100" : "opacity-0"}`}
+          />
+        )}
+      </div>
       <div className="absolute [&>svg]:h-auto [&>svg]:w-full" style={{ left: PAD, top: PAD, width: card.logoW }}>
         {card.logo}
       </div>
