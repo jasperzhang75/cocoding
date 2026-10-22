@@ -11,6 +11,7 @@ import { FACE_MARKS, type FaceMarkKey } from "./infra-face-marks";
 import { isNavigating } from "./page-nav";
 import { integrationDocsUrl } from "@/lib/links";
 import { NAV_HEIGHT } from "@/lib/layout";
+import UnicornScene from "./UnicornScene";
 
 /* Infrastructure — the isometric story (Figma 16990:8066 and on),
    driven by scroll. The section arrives straight at frame 4 — the
@@ -29,15 +30,19 @@ import { NAV_HEIGHT } from "@/lib/layout";
    - The stack under the cube: three 65.8 rounded squares (r6) through the
      isometric matrix [[0.866,-0.866],[0.5,0.5]] — the Figma transform
      verbatim — at x372, y311/334.3/351.7, 80% faces. Black fill, stroke =
-     A8A8A8 -> 424242 linear at 50%, dashed 1.8/1.8 at 0.9; the group
-     composites through Plus lighter.
+     A8A8A8 -> 424242 linear at 50%, dashed 1.8/1.8 at 0.9. In Figma the
+     plates are 50% black under Plus lighter — black adds nothing, so only
+     the strokes show; drawn here as strokes alone, no blend (Safari, with
+     the scene's canvas under the art, blended that group against nothing
+     and painted the black, 2026-10-22).
    - Panel: 751x679, top corners 10, stroke 0.9 inside on top/left/right
      only — white 78% at the top running to #999 42% at the bottom, the
      whole stroke at 15% (Jasper 2026-10-21 — 22% in the file, 20% for
      an evening; white 8% -> 2.6% before) — which LIGHTS UP as the section arrives: it stands at its
      dim bottom value and cross-fades to the bright gradient with the
      entrance (Jasper: "scroll 下来的时候这个边框亮的部分是慢慢点亮的"),
-     see RING. Fill #06080B -> black top to bottom (Jasper took the
+     see RING. Fill #050505, the design's (17205:88091, 2026-10-22; #06080B ->
+     black before, and Jasper took the
      blurred glows off its top the same day, "避免波纹状"; black under a
      2% #3750C8 wash before).
      At xl the panel is 600 tall, the art cropped (see XL_PANEL_H).
@@ -223,7 +228,9 @@ const RUNWAY = 120;
      stays readable through them;
    - glows: two radials (#18365F -> #316FC5 at 52%) — the ambient one
      layer-blurred 300 (stdDev 150), the cube halo sharp with the design's
-     tiled grain PNG lightening it at 23%;
+     tiled grain PNG lightening it at 23% — both gone now: the halo never
+     read well, and the ambient gave way to a Unicorn Studio scene under
+     the SVG on 2026-10-22 (see the panel);
    - lucide/server mark riding the lid through its own iso matrix. */
 const CUBE = {
   lid: "matrix(0.865 0.502 -0.867 0.498 372.607 246.158)",
@@ -1140,11 +1147,12 @@ function InfrastructureStage() {
         ],
       };
       /* the fade rides on the stack and the cube THEMSELVES, never on the
-         wrapper: an opacity on the wrapper isolates it, and inside an
-         isolated group the stack's plus-lighter has only transparency to
-         add to — its black faces came through as solid black squares all
+         wrapper. (Once the stack was a plus-lighter group of black plates and
+         an opacity on the wrapper isolated it — it then had only
+         transparency to add to, and its black faces came through as solid
+         black squares all
          through the entrance (Jasper 2026-10-21: "中间的三个部分是黑色的
-         不透明的"). Faded on its own, the stack still adds to the panel. */
+         不透明的"). The plates are stroke-only now; the rule stays.) */
       gsap.set(env.pop, { scale: POP.from, y: POP.rise }); // its svgOrigin: layoutPanel
       gsap.set([env.stack, env.cube], { opacity: 0 });
       gsap.set(env.items, { opacity: 0 });
@@ -2438,10 +2446,27 @@ function InfrastructureStage() {
           ref={panelRef}
           className="relative mt-10 h-[679px] w-full overflow-hidden rounded-t-lg md:mt-0 md:w-[min(751px,calc(100%-344px))] md:shrink-0 xl:absolute xl:left-[449px] xl:top-[7px] xl:h-[600px] xl:w-[751px]"
           style={{
-            background:
-              "linear-gradient(180deg, #06080B, #000)",
+            // the design's fill (yFciEPejue3E2xhstXF0Wu 17205:88091, panel 17205:88269,
+            // 2026-10-22): flat #050505. Before that evening: #06080B -> black, a flat
+            // #060C12 for an hour, then 17205:88030's #020A12 -> black.
+            background: "#050505",
           }}
         >
+          {/* THE AMBIENT: the Unicorn Studio scene (a dark, slowly breathing
+              blob with a faint blue rim) under the rings and the art, fading in
+              once it has drawn (UnicornScene; 30fps, it moves slowly and the
+              panel animates on scroll); it follows the panel's rise (the
+              opacity on the panel, apply()). Jasper 2026-10-22: the scene
+              replaced the blue glow (Ellipse 21888, raster env-glow.png from
+              scripts/infra-glows), the glow came back under it for an hour,
+              then "去除掉那个自己绘制的椭圆光晕试试" — gone again, a trial.
+              A WebGL canvas under the art SVG is what Safari got wrong while
+              the stack was a plus-lighter group of black-filled plates: with
+              the canvas beneath, WebKit blended that group against nothing and
+              the plates came out solid black (Jasper's screenshot; reproduced
+              in real Safari through safaridriver, not in Playwright WebKit).
+              The plates are stroke-only now, no blend (see the stack). */}
+          <UnicornScene projectId="WIhcj80o8FwPISYReyoz" fps={30} />
           <div data-ring-dim aria-hidden className="pointer-events-none absolute inset-0 rounded-t-lg" style={RING_DIM} />
           <div data-ring-lit aria-hidden className="pointer-events-none absolute inset-0 rounded-t-lg opacity-0" style={RING_LIT} />
 
@@ -2517,31 +2542,9 @@ function InfrastructureStage() {
               style={{ display: "none" }}
             />
 
-            {/* the ambient, compositing NORMALLY (adding it was what read
-                as a solid ball): its two Figma fills — the 52% radial with
-                the grain tiled over it at LIGHTEN — in an isolated group so
-                the lighten stays inside the paint stack, as in Figma. */}
-            <g data-anchor="center" data-md-lift={MD_LIFT}>
-            <g data-env-back>
-              {/* Ellipse 21888 — the ambient: the 149.5 x 107.5 ellipse at
-                  370.5 / 344.5 (radial #18365F -> #316FC5 at 52%) with its
-                  grain tiled over it at LIGHTEN, layer-blurred 300 — as a
-                  raster, rendered once from that very markup (see
-                  scripts/infra-glows) over the filter's region, because the
-                  live feGaussianBlur (stdDeviation 150) re-ran on every
-                  repaint of the animating SVG and phones stuttered (Jasper,
-                  2026-09-08). (21891's sharp radial is dropped — browser
-                  compositing turns it into a solid disc.) */}
-              <image
-                href="/infrastructure/env-glow.png"
-                x="-503.2"
-                y="-125.1"
-                width="1932"
-                height="966"
-                preserveAspectRatio="none"
-              />
-            </g>
-            </g>
+            {/* the ambient glow (Ellipse 21888, a blurred radial behind the
+                cube, raster env-glow.png) stood here until 2026-10-22; the
+                Unicorn Studio scene under this SVG plays its part now. */}
 
             {/* THE PICTURE THAT SPRINGS IN (the entrance, in the effect): the
                 stack and the cube, scaled about the cube's center and lifted
@@ -2550,7 +2553,7 @@ function InfrastructureStage() {
             <g data-pop>
             {/* the stack: three layers under the cube, in their frame-4
                 pose (the effect states it too, for the morph's sake) */}
-            <g data-cube data-anchor="center" data-md-lift={MD_LIFT} style={{ mixBlendMode: "plus-lighter", opacity: 0 }}>
+            <g data-cube data-anchor="center" data-md-lift={MD_LIFT} style={{ opacity: 0 }}>
               {ENV_STACK_Y.map((y) => (
                 <g key={y} data-face transform={`translate(${STACK.x} ${y})`} style={{ opacity: 0.8 }}>
                   <rect
@@ -2558,7 +2561,7 @@ function InfrastructureStage() {
                     height={STACK.size}
                     rx="6"
                     transform="matrix(0.866 0.5 -0.866 0.5 0 0)"
-                    fill="#000"
+                    fill="none"
                     stroke="url(#infra-face-stroke)"
                     strokeOpacity="0.5"
                     strokeWidth="0.9"
@@ -2580,7 +2583,7 @@ function InfrastructureStage() {
                     height={STACK5.size}
                     rx="6"
                     transform="matrix(0.866 0.5 -0.866 0.5 0 0)"
-                    fill="#000"
+                    fill="none"
                     stroke="#A8A8A8"
                     strokeOpacity="0.5"
                     strokeWidth="0.9"
@@ -3280,6 +3283,7 @@ function InfrastructureStage() {
             </g>
 
           </svg>
+
         </div>
       </div>
       {/* the runway itself: the stage stays stuck while this much scrolls under it */}

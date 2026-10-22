@@ -23,8 +23,8 @@ export default function SapphirePearl({
         count={3}
         seed={26}
         smoothness={3.41}
-        speed={1.5}
-        stops={[{ color: "#000036", position: 0 }, { color: "#1d448f80", position: 0.6329 }, { color: "#00006e", position: 1 }]}
+        speed={1.9}
+        stops={[{ color: "#000036", position: 0 }, { color: "#204aa180", position: 0.6329 }, { color: "#00006e", position: 1 }]}
         swirl={-0.11}
         variation={1} />
     </Shader>

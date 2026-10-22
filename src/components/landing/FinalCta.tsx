@@ -1,10 +1,12 @@
 import { AUTH_URL } from "@/lib/links";
-import FinalCtaGlow from "./FinalCtaGlow";
+import UnicornScene from "./UnicornScene";
 
 /* THE CLOSING CALL (Figma yFciEPejue3E2xhstXF0Wu 16555:16606, "MacBook
    Air - 140"): a 1280 x 832 screen with nothing but a two-line 48px
    heading and a white button, centered — 330 above and below on that
-   screen — and a blue glow sitting just right of the words. The screen
+   screen — and, until 2026-10-22, a blue glow sitting just right of the
+   words; now a Unicorn Studio scene fills the screen behind them instead
+   (Jasper: "背景去掉那个蓝色的光晕 加上这个 unicorn studio"). The screen
    IS the section: it fills the viewport at every width (Jasper
    2026-09-07), the content centered in it. The design's outline "Log
    in" beside the button is hidden there, so it is not drawn.
@@ -15,9 +17,9 @@ import FinalCtaGlow from "./FinalCtaGlow";
 export default function FinalCta() {
   return (
     <section data-footer-pull className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 py-24 md:px-10">
-      {/* Ellipse 21888, the blue glow level with the heading: it comes up
-          as the section scrolls into view (see FinalCtaGlow) */}
-      <FinalCtaGlow />
+      {/* the scene — a ring of blue particles on black, the heading inside it —
+          in-page, faded in once it has drawn (see UnicornScene) */}
+      <UnicornScene projectId="nIdbg7lN6sjZNFMeY5IY" />
       <div className="relative mx-auto flex w-full max-w-[1200px] flex-col items-center">
         <h2 className="text-center text-heading-lg text-text-primary xl:text-display">
           Build the future.

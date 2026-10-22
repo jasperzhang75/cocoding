@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { preconnect, preload } from "react-dom";
+import { loadSdk, onFirstFrame, UNICORN_SDK as SDK, type Scene } from "./unicorn";
 
 /* THE FIRST SCREEN'S BACKGROUND: the Unicorn Studio scene "Cocoding.ai
    landing" (project hjz7dlZ2jZHar7bHXhfg — a white gradient under noise,
@@ -13,7 +14,8 @@ import { preconnect, preload } from "react-dom";
    fetched uncached from Google Storage — then shader compilation) and then
    popped in. Jasper (2026-09-07): plan 1 + 4, CSS stand-in.
    1. The SDK runs in our page (one document less; the script is preloaded
-      from the HTML head, the hosts preconnected). It ran with production:
+      from the HTML head, the hosts preconnected; the loader lives in
+      unicorn.ts since the closing call got a scene too, 2026-10-22). It ran with production:
       true, the JSON from Unicorn's CDN (assets.unicorn.studio), cached —
       until Jasper republished the scene (2026-10-19) and no browser saw
       it: that CDN keeps one copy per exact Accept-Encoding string, the
@@ -59,7 +61,6 @@ import { preconnect, preload } from "react-dom";
       here had stood in for it for an afternoon.
    Reduced motion: the stand-in only, nothing loaded. */
 
-const SDK = "https://www.unicorn.studio/unicornStudio.umd.js";
 const PROJECT = "hjz7dlZ2jZHar7bHXhfg";
 const STILL = "/hero/stand-in";
 const AVIF_SET = `${STILL}-1440.avif 1x, ${STILL}-2880.avif 2x`;
@@ -78,27 +79,6 @@ const GRAIN =
       "</filter><rect width='240' height='240' filter='url(#g)'/></svg>"
   );
 
-type Scene = { initialized?: boolean; rendering?: boolean; fallbackOnly?: boolean; destroy?: () => void };
-type UnicornStudio = { addScene: (options: Record<string, unknown>) => Promise<Scene> };
-declare global {
-  interface Window {
-    UnicornStudio?: UnicornStudio;
-    __unicornSdk?: Promise<UnicornStudio>;
-  }
-}
-
-const loadSdk = () =>
-  (window.__unicornSdk ??= new Promise<UnicornStudio>((resolve, reject) => {
-    if (window.UnicornStudio?.addScene) return resolve(window.UnicornStudio);
-    const s = document.createElement("script");
-    s.src = SDK;
-    s.async = true;
-    s.onload = () =>
-      window.UnicornStudio?.addScene ? resolve(window.UnicornStudio) : reject(new Error("UnicornStudio loaded without addScene"));
-    s.onerror = () => reject(new Error(`Unable to load ${SDK}`));
-    document.head.appendChild(s);
-  }));
-
 export default function HeroBackground() {
   // in the server HTML's head: the fetches start with the page, not after hydration
   preconnect("https://www.unicorn.studio");
@@ -112,7 +92,7 @@ export default function HeroBackground() {
     const host = hostRef.current;
     if (!host || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let scene: Scene | null = null;
-    let raf = 0;
+    let cancelPoll = () => {};
     let gone = false;
     const show = () => {
       host.style.opacity = "1";
@@ -136,27 +116,14 @@ export default function HeroBackground() {
         }
         scene = sc;
         if (sc.fallbackOnly) return; // no WebGL2: the stand-in is the background
-        const started = performance.now();
-        const poll = () => {
-          if (gone) return;
-          if (sc.initialized && sc.rendering) {
-            raf = requestAnimationFrame(show); // one drawn frame later
-            return;
-          }
-          if (performance.now() - started > 6000) {
-            if (host.querySelector("canvas")) show();
-            return;
-          }
-          raf = requestAnimationFrame(poll);
-        };
-        poll();
+        cancelPoll = onFirstFrame(sc, host, show);
       })
       .catch(() => {
         /* the stand-in stays */
       });
     return () => {
       gone = true;
-      cancelAnimationFrame(raf);
+      cancelPoll();
       scene?.destroy?.();
     };
   }, []);
