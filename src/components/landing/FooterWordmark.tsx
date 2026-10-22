@@ -92,9 +92,15 @@ import { useEffect, useRef } from "react";
       its opacity only moves with scroll events and reads 1 whenever the
       footer is lifted. */
 
-const BAND_VH = 0.8; // the band's limit: the lift tends to this share of the viewport's height and never reaches it
-const GIVE = 0.8; // how much of the wheel's first pixels the footer follows (the slope at rest)
-const GIVE_TOUCH = 0.55; // a finger's (iOS's own rubber-band coefficient)
+/* 2026-10-22, with the one bounce in place (Jasper: "现在手感是对的 但是我要求
+   他能拉到的高度要比现在高70%"): the band and both gives are 1.7x what they
+   were (0.8 / 0.8 / 0.55) — scaling both scales every lift by exactly
+   1.7 with the curve's shape, i.e. the feel, unchanged: a notch ~82 (48),
+   a hard trackpad swipe ~520 at 1280 x 800 (306), a hard flick's bounce
+   ~310 (181), a phone's 400px drag ~280 (166). */
+const BAND_VH = 1.36; // the band's limit: the lift tends to this share of the viewport's height and never reaches it
+const GIVE = 1.36; // how much of the wheel's first pixels the footer follows (the slope at rest)
+const GIVE_TOUCH = 0.935; // a finger's (1.7x iOS's own rubber-band coefficient, 0.55)
 const TAU = 1500; // ms — the push's decay while it is still being fed: long, so a pull reads as finger travel and a long one keeps building
 const TAU_RELEASE = 40; // ms — its fade once let go (the spring is fast enough now to finish a flick's rise first)
 const MIN_STEP = 4; // smaller wheel deltas are momentum crumbs, not a pull
