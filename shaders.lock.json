@@ -6,8 +6,8 @@
       "component": "HelloWorld",
       "file": "src/components/shaders/HelloWorld.tsx",
       "framework": "react",
-      "hash": "sha256:ca88a6b7b3a09c2a3935d1e36a340adb236c071db8a449955887b5fca858133a",
-      "updatedAt": "2026-10-22T09:26:15.256839+00:00",
+      "hash": "sha256:882b600e7369db534a8ab7de91fb120b69fe444255bfd9f0d66125eb7fa9b024",
+      "updatedAt": "2026-10-22T09:46:59.851423+00:00",
       "installedAt": "2026-10-21T18:17:34.698Z"
     },
     "4744455": {
@@ -15,8 +15,8 @@
       "component": "SapphirePearl",
       "file": "src/components/shaders/SapphirePearl.tsx",
       "framework": "react",
-      "hash": "sha256:68f7a05167af3bf62d0148a036c74aeea89c65275399e333d20728807b8a856f",
-      "updatedAt": "2026-10-22T09:43:35.341306+00:00",
+      "hash": "sha256:8bbb0c0b37dd3a42d2a8cf19f6cb00a8f09f0de5437d92e227bbe4c741d20bf4",
+      "updatedAt": "2026-10-22T09:48:53.936135+00:00",
       "installedAt": "2026-10-22T09:31:18.039Z"
     }
   }
