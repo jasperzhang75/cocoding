@@ -852,14 +852,19 @@ function InfrastructureStage() {
     const xlMq = window.matchMedia("(min-width: 1280px)");
     const captureOn = () => !reduced;
     /* where the stage sticks (its `top`): xl centers the panel; the
-       narrow layouts center the whole stage when it fits the viewport,
-       otherwise rest the panel's bottom on the viewport's bottom and the
-       text above runs off the top (a phone shows the current item's
-       title over the panel that way). Since the nav bar is pinned
-       (2026-10-15) "centered" means in the room UNDER it, NAV_HEIGHT
-       down — but never so low that the panel's bottom leaves the
-       viewport (a short screen gives up the bar's room first). The CSS
-       defaults in globals.css (.infra-runway) mirror these formulas. */
+       narrow layouts center the whole stage when it fits the room under
+       the pinned nav bar (2026-10-15), and when it does not (a phone:
+       heading, the open item and a 679px panel are taller than the
+       viewport) the open item's title and description sit STICK_GAP
+       under the bar and the panel's bottom runs off the viewport. It
+       used to rest the panel's bottom on the viewport's bottom instead,
+       the text running off the top — with the hold on touch that put
+       the item under the bar for good (Jasper 2026-10-22, the phone:
+       "那个 tab 底下介绍的部分 ... 是要在这个右边这个 card 的上面显示出来
+       的"). The panel's art sits in its upper two thirds, so what the
+       viewport cuts is its empty foot. The CSS defaults in globals.css
+       (.infra-runway) approximate these before this runs. */
+    const STICK_GAP = 16; // px between the bar and the item's title (page-nav's landing gap)
     const stickTop = () => {
       const vh = window.innerHeight;
       if (xlMq.matches) {
@@ -868,7 +873,10 @@ function InfrastructureStage() {
         return Math.min((vh + NAV_HEIGHT) / 2 - (top + h / 2), vh - (top + h));
       }
       const h = stage.offsetHeight;
-      return Math.min(vh - h, (vh + NAV_HEIGHT - h) / 2);
+      if (h <= vh - NAV_HEIGHT) return (vh + NAV_HEIGHT - h) / 2;
+      const items = stage.querySelector<HTMLElement>("[data-items]");
+      const itemsTop = items ? items.getBoundingClientRect().top - stage.getBoundingClientRect().top : 0;
+      return NAV_HEIGHT + STICK_GAP - itemsTop;
     };
     /* the runway's length: the 3 -> 4 scrub (the hold takes over at its end) */
     const runwayLen = () => RUNWAY;
@@ -2334,6 +2342,25 @@ function InfrastructureStage() {
           while the spacer after it scrolls by, driving 3 -> 4 and, on
           touch, the frames after. Both vars have CSS defaults
           (.infra-runway) and are re-measured by layoutPanel. */}
+      {/* A PHONE'S HEADING stands above the runway, so it scrolls away
+          before the stage sticks: held, the stage keeps the open item just
+          under the nav bar (see stickTop) and the heading would sit behind
+          the bar's 70% black (Jasper 2026-10-22, the phone). The stage's
+          own heading shows from md, where the two-column stage fits. */}
+      <div className="md:hidden">
+        <HyperText
+          as="p"
+          {...EYEBROW_SCRAMBLE}
+          className="font-mono text-indicator-lg uppercase text-accent"
+        >
+          Infrastructure
+        </HyperText>
+        <h2 className="mt-3 text-heading-lg text-text-primary">
+          Build freely.
+          <br />
+          Launch confidently.
+        </h2>
+      </div>
       <div ref={runwayRef} className="infra-runway">
       {/* the stage. Three layouts: a phone (Figma bHyNfFfV0ocgVPCHtOyYBp
           1159:676) stacks the heading, the CURRENT item's title and
@@ -2345,15 +2372,16 @@ function InfrastructureStage() {
       <div className="sticky top-[var(--stick-top)] mx-auto max-w-[600px] md:flex md:max-w-none md:items-start md:gap-[41px] xl:block xl:h-[607px] xl:w-[1200px]">
         {/* left column */}
         <div className="md:min-w-0 md:flex-1 xl:absolute xl:left-0 xl:top-0 xl:w-[408px]">
-          {/* same one-shot scramble as the FEATURES eyebrow */}
+          {/* same one-shot scramble as the FEATURES eyebrow; from md only —
+              a phone's heading is the one above the runway */}
           <HyperText
             as="p"
             {...EYEBROW_SCRAMBLE}
-            className="font-mono text-indicator-lg uppercase text-accent"
+            className="font-mono text-indicator-lg uppercase text-accent max-md:hidden"
           >
             Infrastructure
           </HyperText>
-          <h2 className="mt-3 text-heading-lg text-text-primary md:whitespace-nowrap xl:whitespace-normal xl:text-display">
+          <h2 className="mt-3 text-heading-lg text-text-primary max-md:hidden md:whitespace-nowrap xl:whitespace-normal xl:text-display">
             Build freely.
             <br />
             Launch confidently.
@@ -2364,7 +2392,7 @@ function InfrastructureStage() {
               hairline, 12px between a title and its description. A phone
               shows only the open item (data-open, kept by the swap) in a
               block of the design's 91px, so the panel below never moves. */}
-          <div className="mt-7 min-h-[91px] md:mt-[60px] md:min-h-0 xl:mt-[72px] xl:w-[350px]">
+          <div data-items className="mt-7 min-h-[91px] md:mt-[60px] md:min-h-0 xl:mt-[72px] xl:w-[350px]">
             {ITEMS.map((item, i) => (
               <div
                 key={item.key}

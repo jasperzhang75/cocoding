@@ -234,7 +234,15 @@ body {
    same formulas as stickTop() in Infrastructure.tsx. */
 .infra-runway {
   --runway: 120px;
-  --stick-top: min(100svh - 679px, (100svh + var(--nav-height) - 679px) / 2);
+  /* a phone: the open item 16px under the nav bar (its block is the
+     stage's top: its margin collapses through); md: the stage centered
+     under the bar (see stickTop) */
+  --stick-top: calc(var(--nav-height) + 16px);
+}
+@media (min-width: 48rem) {
+  .infra-runway {
+    --stick-top: min(100svh - 679px, (100svh + var(--nav-height) - 679px) / 2);
+  }
 }
 @media (min-width: 80rem) {
   .infra-runway {
