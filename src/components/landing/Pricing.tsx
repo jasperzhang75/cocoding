@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { HyperText } from "@/components/magicui/hyper-text";
+import gsap from "gsap";
 import { EYEBROW_SCRAMBLE } from "./eyebrow";
 import { AUTH_URL } from "@/lib/links";
 
@@ -366,14 +367,61 @@ function Credits({ annual, value, onChange }: { annual: boolean; value: CreditPa
   );
 }
 
+/* THE SWEEP (Jasper 2026-10-22: "pricing 第一次滚入的时候 pro 会有一次
+   linear 的流光滚动 就一次", then "stroke 那个 linear 本身会流动一次" — not
+   a beam on the ring, the ring's own gradient): once, when the Pro card
+   has first come SWEEP_SEEN into view, the #69AFFF -> white gradient's
+   axis turns one full circle — the blue end leaving the top, running
+   down the right, across the bottom, up the left and back to the top —
+   over SWEEP.duration after SWEEP.delay, easing in and out, and rests
+   where the design draws it. Never again on this page load. The axis is
+   the gradient's x1/y1 -> x2/y2 in the ring's box, as the Pro ring that
+   followed the pointer (9fcf012, rolled back) aimed it. */
+const SWEEP = { turns: 1, duration: 1.8, delay: 0.2, ease: "power2.inOut" };
+const SWEEP_SEEN = 0.5; // the card's share on screen that counts as arrived
+const RING_REST = -90; // degrees: the blue end up
+
 /* the Pro card's state: the billing period (Annual on, as the design
    shows the switch) and the credit pack (none) */
 function ProCard() {
   const [annual, setAnnual] = useState(true);
   const [pack, setPack] = useState<CreditPack>(NO_PACK);
   const ringId = useId();
+  const cardRef = useRef<HTMLElement>(null);
+  const gradRef = useRef<SVGLinearGradientElement>(null);
+  useEffect(() => {
+    const el = cardRef.current;
+    const g = gradRef.current;
+    if (!el || !g || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const a = { deg: RING_REST };
+    const aim = () => {
+      const r = (a.deg * Math.PI) / 180;
+      const x = 0.5 + 0.5 * Math.cos(r);
+      const y = 0.5 + 0.5 * Math.sin(r);
+      g.setAttribute("x1", String(x));
+      g.setAttribute("y1", String(y));
+      g.setAttribute("x2", String(1 - x));
+      g.setAttribute("y2", String(1 - y));
+    };
+    let tween: gsap.core.Tween | undefined;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.intersectionRatio < SWEEP_SEEN) return;
+        io.disconnect();
+        tween = gsap.to(a, { deg: RING_REST + 360 * SWEEP.turns, duration: SWEEP.duration, delay: SWEEP.delay, ease: SWEEP.ease, onUpdate: aim });
+      },
+      { threshold: SWEEP_SEEN }
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      tween?.kill();
+      a.deg = RING_REST;
+      aim();
+    };
+  }, []);
   return (
-    <article className={`${CARD} bg-white/[0.03]`}>
+    <article ref={cardRef} className={`${CARD} bg-white/[0.03]`}>
       {/* Ellipse 21887: a 348 x 249 ellipse turned -90°, so a 249 x
           348 box, centered in the card; radial #18365F -> #316FC5 at
           43%, LAYER-BLURRED 300 (CSS blur 150), clipped by the card.
@@ -391,7 +439,7 @@ function ProCard() {
       {/* the design's ring: 1px inside, #69AFFF at the top running to white
           at the bottom, the whole stroke at 24% */}
       <Hairline radius={10} width={1} opacity={0.24} stroke={`url(#${ringId})`}>
-        <linearGradient id={ringId} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient ref={gradRef} id={ringId} x1="0.5" y1="0" x2="0.5" y2="1">
           <stop stopColor="#69AFFF" />
           <stop offset="1" stopColor="#FFFFFF" />
         </linearGradient>
