@@ -1687,6 +1687,66 @@ function InfrastructureStage() {
       let arriving: (() => void) | null = null; // runs when a programmatic scroll lands
       let arriveTimer = 0;
 
+      /* THE LOCK ON TOUCH (2026-10-22). iOS Safari ignores overflow: hidden
+         on the root for a scroll already in flight: the momentum that
+         carried the page to the runway's end kept rolling, the grace in
+         apply() pulled it back on every event and after 600ms the hold let
+         go (Jasper: "到达页面的时候 向下滑他会不停地抖动然后划过去 你的劫持
+         好像失败了"). What iOS does honour at once is a body that cannot
+         scroll: position: fixed, holding the page's offset as a negative
+         top (the body-scroll-lock recipe) — the document collapses to the
+         viewport, nothing can move, and the picture stays exactly as it
+         was. Under the lock that offset IS the page's position: pageY and
+         pageScrollTo read and write it, every move the hold makes goes
+         through them, the room below is carried from the moment of
+         locking, and apply() is run a frame after each move since no
+         scroll event will. Pointers keep the plain overflow hold (the
+         lock would reflow a page with a classic scrollbar). */
+      let lock: { y: number; y0: number; room0: number } | null = null;
+      let applyRaf = 0;
+      const applyLater = () => {
+        if (applyRaf) return;
+        applyRaf = window.requestAnimationFrame(() => {
+          applyRaf = 0;
+          apply();
+        });
+      };
+      const pageY = () => (lock ? lock.y : window.scrollY);
+      const pageRoom = () =>
+        lock
+          ? Math.max(0, lock.room0 - (lock.y - lock.y0))
+          : Math.max(0, document.documentElement.scrollHeight - window.innerHeight - window.scrollY);
+      const pageScrollTo = (y: number) => {
+        if (!lock) {
+          window.scrollTo({ top: y, behavior: "instant" });
+          return;
+        }
+        lock.y = y;
+        document.body.style.top = `${-y}px`;
+        applyLater();
+      };
+      const lockPage = () => {
+        if (lock) return;
+        const y = window.scrollY;
+        lock = { y, y0: y, room0: Math.max(0, document.documentElement.scrollHeight - window.innerHeight - y) };
+        const b = document.body.style;
+        b.position = "fixed";
+        b.top = `${-y}px`;
+        b.left = "0";
+        b.right = "0";
+      };
+      const unlockPage = () => {
+        if (!lock) return;
+        const y = lock.y;
+        lock = null;
+        const b = document.body.style;
+        b.position = "";
+        b.top = "";
+        b.left = "";
+        b.right = "";
+        window.scrollTo({ top: y, behavior: "instant" });
+      };
+
       /* the panel lights up while its top rises from r0 (the viewport's
          bottom edge — dark as it enters) to r1 (where the stage sticks) —
          clamped to the deepest scroll the page allows while this is its
@@ -1694,9 +1754,7 @@ function InfrastructureStage() {
       const pinTarget = () => {
         const r = panel.getBoundingClientRect();
         const vh = window.innerHeight;
-        const maxScroll =
-          document.documentElement.scrollHeight - vh - window.scrollY;
-        const minTop = r.top - Math.max(0, maxScroll); // panel.top at page bottom
+        const minTop = r.top - pageRoom(); // panel.top at page bottom
         // the panel's top once the stage sticks
         return { r, r0: vh, r1: Math.max(stickTop() + panel.offsetTop, minTop) };
       };
@@ -1706,8 +1764,7 @@ function InfrastructureStage() {
          and the clamp retires as later sections add room. `scrub` is the
          stretch whose end forms frame 4 and captures. */
       const geometry = () => {
-        const vh = window.innerHeight;
-        const room = Math.max(0, document.documentElement.scrollHeight - vh - window.scrollY);
+        const room = pageRoom();
         const travel = stickTop() - runway.getBoundingClientRect().top;
         const reach = Math.min(runwayLen(), Math.max(1, travel + room));
         return { travel, runwayLen: reach, overshoot: travel - reach, room, scrub: Math.min(RUNWAY, reach) };
@@ -1831,7 +1888,7 @@ function InfrastructureStage() {
         glide?.kill();
         glide = null;
         if (Math.abs(overshoot) <= 0.5) return;
-        const from = window.scrollY;
+        const from = pageY();
         const to = from - overshoot;
         // a few px: just align. More than half a screen — the page got
         // away while the main thread was busy (Safari, a fast flick through
@@ -1839,7 +1896,7 @@ function InfrastructureStage() {
         // section reads as "jumped to Testimonial and came back" (Jasper),
         // one frame there does not.
         if (Math.abs(overshoot) < 24 || Math.abs(overshoot) > 0.6 * window.innerHeight) {
-          window.scrollTo({ top: to, behavior: "instant" });
+          pageScrollTo(to);
           return;
         }
         const pos = { y: from };
@@ -1847,7 +1904,7 @@ function InfrastructureStage() {
           y: to,
           duration: Math.min(0.4, 0.15 + Math.abs(overshoot) * 0.0004),
           ease: "power2.out",
-          onUpdate: () => window.scrollTo({ top: pos.y, behavior: "instant" }),
+          onUpdate: () => pageScrollTo(pos.y),
           onComplete: () => {
             glide = null;
             capturedAt = performance.now(); // the grace starts once the page has landed
@@ -1871,8 +1928,6 @@ function InfrastructureStage() {
         gestureUsed = !formed;
         arrival = !formed;
         touchGesture();
-        // come to rest exactly on the runway's end, whichever side we came from
-        settleAtEnd(overshoot);
         /* The hold itself: the page stops scrolling by overflow: hidden on
            the root, not only by preventDefault. WebKit honours
            preventDefault on a wheel gesture only if its FIRST event was
@@ -1893,6 +1948,10 @@ function InfrastructureStage() {
         // frame 8 jump on the way out). Hold the width with padding instead.
         const grew = root.clientWidth - widthBefore;
         if (grew > 0) root.style.paddingRight = `${grew}px`;
+        // a touch screen: the body lock (see THE LOCK ON TOUCH)
+        if (!window.matchMedia("(hover: hover)").matches) lockPage();
+        // come to rest exactly on the runway's end, whichever side we came from
+        settleAtEnd(overshoot);
         window.addEventListener("wheel", onWheel, { passive: false });
         window.addEventListener("touchmove", onTouchMove, { passive: false });
         window.addEventListener("keydown", onKey);
@@ -1915,6 +1974,7 @@ function InfrastructureStage() {
         lastOvershoot = NaN;
         lastTravel = NaN;
         armed = false;
+        unlockPage();
         document.documentElement.style.overflow = "";
         document.documentElement.style.paddingRight = "";
         window.removeEventListener("wheel", onWheel);
@@ -1922,6 +1982,8 @@ function InfrastructureStage() {
         window.removeEventListener("keydown", onKey);
         if (nudge) window.scrollBy({ top: nudge, behavior: "smooth" });
       };
+      // a nav-bar jump lets the page through (page-nav.ts tells us first)
+      const onPageNav = () => release();
 
       /* one gesture's step: +1 down, -1 up. Past the last frame in either
          direction the page is released; a transition in flight yields to
@@ -2065,6 +2127,12 @@ function InfrastructureStage() {
           arriving = null;
           f?.();
         }, 1500);
+        if (lock) {
+          // nothing scrolls under the lock: place the page and count it landed
+          pageScrollTo(lock.y + (to - geometry().travel));
+          arrived();
+          return;
+        }
         window.scrollTo({ top: window.scrollY + (to - geometry().travel), behavior: "smooth" });
       };
       const arrived = () => {
@@ -2134,7 +2202,7 @@ function InfrastructureStage() {
           // back to the end; after that anything that still drags the
           // page away lets it go (the next crossing captures again).
           if (performance.now() - capturedAt < 600) {
-            if (Math.abs(g.overshoot) > 0.5) window.scrollBy({ top: -g.overshoot, behavior: "instant" });
+            if (Math.abs(g.overshoot) > 0.5) pageScrollTo(pageY() - g.overshoot);
             lastOvershoot = 0;
             return;
           }
@@ -2215,6 +2283,7 @@ function InfrastructureStage() {
         window.addEventListener("scroll", apply, { passive: true });
         window.addEventListener("resize", apply, { passive: true });
         window.addEventListener("touchstart", onTouchStart, { passive: true, capture: true });
+        window.addEventListener("page-nav", onPageNav);
       };
       const off = () => {
         if (!listening) return;
@@ -2222,6 +2291,7 @@ function InfrastructureStage() {
         window.removeEventListener("scroll", apply);
         window.removeEventListener("resize", apply);
         window.removeEventListener("touchstart", onTouchStart, { capture: true });
+        window.removeEventListener("page-nav", onPageNav);
       };
 
       apply();
@@ -2244,6 +2314,7 @@ function InfrastructureStage() {
         release();
         window.clearTimeout(gestureTimer);
         window.clearTimeout(arriveTimer);
+        window.cancelAnimationFrame(applyRaf);
       };
     }, svg);
 

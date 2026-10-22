@@ -42,6 +42,9 @@ export function scrollToSection(id: string): boolean {
   const section = document.getElementById(id);
   if (!section) return false;
   stop?.();
+  // the Infrastructure's hold releases the page first (a locked body
+  // could not be scrolled at all)
+  dispatchEvent(new Event("page-nav"));
 
   const pad = parseFloat(getComputedStyle(section).paddingTop) || 0;
   const top = Math.max(0, section.getBoundingClientRect().top + window.scrollY + pad - LAND);
