@@ -878,8 +878,13 @@ function InfrastructureStage() {
       }
       return band;
     };
-    /* the runway's length: the 3 -> 4 scrub, plus four bands when they run */
-    const runwayLen = () => (bandsOn() ? RUNWAY + 4 * bandLen() : RUNWAY);
+    /* the runway's length: the 3 -> 4 scrub, plus four bands when they run
+       and a TAIL of TAIL_BANDS more past the last, where frame 8 holds: a
+       flick's momentum past a step runs out under the stuck stage instead
+       of carrying the section away (see ONE STEP PER SWIPE). The CSS
+       default in globals.css (.infra-runway, hover: none) mirrors this. */
+    const TAIL_BANDS = 3;
+    const runwayLen = () => (bandsOn() ? RUNWAY + (4 + TAIL_BANDS) * bandLen() : RUNWAY);
     let relayout: () => void = () => {};
     /* THE CARD ROWS (frames 6/7). Authored at a 55px pitch for the 751
        panel. On a narrower one the pitch closes up first, down to 44px
@@ -1108,7 +1113,13 @@ function InfrastructureStage() {
 
     // the light starts on the lid with frame 4's mark — stated outright so
     // a re-run of this effect (dev hot reload) cannot inherit a stale light
-    frameRef.current = 4;
+    /* the frame, kept on the section as data-frame too — for tests and
+       for any style that wants to know (nothing reads it yet) */
+    const setFrame = (n: number) => {
+      frameRef.current = n;
+      section.dataset.frame = String(n);
+    };
+    setFrame(4);
     activeFaceRef.current = "lid";
     gsap.set(svg.querySelector('[data-face-lit="lid"]'), { opacity: 1 });
     gsap.set(svg.querySelectorAll('[data-face-lit="left"], [data-face-lit="right"]'), { opacity: 0 });
@@ -1435,7 +1446,7 @@ function InfrastructureStage() {
       };
 
       const stepTo5 = () => {
-        frameRef.current = 5;
+        setFrame(5);
         hideOthers([4, 5]);
         flickerRef.current?.kill();
         normalizeToLid();
@@ -1448,7 +1459,7 @@ function InfrastructureStage() {
         else t.play(); // from wherever it stands (0, or part-way if a reverse was interrupted)
       };
       const stepBack4 = () => {
-        frameRef.current = 4;
+        setFrame(4);
         hideOthers([4, 5]);
         flickerRef.current?.kill();
         normalizeToLid();
@@ -1462,7 +1473,7 @@ function InfrastructureStage() {
       /* into 6 from anywhere: the leaving frame fades, the card row plays
          its self-contained entrance (rows reset to rest unseen first) */
       const stepTo6 = (from: 4 | 5 | 8, instant = false) => {
-        frameRef.current = 6;
+        setFrame(6);
         hideOthers([from, 6]);
         flickerRef.current?.kill();
         scoreTlRef.current?.kill();
@@ -1583,7 +1594,7 @@ function InfrastructureStage() {
       };
       /* into 8 from anywhere: the leaving frame fades, the scorecard plays */
       const stepTo8 = (from: 4 | 5 | 6, instant = false) => {
-        frameRef.current = 8;
+        setFrame(8);
         hideOthers([from, 8]);
         flickerRef.current?.kill();
         if (from !== 6) {
@@ -1603,7 +1614,7 @@ function InfrastructureStage() {
          posed unseen (tl3 at 0 = frame 4, at 1 = frame 5, lid lit, default
          callouts) and fades in already in place */
       const stepToCube = (from: 6 | 8, target: 4 | 5, instant = false) => {
-        frameRef.current = target;
+        setFrame(target);
         hideOthers([from, target]);
         flickerRef.current?.kill();
         scoreTlRef.current?.kill();
@@ -2055,25 +2066,87 @@ function InfrastructureStage() {
       /* BANDS (touch). Past the scrub the runway is four bands of one
          BAND each: frame 4 holds through the first, then 5, 6, 8. Nothing
          is held — the page scrolls freely and the frame follows the band
-         the stage is in, one step at a time in either direction (a swipe
-         over two boundaries walks the frame between, a paint apart). A
+         the stage is in, one step at a time in either direction. A
          boundary has a dead zone of ±15% of a band around it, so resting
          on one never flaps. A title tap switches at once and glides the
-         page to that frame's band; the bands sleep during the glide. */
+         page to that frame's band; the bands sleep during the glide.
+         ONE STEP PER SWIPE (Jasper 2026-10-22: "mobile 上的 scroll 经常容易
+         一个 scroll 就从 productionready 跳到 intergration ... 一个 scroll 只能
+         切换一个 tab"): a flick's momentum crosses two or three bands, and
+         the bands used to walk the frame over each of them. Now a swipe —
+         finger down to the end of the momentum after it, or any scroll
+         stream broken by SWIPE_QUIET of silence — steps the frame once at
+         most; and once the page has come to rest inside the runway (no
+         finger down) it glides to the frame's band center, unseen, since
+         the stage is stuck through the runway, so the next swipe starts
+         from the middle of a band with a whole band to cross. Past the last
+         band the runway runs on for TAIL_BANDS (frame 8 holding) so an
+         overshoot stays under the stuck stage: a swipe that stepped settles
+         back to its frame's band center; a downward swipe from frame 8 that
+         ends in the tail glides on to the runway's end, so the next one
+         leaves the section with its whole momentum; an upward one from
+         the end settles into frame 8's band. A swipe that carries the page
+         out of the runway is let go. A touch during a glide ends the glide. */
       const BAND_FRAMES = [4, 5, 6, 8];
       const DEAD = 0.15;
-      let bandRaf = 0;
+      const SWIPE_QUIET = 400; // ms without a scroll event: the swipe is over (a finger down ends one at once; a long frame mid-momentum must not)
+      const SETTLE_AFTER = 150; // ms after the last scroll event before the page is settled
+      let swipeStepped = false; // this swipe has had its step
+      let swipeAt = 0; // the swipe's last scroll event
+      let swipeFrom = 0; // the travel the swipe began at (its direction)
+      let touching = false; // a finger is down
+      let settleTimer = 0;
+      const settle = () => {
+        if (arriving || touching || !bandsOn() || !landed) return;
+        const i = BAND_FRAMES.indexOf(frameRef.current);
+        if (i < 0) return;
+        const g = geometry();
+        if (g.travel < 0 || g.travel > g.runwayLen) return; // out of the runway: let go
+        const pos = (g.travel - RUNWAY) / bandLen();
+        const inTail = pos >= BAND_FRAMES.length;
+        const leaving = inTail && !swipeStepped && g.travel >= swipeFrom; // frame 8, swiped on down
+        const to = leaving ? g.runwayLen : RUNWAY + (i + 0.5) * bandLen();
+        if (Math.abs(g.travel - to) <= 2) return;
+        scrollToTravel(to, () => {});
+      };
+      const settleLater = () => {
+        window.clearTimeout(settleTimer);
+        settleTimer = window.setTimeout(settle, SETTLE_AFTER);
+      };
       const bands = (travel: number) => {
         if (arriving) return;
+        const now = performance.now();
+        if (now - swipeAt > SWIPE_QUIET) {
+          swipeStepped = false; // a new swipe
+          swipeFrom = travel;
+        }
+        swipeAt = now;
+        settleLater();
         const i = BAND_FRAMES.indexOf(frameRef.current);
         if (i < 0 || (i === 0 && !landed)) return;
         const pos = (travel - RUNWAY) / bandLen();
+        if (pos < -DEAD) {
+          // above the bands the scrub owns the stage: it must show frame 4
+          if (i > 0) goTo(4, interrupt());
+          return;
+        }
+        if (swipeStepped) return;
         const next = pos >= i + 1 + DEAD ? i + 1 : pos < i - DEAD ? i - 1 : i;
         if (next === i || next < 0 || next >= BAND_FRAMES.length) return;
         goTo(BAND_FRAMES[next], interrupt());
-        if (frameRef.current !== BAND_FRAMES[next]) return;
-        window.cancelAnimationFrame(bandRaf);
-        bandRaf = window.requestAnimationFrame(() => bands(geometry().travel));
+        if (frameRef.current === BAND_FRAMES[next]) swipeStepped = true;
+      };
+      const onBandTouchStart = () => {
+        touching = true;
+        swipeStepped = false; // a finger down is a new swipe, momentum or not
+        swipeFrom = geometry().travel;
+        swipeAt = performance.now();
+        window.clearTimeout(settleTimer);
+        if (arriving) arrived(); // a glide the finger has stopped
+      };
+      const onBandTouchEnd = () => {
+        touching = false;
+        settleLater(); // momentum, if any, keeps pushing it back
       };
 
       const apply = () => {
@@ -2228,12 +2301,18 @@ function InfrastructureStage() {
         listening = true;
         window.addEventListener("scroll", apply, { passive: true });
         window.addEventListener("resize", apply, { passive: true });
+        window.addEventListener("touchstart", onBandTouchStart, { passive: true });
+        window.addEventListener("touchend", onBandTouchEnd, { passive: true });
+        window.addEventListener("touchcancel", onBandTouchEnd, { passive: true });
       };
       const off = () => {
         if (!listening) return;
         listening = false;
         window.removeEventListener("scroll", apply);
         window.removeEventListener("resize", apply);
+        window.removeEventListener("touchstart", onBandTouchStart);
+        window.removeEventListener("touchend", onBandTouchEnd);
+        window.removeEventListener("touchcancel", onBandTouchEnd);
       };
 
       apply();
@@ -2256,7 +2335,7 @@ function InfrastructureStage() {
         release();
         window.clearTimeout(gestureTimer);
         window.clearTimeout(arriveTimer);
-        window.cancelAnimationFrame(bandRaf);
+        window.clearTimeout(settleTimer);
       };
     }, svg);
 

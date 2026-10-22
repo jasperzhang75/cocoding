@@ -243,7 +243,8 @@ body {
 }
 @media (hover: none) and (prefers-reduced-motion: no-preference) {
   .infra-runway {
-    --runway: calc(120px + 4 * clamp(320px, 70svh, 700px) + max(0px, min(100svh - 679px, (100svh + var(--nav-height) - 679px) / 2)));
+    /* four bands of frames and a tail of three (TAIL_BANDS in Infrastructure) */
+    --runway: calc(120px + 7 * clamp(320px, 70svh, 700px) + max(0px, min(100svh - 679px, (100svh + var(--nav-height) - 679px) / 2)));
   }
 }
 
