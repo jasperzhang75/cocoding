@@ -93,20 +93,36 @@ import { useEffect, useRef } from "react";
       footer is lifted. */
 
 /* 2026-10-22, with the one bounce in place (Jasper: "现在手感是对的 但是我要求
-   他能拉到的高度要比现在高70%"): the band and both gives are 1.7x what they
-   were (0.8 / 0.8 / 0.55) — scaling both scales every lift by exactly
-   1.7 with the curve's shape, i.e. the feel, unchanged: a notch ~82 (48),
-   a hard trackpad swipe ~520 at 1280 x 800 (306), a hard flick's bounce
-   ~310 (181), a phone's 400px drag ~280 (166). */
-const BAND_VH = 1.36; // the band's limit: the lift tends to this share of the viewport's height and never reaches it
-const GIVE = 1.36; // how much of the wheel's first pixels the footer follows (the slope at rest)
-const GIVE_TOUCH = 0.935; // a finger's (1.7x iOS's own rubber-band coefficient, 0.55)
-const TAU = 1500; // ms — the push's decay while it is still being fed: long, so a pull reads as finger travel and a long one keeps building
-const TAU_RELEASE = 40; // ms — its fade once let go (the spring is fast enough now to finish a flick's rise first)
-const MIN_STEP = 4; // smaller wheel deltas are momentum crumbs, not a pull
-const MAX_STEP = 70; // one event counts at most this much: a mouse notch (100) lifts ~48px, not 58 (Jasper)
-const MOMENTUM_RUN = 5; // strictly decreasing deltas in a row at the end = momentum: let go
-const LET_GO = 90; // ms without a push
+   他能拉到的高度要比现在高70%"): the band and both gives went to 1.7x.
+
+   THE WORD STAYS UNDER THE FINGER (2026-10-23, Jasper: "拖动还是会被一种力
+   量往下拉 电脑上也是"). Measured, there were two forces: (a) the band —
+   from the first pixel the lift was a shrinking share of the pull (a
+   phone's 400px drag lifted 270, the word sliding down under the finger,
+   and the spring trailed a moving finger by half its travel at first);
+   (b) on a trackpad the pull dropped while the fingers were still there —
+   deltas under 4px (a slow drag, a finger slowing down) did not count,
+   so 90ms later the pull was let go and fell, and the push decayed even
+   while fed. Now: the lift is the pull itself, 1:1, for the first FREE_VH
+   of the viewport (the word, its lower half and well past), and only
+   beyond that a rubber band (BAND_VH more at most) — a drag, not a
+   stretch; a finger on the glass moves the footer directly, no spring
+   until it lets go; a wheel stream that is the user's own (it began at
+   the end, or is already pulling) counts every delta, its push no longer
+   decays while fed, and a stream that slowed to small deltas (fingers
+   coming to rest) is held LET_GO_SLOW before it is taken as let go —
+   wheel events say nothing about resting fingers, so that wait is the
+   compromise: longer and a slow release would hang. */
+const FREE_VH = 0.5; // the lift follows the pull 1:1 up to this share of the viewport's height
+const BAND_VH = 0.5; // past that a rubber band, giving at most this much more (the clipper's headroom is 100svh)
+const TAU_RELEASE = 40; // ms — the push's fade once let go (the spring is fast enough to finish a flick's rise first)
+const MIN_STEP = 4; // smaller wheel deltas are momentum crumbs — unless the stream is the user's own pull
+const MAX_STEP = 70; // one event counts at most this much (a mouse notch, 100, lifts 70)
+const MOMENTUM_RUN = 5; // decreasing deltas in a row at the end = momentum: let go
+const FLICK = 16; // px — in the user's own pull, only a run falling from at least this is momentum
+const LET_GO = 90; // ms without a push: let go, and a new stream begins
+const SLOW = 6; // px — a last delta under this: the fingers were coming to rest
+const LET_GO_SLOW = 300; // ms without a push after a slow one before it is let go
 const STIFFNESS = 1200; // the spring toward the target, 1/s² (ω ≈ 35: on the finger within ~0.1s)
 const ZETA_UP = 0.7; // damping ratio rising: quick, a hair of overshoot
 const ZETA_DOWN = 0.9; // damping ratio returning: a soft landing
@@ -134,7 +150,8 @@ export default function FooterWordmark() {
     }
 
     /* 1. dark -> bright with the reveal */
-    let band = 0; // the lift's limit (px)
+    let free = 0; // px the lift follows 1:1
+    let band = 0; // px the rubber band past it gives at most
     let headroom = 0; // the clipper's room above the footer: the band and the spring's overshoot
     const light = () => {
       const fs = parseFloat(getComputedStyle(box).fontSize);
@@ -143,6 +160,7 @@ export default function FooterWordmark() {
       // half-pixel border, which leaves the page's end 0.5px under the viewport's
       const t = Math.min(1, Math.max(0, (innerHeight - r.top + 1) / (0.716 * fs)));
       word.style.opacity = String(t);
+      free = FREE_VH * innerHeight;
       band = BAND_VH * innerHeight;
       headroom = parseFloat(getComputedStyle(clipper).paddingTop) || 0;
     };
@@ -151,11 +169,15 @@ export default function FooterWordmark() {
     addEventListener("resize", light);
 
     /* 2. the pull at the page's end — the footer moves, the word with it */
-    let push = 0; // accumulated wheel travel, decaying
+    let push = 0; // accumulated wheel travel (fades once let go)
     let pushedAt = 0; // when the wheel last pulled
+    let pushDy = 0; // by how much: a small one means the fingers may be resting
+    let ours = false; // this wheel stream is the user's own pull (it began at the end)
     let lastAt = 0; // the last wheel event of the stream, tail included
     let lastDy = 0; // its delta
-    let runDown = 0; // strictly decreasing deltas in a row, at the end
+    let runDown = 0; // decreasing deltas in a row, at the end
+    let runFrom = 0; // the delta that run fell from
+    let runLast = 0; // the last delta of at least MIN_STEP
     let released = false; // let go: the rest of this stream is momentum
     let touchY0 = 0; // where a drag at the end began
     let touching = false; // a finger is down
@@ -165,9 +187,9 @@ export default function FooterWordmark() {
     let vel = 0;
     let last = 0;
     let raf = 0;
-    /* the rubber band: the lift for x px of pull, following `give` of it at
-       first and less the further it goes, tending to the band's limit */
-    const stretch = (x: number, give: number) => band * (1 - 1 / (1 + (give * x) / band));
+    /* the lift for x px of pull: x itself up to `free`, then a rubber band
+       tending to `band` more */
+    const stretch = (x: number) => (x <= free ? x : free + band * (1 - 1 / (1 + (x - free) / band)));
     const atEnd = () => {
       const d = document.scrollingElement ?? document.documentElement;
       return d.scrollTop + innerHeight >= d.scrollHeight - 1;
@@ -175,16 +197,23 @@ export default function FooterWordmark() {
     const tick = (now: number) => {
       const dt = Math.min(32, now - last) / 1000;
       last = now;
-      push *= Math.exp(-(dt * 1000) / (released || now - pushedAt > LET_GO ? TAU_RELEASE : TAU));
+      // fed, the push is the fingers' travel; let go, it fades
+      if (released || now - pushedAt > (ours && pushDy < SLOW ? LET_GO_SLOW : LET_GO)) push *= Math.exp(-(dt * 1000) / TAU_RELEASE);
       if (push < 1) push = 0;
-      const target = Math.max(stretch(push, GIVE), touchTarget);
-      const damping = 2 * (target > pull ? ZETA_UP : ZETA_DOWN) * Math.sqrt(STIFFNESS);
-      // a stiff spring wants small steps: integrate in ≤ 8ms substeps
-      const n = Math.ceil(dt / 0.008);
-      const h = dt / n;
-      for (let i = 0; i < n; i++) {
-        vel += (STIFFNESS * (target - pull) - damping * vel) * h;
-        pull += vel * h;
+      const target = Math.max(stretch(push), touchTarget);
+      if (touchPulling && touchTarget > 0 && touchTarget >= stretch(push) && dt > 0) {
+        // a finger on the glass: the footer is where the finger puts it
+        vel = (target - pull) / dt;
+        pull = target;
+      } else {
+        const damping = 2 * (target > pull ? ZETA_UP : ZETA_DOWN) * Math.sqrt(STIFFNESS);
+        // a stiff spring wants small steps: integrate in ≤ 8ms substeps
+        const n = Math.ceil(dt / 0.008);
+        const h = dt / n;
+        for (let i = 0; i < n; i++) {
+          vel += (STIFFNESS * (target - pull) - damping * vel) * h;
+          pull += vel * h;
+        }
       }
       if (!push && !touchTarget && Math.abs(pull) < 0.2 && Math.abs(vel) < 2) {
         pull = vel = 0;
@@ -203,34 +232,56 @@ export default function FooterWordmark() {
         push = 0; // scrolling away lets go at once
         released = false;
         runDown = 0;
+        ours = false;
         return;
       }
-      if (dy < MIN_STEP) return; // a crumb: not part of any stream
+      if (!dy) return;
       const t = performance.now();
+      // a new stream: after LET_GO of silence — after a let-go tail, longer,
+      // so the tail's last scattered crumbs are not taken for a fresh pull
+      const quiet = t - lastAt > (released ? LET_GO_SLOW : LET_GO);
       const prevDy = lastDy;
-      const quiet = t - lastAt > LET_GO; // a new stream
       lastAt = t;
       lastDy = dy;
       if (quiet) {
         released = false;
         runDown = 0;
+        ours = atEnd(); // a stream that begins at the end is the user pulling
       }
       if (!atEnd()) {
         runDown = 0; // the run that counts starts at the end
         return;
       }
+      // a crumb counts only in the user's own pull (a slow drag, fingers
+      // slowing down); anyone else's is momentum's tail
+      if (dy < MIN_STEP && !ours) return;
       if (released) {
         if (dy < Math.max(10, 2 * prevDy)) return; // the tail: ignored
         released = false; // a fresh flick inside it
         runDown = 0;
       }
-      runDown = !quiet && dy < prevDy ? runDown + 1 : 0;
-      if (runDown >= MOMENTUM_RUN) {
+      /* momentum, read from real deltas only (crumbs neither extend nor
+         break a run): in someone else's stream, MOMENTUM_RUN strictly
+         decreasing deltas; in the user's own, a run that falls from a
+         flick's speed (FLICK) — non-increasing, as momentum's rounded
+         deltas repeat — while a slow drag easing to a rest is never let
+         go by it, only by the silence after */
+      if (dy >= MIN_STEP) {
+        const down = ours ? dy <= runLast : dy < runLast;
+        if (!quiet && down) runDown += 1;
+        else {
+          runDown = 0;
+          runFrom = dy;
+        }
+        runLast = dy;
+      }
+      if (runDown >= MOMENTUM_RUN && (!ours || (runFrom >= FLICK && dy < runFrom))) {
         released = true; // momentum: let go (the push fades in tick)
         return;
       }
       push += Math.min(dy, MAX_STEP);
       pushedAt = t;
+      pushDy = dy;
       start();
     };
     addEventListener("wheel", onWheel, { passive: true });
@@ -263,7 +314,7 @@ export default function FooterWordmark() {
         return;
       }
       e.preventDefault();
-      touchTarget = stretch(Math.max(0, d), GIVE_TOUCH);
+      touchTarget = stretch(Math.max(0, d));
       start();
     };
     const onTouchEnd = () => {
@@ -294,6 +345,7 @@ export default function FooterWordmark() {
       if (end && !wasAtEnd && speed >= ARRIVAL_MIN && !touching && t - lastAt > LET_GO) {
         push += speed * ARRIVAL;
         pushedAt = t;
+        pushDy = Infinity; // a bounce: let go on the usual beat
         start();
       }
       wasAtEnd = end;
