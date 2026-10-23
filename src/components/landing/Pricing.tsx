@@ -6,6 +6,7 @@ import { HyperText } from "@/components/magicui/hyper-text";
 import gsap from "gsap";
 import { EYEBROW_SCRAMBLE } from "./eyebrow";
 import { AUTH_URL } from "@/lib/links";
+import { Hairline, Tick } from "./Hairline";
 
 /* PRICING, redesigned (Figma bHyNfFfV0ocgVPCHtOyYBp 4:8 in "MacBook Air -
    34", read 2026-10-12, then its successor yFciEPejue3E2xhstXF0Wu
@@ -135,13 +136,6 @@ function Chevron({ flipped = false }: { flipped?: boolean }) {
 }
 /* the chosen pack's mark in the credits list: lucide check at 16, the
    list's text color */
-function Tick() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden className="shrink-0">
-      <path d="M13.33 4 6 11.33 2.67 8" stroke="#EDEDED" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 /* ---------------------------------------------------------------- pieces */
 
@@ -486,34 +480,6 @@ const PLAIN_CARD = `${CARD} bg-[#0A0A0A] shadow-[inset_0_0_0_1px_rgba(255,255,25
    less that half. An overlay above everything in its box — on the Pro
    card, above the blue glow, which would paint over the card's own
    border. `children` go into <defs> (the Pro ring's gradient). */
-function Hairline({
-  radius,
-  width = 0.8,
-  opacity = 0.06,
-  stroke = "#FFFFFF",
-  children,
-}: {
-  radius: number;
-  width?: number;
-  opacity?: number;
-  stroke?: string;
-  children?: React.ReactNode;
-}) {
-  const half = width / 2;
-  return (
-    <svg aria-hidden className="pointer-events-none absolute inset-0 size-full">
-      {children && <defs>{children}</defs>}
-      <rect
-        rx={radius - half}
-        fill="none"
-        stroke={stroke}
-        strokeOpacity={opacity}
-        strokeWidth={width}
-        style={{ x: `${half}px`, y: `${half}px`, width: `calc(100% - ${width}px)`, height: `calc(100% - ${width}px)` }}
-      />
-    </svg>
-  );
-}
 /* the CTA block: the list's gap above it (59 at xl, 40 below) */
 const CTA_BLOCK = "mt-auto pt-10 xl:pt-[59px]";
 

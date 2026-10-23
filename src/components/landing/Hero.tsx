@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
 import BorderLight from "./BorderLight";
+import Menu from "./Menu";
 
 /* Landing-only values: #3f3f3f/56 badge border, #6A91FC "New" pill (its own
    special blue, intentionally NOT the Accent token), #131516 text on accent,
@@ -22,7 +23,15 @@ import BorderLight from "./BorderLight";
      150ms — resting is a near-invisible 4%, focus the design's flat 12%
    - voice chip: idle is white/61, with input text it goes fully white and the
      audio-lines glyph morphs into a rightward send arrow via GSAP MorphSVG
-     (compound paths). The glyph is #000000, matching the Figma vector. */
+     (compound paths). The glyph is #000000, matching the Figma vector.
+
+   The box's controls (2026-10-23, Jasper: "auto 下面增加 website、keynote、
+   animation 然后那个+添加可以添加文件的 Gemini3.0 那个改成最新的模型和下拉添加
+   一些最新的模型名称"): the mode and the model are Menu listboxes (MODES,
+   MODELS; the design's label + chevron as the trigger, Pricing's menu
+   under it), and the paperclip opens the file picker — the chosen files
+   stand as chips above the bottom row, each with its own remove. Nothing
+   is sent anywhere: this is the landing page's picture of the product. */
 
 gsap.registerPlugin(MorphSVGPlugin);
 
@@ -63,6 +72,11 @@ const BEAM = 56;
 const BEAM_LAP = 2.4; // slower round the caps, see BorderLight (3.4 for an hour; Jasper: "再快一点")
 const BEAM_DELAY = 0.6;
 
+/* what the box can make (Auto first, the design's label) and which model
+   makes it (the newest first; the design showed "Gemini 3.0") */
+const MODES = ["Auto", "Website", "Keynote", "Animation"] as const;
+const MODELS = ["Claude Opus 5.5", "Claude Sonnet 5.5", "Claude Haiku 5.5", "Claude Fable 5.1", "GPT-5.2", "Gemini 3.1 Pro"] as const;
+
 function ArrowRight({ className }: { className?: string }) {
   return (
     <svg
@@ -93,20 +107,39 @@ function AnnouncementBadge() {
         New
       </span>
       <p className="flex items-center gap-1.5 text-body-xs text-text-primary">
-        Claude Opus 4.7 now available
+        Claude Opus 5.5 now available
         <ArrowRight className="text-text-body/60" />
       </p>
     </div>
   );
 }
 
+function Cross() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
+      <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function PromptBox() {
   const [value, setValue] = useState("");
+  const [mode, setMode] = useState<string>(MODES[0]);
+  const [model, setModel] = useState<string>(MODELS[0]);
+  const [files, setFiles] = useState<string[]>([]);
   const hasText = value.trim().length > 0;
   const morphRef = useRef<SVGPathElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const mounted = useRef(false);
+
+  // the paperclip's files, by name; the same name twice is one chip
+  const addFiles = (list: FileList | null) => {
+    if (!list?.length) return;
+    const names = Array.from(list, (f) => f.name);
+    setFiles((prev) => [...prev, ...names.filter((n) => !prev.includes(n))]);
+  };
 
   // the typing placeholder (see PROMPT_TAILS)
   useEffect(() => {
@@ -172,7 +205,7 @@ function PromptBox() {
   return (
     <div
       ref={boxRef}
-      className="group pointer-events-auto relative h-[150px] w-full overflow-hidden rounded-2xl"
+      className="group pointer-events-auto relative h-[150px] w-full rounded-2xl"
       style={{
         /* Fills read from Figma node 16568:18077: #171717 under #000000 @ 20%.
            The stroke is NOT here — it lives in the two .prompt-ring overlays
@@ -188,14 +221,50 @@ function PromptBox() {
         onChange={(e) => setValue(e.target.value)}
         aria-label="Describe what you want to build"
         placeholder={PROMPT_LEAD + PROMPT_TAILS[0]}
-        className="pointer-events-auto h-full w-full resize-none bg-transparent px-5 pb-14 pt-[21px] text-body-md text-text-primary outline-none placeholder:text-[#929292]/50 md:text-body-sm"
+        className={`pointer-events-auto h-full w-full resize-none rounded-2xl bg-transparent px-5 pt-[21px] text-body-md text-text-primary outline-none placeholder:text-[#929292]/50 md:text-body-sm ${
+          files.length ? "pb-[88px]" : "pb-14"
+        }`}
       />
+
+      {/* the attached files, above the bottom row */}
+      {files.length > 0 && (
+        <ul className="pointer-events-auto absolute inset-x-0 bottom-14 flex flex-wrap gap-1.5 px-5">
+          {files.map((name) => (
+            <li
+              key={name}
+              className="flex h-6 items-center gap-1 rounded-sm bg-white/[0.06] pl-2 pr-1 text-body-xs text-text-body"
+            >
+              <span className="max-w-40 truncate">{name}</span>
+              <button
+                type="button"
+                aria-label={`Remove ${name}`}
+                onClick={() => setFiles((prev) => prev.filter((n) => n !== name))}
+                className="flex size-4 items-center justify-center rounded-xs text-text-body/60 transition-colors duration-150 hover:text-text-primary"
+              >
+                <Cross />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-5 pb-4">
         <div className="flex items-center gap-3">
+          <input
+            ref={fileRef}
+            type="file"
+            multiple
+            className="hidden"
+            tabIndex={-1}
+            onChange={(e) => {
+              addFiles(e.target.files);
+              e.target.value = ""; // the same file again is a choice again
+            }}
+          />
           <button
             type="button"
             aria-label="Attach a file"
+            onClick={() => fileRef.current?.click()}
             className="pointer-events-auto relative size-4 overflow-hidden"
           >
             <Image
@@ -205,30 +274,26 @@ function PromptBox() {
               className="scale-150"
             />
           </button>
-          <button
-            type="button"
-            className="pointer-events-auto flex h-8 items-center gap-1 rounded-md py-1.5 pl-3 pr-2"
-          >
-            <span className="text-body-sm text-text-body">Auto</span>
-            <Image
-              src="/icons/chevron-down.svg"
-              alt=""
-              width={16}
-              height={16}
-            />
-          </button>
+          <Menu
+            label="What to create"
+            options={MODES}
+            value={mode}
+            onChange={setMode}
+            buttonClassName="pointer-events-auto flex h-8 items-center gap-1 rounded-md py-1.5 pl-3 pr-2"
+            labelClassName="text-body-sm text-text-body"
+          />
         </div>
 
         <div className="flex items-center gap-4 md:gap-6">
-          <button type="button" className="pointer-events-auto flex items-center gap-[3px]">
-            <span className="text-body-xs text-text-body">Gemini 3.0</span>
-            <Image
-              src="/icons/chevron-down.svg"
-              alt=""
-              width={16}
-              height={16}
-            />
-          </button>
+          <Menu
+            label="Model"
+            options={MODELS}
+            value={model}
+            onChange={setModel}
+            align="right"
+            buttonClassName="pointer-events-auto flex items-center gap-[3px]"
+            labelClassName="text-body-xs text-text-body"
+          />
           <button
             type="button"
             aria-label={hasText ? "Send" : "Voice input"}
