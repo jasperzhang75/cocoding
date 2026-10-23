@@ -91,7 +91,7 @@ const airbnb: Card = {
   kind: "study",
   logo: <AirbnbLogo />,
   logoW: "25.91cqw", // 100 wide
-  stat: "4×",
+  stat: "4X", // capital X: the × glyph sat at x-height beside the 4, small next to the other card's "62%"
   statLabel: "Faster to ship internal tools",
   kicker: "Case study",
   title: "How Airbnb ships internal tools in days, not quarters",
