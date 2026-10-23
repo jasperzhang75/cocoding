@@ -7,7 +7,7 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { HyperText } from "@/components/magicui/hyper-text";
 import { EYEBROW_SCRAMBLE } from "./eyebrow";
-import { NotionLogo, OpenAILogo, RampLogo } from "./testimonial-logos";
+import { AirbnbLogo, DropboxLogo, RaycastLogo, StripeLogo, SupabaseLogo, VercelLogo } from "./testimonial-logos";
 import { onArrival } from "./on-arrival";
 
 /* THE MESH (Jasper 2026-10-21: `npx shaders install 4744333`, "add this
@@ -37,9 +37,10 @@ const Mesh = dynamic(() => import("@/components/shaders/HelloWorld"), { ssr: fal
    end;
    three fit the 1200 container and the neighbours peek out at its
    sides (the section clips at the viewport). The design draws three
-   cards — a photo quote (OpenAI), a case study (Ramp), a photo quote
-   (Notion) — and Jasper asked for six to have something to slide, so
-   the three repeat. Placeholder content for now. Besides the arrows: a
+   cards — a photo quote, a case study, a photo quote (OpenAI, Ramp and
+   Notion in the design) — and Jasper asked for six to have something
+   to slide, so the three repeat. Since 2026-10-23 each of the six wears
+   its own company (testimonial-logos.tsx). Placeholder content. Besides the arrows: a
    touch swipe, and (Jasper 2026-09-07) a horizontal wheel gesture — a
    trackpad's two-finger left/right — anywhere over the section. */
 
@@ -76,34 +77,34 @@ type Card =
   | { kind: "quote"; logo: ReactNode; logoW: string; photo: string; photoOpacity: number; video?: string; name: string; text: string }
   | { kind: "study"; logo: ReactNode; logoW: string; stat: string; statLabel: string; kicker: string; title: string };
 
-const openai: Card = {
+const vercel: Card = {
   kind: "quote",
-  logo: <OpenAILogo />,
-  logoW: "28.76cqw",
+  logo: <VercelLogo />,
+  logoW: "29.02cqw", // 112 wide — its caps run taller than the others' at 128
   photo: "/testimonials/quote-openai-hd.png",
   photoOpacity: 0.8,
   video: "/testimonials/speak-openai.mp4",
-  name: "Gabriel Peal, Frontend Developer",
-  text: "“ It's the first AI tool that doesn't feel like a toy. ”",
+  name: "Tom Whitaker, Engineer at Vercel",
+  text: "“ It shipped our internal dashboard in an afternoon. ”",
 };
-const ramp: Card = {
+const airbnb: Card = {
   kind: "study",
-  logo: <RampLogo />,
-  logoW: "24.87cqw",
-  stat: "90%",
-  statLabel: "Learner satisfaction",
+  logo: <AirbnbLogo />,
+  logoW: "25.91cqw", // 100 wide
+  stat: "4×",
+  statLabel: "Faster to ship internal tools",
   kicker: "Case study",
-  title: "How Ramp builds next-generation payment tools",
+  title: "How Airbnb ships internal tools in days, not quarters",
 };
-const notion: Card = {
+const stripe: Card = {
   kind: "quote",
-  logo: <NotionLogo />,
-  logoW: "23.83cqw", // 92 wide — the wordmark overruns the design's 82 frame
+  logo: <StripeLogo />,
+  logoW: "18.65cqw", // 72 wide
   photo: "/testimonials/quote-notion-hd.png",
   photoOpacity: 0.7,
   video: "/testimonials/speak-notion.mp4",
-  name: "Gabriel Peal, Backend Developer",
-  text: "“ Cocoding built a dashboard that actually looks good.”",
+  name: "Clara Lindqvist, Designer at Stripe",
+  text: "“ It reads our Figma and comes back with the page I meant. ”",
 };
 /* the second half of the loop: the same three cards with two other
    people (Jasper 2026-10-21: "剩下几张图换些人"). Both portraits were
@@ -124,10 +125,46 @@ const notion: Card = {
    match 1:1. The Notion card's photo is 90% there, hence the override.
    New file names, because the browser, Next's image optimizer and
    Vercel's image CDN all cache by URL and kept serving the old photo
-   under the old one. Placeholder names and quotes as before. */
-const openaiB: Card = { ...openai, photo: "/testimonials/quote-openai-b-crop.jpg", video: "/testimonials/speak-openai-b.mp4" };
-const notionB: Card = { ...notion, photo: "/testimonials/quote-notion-b-crop.jpg", photoOpacity: 0.9, video: "/testimonials/speak-notion-b.mp4" };
-const CARDS: Card[] = [openai, ramp, notion, openaiB, ramp, notionB];
+   under the old one.
+   THE WORDS (2026-10-23, Jasper: "生成一些合理化的评论 人名还有职位还有公司"):
+   invented people with a title at the company whose mark the card wears
+   (the photo files keep the design's openai / notion names),
+   one short line each about what the product did for them (the name
+   line kept to one line on a 375 phone, 84% card, 13px) — placeholder
+   copy, nobody's real words; the companies are the design's. The clips
+   were voiced with the earlier quotes and play muted, so the lips do not
+   follow these. The study card gets a second edition for the loop's
+   second half. */
+const supabase: Card = {
+  kind: "quote",
+  logo: <SupabaseLogo />,
+  logoW: "31.61cqw", // 122 wide
+  photo: "/testimonials/quote-openai-b-crop.jpg",
+  photoOpacity: 0.8,
+  video: "/testimonials/speak-openai-b.mp4",
+  name: "Grace Lin, Tech Lead at Supabase",
+  text: "“ Half our prototypes now go straight to production. ”",
+};
+const dropbox: Card = {
+  kind: "study",
+  logo: <DropboxLogo />,
+  logoW: "31.09cqw", // 120 wide
+  stat: "62%",
+  statLabel: "Less time on UI rework",
+  kicker: "Case study",
+  title: "How Dropbox keeps design and code in step",
+};
+const raycast: Card = {
+  kind: "quote",
+  logo: <RaycastLogo />,
+  logoW: "27.98cqw", // 108 wide
+  photo: "/testimonials/quote-notion-b-crop.jpg",
+  photoOpacity: 0.9,
+  video: "/testimonials/speak-notion-b.mp4",
+  name: "Marcus Osei, Frontend Lead at Raycast",
+  text: "“ Pixel-accurate first time. No more hand-tuned CSS. ”",
+};
+const CARDS: Card[] = [vercel, airbnb, stripe, supabase, dropbox, raycast];
 
 /* ---------------------------------------------------------------- cards */
 
